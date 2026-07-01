@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
+
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -12,22 +14,55 @@ class _LoginScreenState extends State<LoginScreen> {
   final TextEditingController passwordController = TextEditingController();
 
   bool isLoading = false;
+  String? errorMessage;
 
   void login() {
+    final email = emailController.text.trim();
+    final password = passwordController.text.trim();
+
+    setState(() {
+      errorMessage = null;
+    });
+
+    // VALIDACIONES
+    if (email.isEmpty || password.isEmpty) {
+      setState(() {
+        errorMessage = "Completa todos los campos";
+      });
+      return;
+    }
+
+    if (password.length < 6) {
+      setState(() {
+        errorMessage = "La contraseña debe tener al menos 6 caracteres";
+      });
+      return;
+    }
+
     setState(() {
       isLoading = true;
     });
 
-    Future.delayed(const Duration(seconds: 2), () {
+    // SIMULACIÓN LOGIN
+    Future.delayed(const Duration(seconds: 1), () {
       setState(() {
         isLoading = false;
       });
 
-      // Por ahora solo simulación
+      // 🔥 ACA ESTÁ EL CAMBIO IMPORTANTE
+      context.go('/dashboard');
+
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Login simulado exitoso")),
+        const SnackBar(content: Text("Login válido (simulado)")),
       );
     });
+  }
+
+  @override
+  void dispose() {
+    emailController.dispose();
+    passwordController.dispose();
+    super.dispose();
   }
 
   @override
@@ -68,7 +103,16 @@ class _LoginScreenState extends State<LoginScreen> {
                 ),
               ),
 
-              const SizedBox(height: 24),
+              const SizedBox(height: 10),
+
+              // ERROR MESSAGE
+              if (errorMessage != null)
+                Text(
+                  errorMessage!,
+                  style: const TextStyle(color: Colors.red),
+                ),
+
+              const SizedBox(height: 20),
 
               SizedBox(
                 width: double.infinity,
