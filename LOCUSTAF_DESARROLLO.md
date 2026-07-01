@@ -19,6 +19,8 @@
 - ProviderScope configurado (Riverpod preparado)
 - MaterialApp configurado
 - SplashScreen definido (placeholder)
+- Dashboard layout creado con sidebar fijo, AppBar y área de contenido
+- Modelo `UserModel` completo con Equatable, copyWith, fromJson/toJson
 
 ---
 
@@ -40,6 +42,8 @@ lib/
 - Riverpod como state management
 - Arquitectura escalable tipo feature-first
 - MVP enfocado en asistencia laboral con GPS
+- Modelos con Equatable + copyWith + fromJson/toJson manual (sin freezed ni build_runner)
+- UserModel con UserRole enum (admin/empleado), createdAt/updatedAt preparados para Firestore
 
 ---
 
@@ -59,6 +63,7 @@ lib/
 - Crear estructura de navegación
 - Implementar GoRouter (NO aún activado)
 - Definir layout base del sistema
+- Crear Dashboard layout (sidebar + AppBar + contenido) ✔
 
 ---
 
@@ -67,9 +72,10 @@ lib/
 Implementar:
 
 - SplashScreen UI real
-- Pantalla Login (mock)
+- Pantalla Login (mock) ✔
 - Estructura de rutas base
 - Core theme refinado
+- Modelo UserModel completo ✔
 
 ---
 
