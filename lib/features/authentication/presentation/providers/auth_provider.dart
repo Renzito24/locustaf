@@ -31,3 +31,8 @@ final authStateProvider = StreamProvider<User?>((ref) {
 final currentUserProvider = Provider<User?>((ref) {
   return FirebaseAuth.instance.currentUser;
 });
+
+final logoutProvider = Provider<Future<void> Function()>((ref) {
+  final service = ref.read(authServiceProvider);
+  return service.logout;
+});
