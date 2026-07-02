@@ -1,61 +1,51 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../providers/auth_provider.dart';
 
-class LoginScreen extends StatefulWidget {
+class LoginScreen extends ConsumerStatefulWidget {
   const LoginScreen({super.key});
 
   @override
-  State<LoginScreen> createState() => _LoginScreenState();
+  ConsumerState<LoginScreen> createState() => _LoginScreenState();
 }
 
-class _LoginScreenState extends State<LoginScreen> {
+class _LoginScreenState extends ConsumerState<LoginScreen> {
   final TextEditingController emailController = TextEditingController();
   final TextEditingController passwordController = TextEditingController();
 
   bool isLoading = false;
   String? errorMessage;
 
-  void login() {
+  Future<void> login() async {
     final email = emailController.text.trim();
     final password = passwordController.text.trim();
 
     setState(() {
       errorMessage = null;
-    });
-
-    // VALIDACIONES
-    if (email.isEmpty || password.isEmpty) {
-      setState(() {
-        errorMessage = "Completa todos los campos";
-      });
-      return;
-    }
-
-    if (password.length < 6) {
-      setState(() {
-        errorMessage = "La contraseña debe tener al menos 6 caracteres";
-      });
-      return;
-    }
-
-    setState(() {
       isLoading = true;
     });
 
-    // SIMULACIÓN LOGIN
-    Future.delayed(const Duration(seconds: 1), () {
-      setState(() {
-        isLoading = false;
-      });
+    try {
+      final authRepo = ref.read(authRepositoryProvider);
 
-      // 🔥 ACA ESTÁ EL CAMBIO IMPORTANTE
+      await authRepo.login(email, password);
+
+      if (!mounted) return;
+
       context.go('/dashboard');
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Login válido (simulado)")),
-      );
-    });
+    } on Exception catch (e) {
+      setState(() {
+        errorMessage = e.toString();
+      });
+    } finally {
+      if (mounted) {
+        setState(() {
+          isLoading = false;
+        });
+      }
+    }
   }
 
   @override
@@ -105,7 +95,6 @@ class _LoginScreenState extends State<LoginScreen> {
 
               const SizedBox(height: 10),
 
-              // ERROR MESSAGE
               if (errorMessage != null)
                 Text(
                   errorMessage!,
