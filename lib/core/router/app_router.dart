@@ -82,6 +82,10 @@ class AppRouter {
             path: RoutePaths.profile,
             builder: (context, state) => const ProfileScreen(),
           ),
+          GoRoute(
+            path: '/employees/create',
+            builder: (context, state) => const CreateEmployeeScreen(),
+          ),
         ],
       ),
     ],
