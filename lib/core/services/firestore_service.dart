@@ -76,6 +76,27 @@ class FirestoreService {
     );
   }
 
+  Stream<List<T>> collectionStreamWhere<T>({
+    required String path,
+    required Map<String, dynamic> filters,
+    required T Function(Map<String, dynamic> json) fromJson,
+  }) {
+    var query = _firestore.collection(path) as Query<Map<String, dynamic>>;
+    filters.forEach((field, value) {
+      query = query.where(field, isEqualTo: value);
+    });
+    return query.snapshots().map(
+      (snapshot) => snapshot.docs.map((doc) {
+        final data = doc.data();
+        return fromJson({
+          ...data,
+          'id': doc.id,
+          'uid': doc.id,
+        });
+      }).toList(),
+    );
+  }
+
   Future<void> setDocument({
     required String path,
     required String documentId,
