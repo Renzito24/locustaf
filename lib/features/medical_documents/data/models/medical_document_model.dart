@@ -2,6 +2,21 @@ import 'package:equatable/equatable.dart';
 
 enum MedicalDocumentTipo { enfermedad, accidente, familiar, personal, otro }
 
+enum VigenciaEstado { vigente, proximoAVencer, vencido }
+
+extension VigenciaEstadoExtension on VigenciaEstado {
+  String get label {
+    switch (this) {
+      case VigenciaEstado.vigente:
+        return 'Vigente';
+      case VigenciaEstado.proximoAVencer:
+        return 'Próximo a vencer';
+      case VigenciaEstado.vencido:
+        return 'Vencido';
+    }
+  }
+}
+
 extension MedicalDocumentTipoExtension on MedicalDocumentTipo {
   String get label {
     switch (this) {
@@ -75,6 +90,7 @@ class MedicalDocumentModel extends Equatable {
   final String? mimeType;
   final MedicalDocumentEstado estado;
   final String? observacionRechazo;
+  final bool isActive;
   final DateTime createdAt;
   final DateTime? updatedAt;
 
@@ -89,9 +105,22 @@ class MedicalDocumentModel extends Equatable {
     this.mimeType,
     this.estado = MedicalDocumentEstado.pendiente,
     this.observacionRechazo,
+    this.isActive = true,
     required this.createdAt,
     this.updatedAt,
   });
+
+  String get observaciones => motivo;
+
+  VigenciaEstado get vigencia {
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final fin = DateTime(fechaFin.year, fechaFin.month, fechaFin.day);
+    final diff = fin.difference(today).inDays;
+    if (diff < 0) return VigenciaEstado.vencido;
+    if (diff <= 30) return VigenciaEstado.proximoAVencer;
+    return VigenciaEstado.vigente;
+  }
 
   MedicalDocumentModel copyWith({
     String? id,
@@ -104,6 +133,7 @@ class MedicalDocumentModel extends Equatable {
     String? mimeType,
     MedicalDocumentEstado? estado,
     String? observacionRechazo,
+    bool? isActive,
     DateTime? createdAt,
     DateTime? updatedAt,
   }) {
@@ -118,6 +148,7 @@ class MedicalDocumentModel extends Equatable {
       mimeType: mimeType ?? this.mimeType,
       estado: estado ?? this.estado,
       observacionRechazo: observacionRechazo ?? this.observacionRechazo,
+      isActive: isActive ?? this.isActive,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
     );
@@ -138,6 +169,7 @@ class MedicalDocumentModel extends Equatable {
               json['estado'] as String)
           : MedicalDocumentEstado.pendiente,
       observacionRechazo: json['observacionRechazo'] as String?,
+      isActive: json['isActive'] as bool? ?? true,
       createdAt: DateTime.parse(json['createdAt'] as String),
       updatedAt: json['updatedAt'] != null
           ? DateTime.parse(json['updatedAt'] as String)
@@ -157,6 +189,7 @@ class MedicalDocumentModel extends Equatable {
       'mimeType': mimeType,
       'estado': estado.name,
       'observacionRechazo': observacionRechazo,
+      'isActive': isActive,
       'createdAt': createdAt.toIso8601String(),
       'updatedAt': updatedAt?.toIso8601String(),
     };
@@ -174,6 +207,7 @@ class MedicalDocumentModel extends Equatable {
         mimeType,
         estado,
         observacionRechazo,
+        isActive,
         createdAt,
         updatedAt,
       ];

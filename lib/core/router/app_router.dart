@@ -14,7 +14,11 @@ import '../../features/workplaces/presentation/screens/workplaces_screen.dart';
 import '../../features/workplaces/presentation/screens/workplace_form_screen.dart';
 import '../../features/attendance/presentation/screens/attendance_screen.dart';
 import '../../features/history/presentation/screens/history_screen.dart';
+import '../../features/medical_documents/data/models/medical_document_model.dart';
+import '../../features/medical_documents/presentation/screens/create_medical_document_screen.dart';
+import '../../features/medical_documents/presentation/screens/edit_medical_document_screen.dart';
 import '../../features/medical_documents/presentation/screens/justificativos_screen.dart';
+import '../../features/medical_documents/presentation/screens/medical_documents_screen.dart';
 import '../../features/reports/presentation/screens/reports_screen.dart';
 import 'app_routes.dart';
 
@@ -46,12 +50,12 @@ class AppRouter {
         if (role == UserRole.employee && path != '/' && !path.startsWith('/login') && !path.startsWith('/dashboard') && !path.startsWith('/profile')) {
           return '/dashboard';
         }
-        if (role == UserRole.supervisor) {
-          final restricted = ['/workplaces', '/history', '/justificativos', '/medical_documents', '/employees/create', '/employees/edit'];
-          if (restricted.any((r) => path.startsWith(r))) {
-            return '/dashboard';
+          if (role == UserRole.supervisor) {
+            final restricted = ['/workplaces', '/history', '/justificativos', '/medical_documents', '/medical_documents/create', '/medical_documents/edit', '/employees/create', '/employees/edit'];
+            if (restricted.any((r) => path.startsWith(r))) {
+              return '/dashboard';
+            }
           }
-        }
       }
 
       return null;
@@ -92,6 +96,21 @@ class AppRouter {
           GoRoute(
             path: RoutePaths.justificativos,
             builder: (context, state) => const JustificativosScreen(),
+          ),
+          GoRoute(
+            path: RoutePaths.medicalDocuments,
+            builder: (context, state) => const MedicalDocumentsScreen(),
+          ),
+          GoRoute(
+            path: RoutePaths.createMedicalDocument,
+            builder: (context, state) => const CreateMedicalDocumentScreen(),
+          ),
+          GoRoute(
+            path: RoutePaths.editMedicalDocument,
+            builder: (context, state) {
+              final doc = state.extra as MedicalDocumentModel;
+              return EditMedicalDocumentScreen(document: doc);
+            },
           ),
           GoRoute(
             path: RoutePaths.reports,
