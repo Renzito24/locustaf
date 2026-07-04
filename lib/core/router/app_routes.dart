@@ -8,6 +8,7 @@ class RoutePaths {
   static const String history = '/history';
   static const String justificativos = '/justificativos';
   static const String medicalDocuments = '/medical_documents';
+  static const String incidences = '/incidences';
   static const String reports = '/reports';
   static const String profile = '/profile';
   static const String editEmployee = '/employees/edit';
@@ -15,4 +16,6 @@ class RoutePaths {
   static const String editWorkplace = '/workplaces/edit';
   static const String createMedicalDocument = '/medical_documents/create';
   static const String editMedicalDocument = '/medical_documents/edit';
+  static const String createIncidence = '/incidences/create';
+  static const String editIncidence = '/incidences/edit';
 }

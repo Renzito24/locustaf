@@ -14,6 +14,10 @@ import '../../features/workplaces/presentation/screens/workplaces_screen.dart';
 import '../../features/workplaces/presentation/screens/workplace_form_screen.dart';
 import '../../features/attendance/presentation/screens/attendance_screen.dart';
 import '../../features/history/presentation/screens/history_screen.dart';
+import '../../features/incidences/data/models/incidence_model.dart';
+import '../../features/incidences/presentation/screens/create_incidence_screen.dart';
+import '../../features/incidences/presentation/screens/edit_incidence_screen.dart';
+import '../../features/incidences/presentation/screens/incidences_screen.dart';
 import '../../features/medical_documents/data/models/medical_document_model.dart';
 import '../../features/medical_documents/presentation/screens/create_medical_document_screen.dart';
 import '../../features/medical_documents/presentation/screens/edit_medical_document_screen.dart';
@@ -51,7 +55,7 @@ class AppRouter {
           return '/dashboard';
         }
           if (role == UserRole.supervisor) {
-            final restricted = ['/workplaces', '/history', '/justificativos', '/medical_documents', '/medical_documents/create', '/medical_documents/edit', '/employees/create', '/employees/edit'];
+            final restricted = ['/workplaces', '/history', '/justificativos', '/medical_documents', '/medical_documents/create', '/medical_documents/edit', '/incidences', '/incidences/create', '/incidences/edit', '/employees/create', '/employees/edit'];
             if (restricted.any((r) => path.startsWith(r))) {
               return '/dashboard';
             }
@@ -110,6 +114,21 @@ class AppRouter {
             builder: (context, state) {
               final doc = state.extra as MedicalDocumentModel;
               return EditMedicalDocumentScreen(document: doc);
+            },
+          ),
+          GoRoute(
+            path: RoutePaths.incidences,
+            builder: (context, state) => const IncidencesScreen(),
+          ),
+          GoRoute(
+            path: RoutePaths.createIncidence,
+            builder: (context, state) => const CreateIncidenceScreen(),
+          ),
+          GoRoute(
+            path: RoutePaths.editIncidence,
+            builder: (context, state) {
+              final inc = state.extra as IncidenceModel;
+              return EditIncidenceScreen(incidence: inc);
             },
           ),
           GoRoute(
