@@ -18,6 +18,14 @@ class AttendanceRepositoryImpl implements AttendanceRepository {
   }
 
   @override
+  Stream<List<AttendanceModel>> getAllAttendances() {
+    return _firestoreService.collectionStream<AttendanceModel>(
+      path: 'attendances',
+      fromJson: AttendanceModel.fromJson,
+    );
+  }
+
+  @override
   Stream<AttendanceModel?> getActiveAttendance(String userId) {
     return _firestoreService.queryStreamWithoutOrder<AttendanceModel>(
       path: 'attendances',
