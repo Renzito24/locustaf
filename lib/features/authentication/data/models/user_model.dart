@@ -1,13 +1,15 @@
 import 'package:equatable/equatable.dart';
 
-enum UserRole { admin, empleado }
+enum UserRole { admin, supervisor, employee }
 
 extension UserRoleExtension on UserRole {
   String get label {
     switch (this) {
       case UserRole.admin:
         return 'Administrador';
-      case UserRole.empleado:
+      case UserRole.supervisor:
+        return 'Supervisor';
+      case UserRole.employee:
         return 'Empleado';
     }
   }
@@ -16,8 +18,10 @@ extension UserRoleExtension on UserRole {
     switch (value) {
       case 'admin':
         return UserRole.admin;
-      case 'empleado':
-        return UserRole.empleado;
+      case 'supervisor':
+        return UserRole.supervisor;
+      case 'employee':
+        return UserRole.employee;
       default:
         throw ArgumentError('Invalid UserRole: $value');
     }
@@ -33,6 +37,7 @@ class UserModel extends Equatable {
   final String? telefono;
   final UserRole rol;
   final bool isActive;
+  final bool isDeleted;
   final String? lugarDeTrabajoId;
   final DateTime createdAt;
   final DateTime? updatedAt;
@@ -46,6 +51,7 @@ class UserModel extends Equatable {
     this.telefono,
     required this.rol,
     this.isActive = true,
+    this.isDeleted = false,
     this.lugarDeTrabajoId,
     required this.createdAt,
     this.updatedAt,
@@ -62,6 +68,7 @@ class UserModel extends Equatable {
     String? telefono,
     UserRole? rol,
     bool? isActive,
+    bool? isDeleted,
     String? lugarDeTrabajoId,
     DateTime? createdAt,
     DateTime? updatedAt,
@@ -75,6 +82,7 @@ class UserModel extends Equatable {
       telefono: telefono ?? this.telefono,
       rol: rol ?? this.rol,
       isActive: isActive ?? this.isActive,
+      isDeleted: isDeleted ?? this.isDeleted,
       lugarDeTrabajoId: lugarDeTrabajoId ?? this.lugarDeTrabajoId,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
@@ -91,6 +99,7 @@ class UserModel extends Equatable {
       telefono: json['telefono'] as String?,
       rol: UserRoleExtension.fromString(json['rol'] as String),
       isActive: json['isActive'] as bool? ?? true,
+      isDeleted: json['isDeleted'] as bool? ?? false,
       lugarDeTrabajoId: json['lugarDeTrabajoId'] as String?,
       createdAt: DateTime.parse(json['createdAt'] as String),
       updatedAt: json['updatedAt'] != null
@@ -109,6 +118,7 @@ class UserModel extends Equatable {
       'telefono': telefono,
       'rol': rol.name,
       'isActive': isActive,
+      'isDeleted': isDeleted,
       'lugarDeTrabajoId': lugarDeTrabajoId,
       'createdAt': createdAt.toIso8601String(),
       'updatedAt': updatedAt?.toIso8601String(),
@@ -125,6 +135,7 @@ class UserModel extends Equatable {
         telefono,
         rol,
         isActive,
+        isDeleted,
         lugarDeTrabajoId,
         createdAt,
         updatedAt,

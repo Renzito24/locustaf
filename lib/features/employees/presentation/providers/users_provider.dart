@@ -66,9 +66,12 @@ final filteredEmployeesProvider = Provider<AsyncValue<List<UserModel>>>((ref) {
 
   return usersAsync.whenData((users) {
     // 1. Filter only employees
-    var employees = users.where((u) => u.rol == UserRole.empleado).toList();
+    var employees = users.where((u) => u.rol == UserRole.employee).toList();
 
-    // 2. Filter by search query (nombre, apellido, dni, email)
+    // 2. Exclude soft-deleted employees
+    employees = employees.where((u) => !u.isDeleted).toList();
+
+    // 3. Filter by search query (nombre, apellido, dni, email)
     if (searchQuery.isNotEmpty) {
       employees = employees.where((u) {
         return u.nombre.toLowerCase().contains(searchQuery) ||
@@ -78,7 +81,7 @@ final filteredEmployeesProvider = Provider<AsyncValue<List<UserModel>>>((ref) {
       }).toList();
     }
 
-    // 3. Filter by active/inactive status
+    // 4. Filter by active/inactive status
     switch (statusFilter) {
       case EmployeeStatusFilter.active:
         employees = employees.where((u) => u.isActive).toList();
@@ -90,7 +93,7 @@ final filteredEmployeesProvider = Provider<AsyncValue<List<UserModel>>>((ref) {
         break;
     }
 
-    // 4. Sort alphabetically by last name (apellido), then name (nombre)
+    // 5. Sort alphabetically by last name (apellido), then name (nombre)
     employees.sort((a, b) {
       final comp = a.apellido.toLowerCase().compareTo(b.apellido.toLowerCase());
       if (comp != 0) return comp;
@@ -136,7 +139,7 @@ class CreateEmployeeNotifier extends AsyncNotifier<void> {
         email: data.email,
         dni: data.dni,
         telefono: data.telefono,
-        rol: UserRole.empleado,
+        rol: UserRole.employee,
         lugarDeTrabajoId: data.lugarDeTrabajoId,
         createdAt: DateTime.now(),
       );

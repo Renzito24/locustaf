@@ -19,6 +19,22 @@ class FirestoreService {
     );
   }
 
+  Stream<T?> documentStream<T>({
+    required String path,
+    required String documentId,
+    required T Function(Map<String, dynamic> json) fromJson,
+  }) {
+    return _firestore.collection(path).doc(documentId).snapshots().map(
+      (snapshot) {
+        if (!snapshot.exists) return null;
+        return fromJson({
+          ...snapshot.data()!,
+          'id': snapshot.id,
+        });
+      },
+    );
+  }
+
   Future<void> setDocument({
     required String path,
     required String documentId,

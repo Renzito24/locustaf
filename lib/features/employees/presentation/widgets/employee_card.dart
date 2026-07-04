@@ -8,6 +8,7 @@ class EmployeeCard extends StatefulWidget {
   final VoidCallback? onEdit;
   final VoidCallback? onToggleActive;
   final VoidCallback? onHistory;
+  final VoidCallback? onDelete;
 
   const EmployeeCard({
     super.key,
@@ -15,6 +16,7 @@ class EmployeeCard extends StatefulWidget {
     this.onEdit,
     this.onToggleActive,
     this.onHistory,
+    this.onDelete,
   });
 
   @override
@@ -157,59 +159,124 @@ class _EmployeeCardState extends State<EmployeeCard> {
                     case 'history':
                       widget.onHistory?.call();
                       break;
+                    case 'delete':
+                      _confirmDelete(context);
+                      break;
                   }
                 },
-                itemBuilder: (BuildContext context) => <PopupMenuEntry<String>>[
-                  PopupMenuItem<String>(
-                    value: 'edit',
-                    enabled: widget.onEdit != null,
-                    child: const Row(
-                      children: [
-                        Icon(Icons.edit_outlined, size: 18),
-                        SizedBox(width: 8),
-                        Text('Editar'),
-                      ],
-                    ),
-                  ),
-                  PopupMenuItem<String>(
-                    value: 'history',
-                    enabled: widget.onHistory != null,
-                    child: const Row(
-                      children: [
-                        Icon(Icons.history_outlined, size: 18),
-                        SizedBox(width: 8),
-                        Text('Historial'),
-                      ],
-                    ),
-                  ),
-                  const PopupMenuDivider(),
-                  PopupMenuItem<String>(
-                    value: 'toggleActive',
-                    enabled: widget.onToggleActive != null,
-                    child: Row(
-                      children: [
-                        Icon(
-                          employee.isActive ? Icons.block_flipped : Icons.check_circle_outline,
-                          size: 18,
-                          color: employee.isActive ? AppColors.error : AppColors.success,
+                itemBuilder: (BuildContext context) {
+                  final items = <PopupMenuEntry<String>>[];
+                  if (widget.onEdit != null) {
+                    items.add(
+                      PopupMenuItem<String>(
+                        value: 'edit',
+                        child: const Row(
+                          children: [
+                            Icon(Icons.edit_outlined, size: 18),
+                            SizedBox(width: 8),
+                            Text('Editar'),
+                          ],
                         ),
-                        const SizedBox(width: 8),
-                        Text(
-                          employee.isActive ? 'Desactivar' : 'Activar',
-                          style: TextStyle(
-                            color: employee.isActive ? AppColors.error : AppColors.success,
-                          ),
+                      ),
+                    );
+                  }
+                  if (widget.onHistory != null) {
+                    items.add(
+                      PopupMenuItem<String>(
+                        value: 'history',
+                        child: const Row(
+                          children: [
+                            Icon(Icons.history_outlined, size: 18),
+                            SizedBox(width: 8),
+                            Text('Historial'),
+                          ],
                         ),
-                      ],
-                    ),
-                  ),
-                ],
+                      ),
+                    );
+                  }
+                  if (widget.onToggleActive != null) {
+                    items.addAll([
+                      if (items.isNotEmpty) const PopupMenuDivider(),
+                      PopupMenuItem<String>(
+                        value: 'toggleActive',
+                        child: Row(
+                          children: [
+                            Icon(
+                              employee.isActive ? Icons.block_flipped : Icons.check_circle_outline,
+                              size: 18,
+                              color: employee.isActive ? AppColors.error : AppColors.success,
+                            ),
+                            const SizedBox(width: 8),
+                            Text(
+                              employee.isActive ? 'Desactivar' : 'Activar',
+                              style: TextStyle(
+                                color: employee.isActive ? AppColors.error : AppColors.success,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ]);
+                  }
+                  if (widget.onDelete != null) {
+                    items.addAll([
+                      if (items.isNotEmpty) const PopupMenuDivider(),
+                      PopupMenuItem<String>(
+                        value: 'delete',
+                        child: const Row(
+                          children: [
+                            Icon(
+                              Icons.delete_outline,
+                              size: 18,
+                              color: AppColors.error,
+                            ),
+                            SizedBox(width: 8),
+                            Text(
+                              'Eliminar',
+                              style: TextStyle(
+                                color: AppColors.error,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ]);
+                  }
+                  return items;
+                },
               ),
             ],
           ),
         ),
       ),
     );
+  }
+
+  Future<void> _confirmDelete(BuildContext context) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Eliminar empleado'),
+        content: const Text(
+          '¿Seguro que deseas eliminar este empleado?',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: const Text('Cancelar'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(true),
+            style: TextButton.styleFrom(foregroundColor: AppColors.error),
+            child: const Text('Eliminar'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true) {
+      widget.onDelete?.call();
+    }
   }
 
   Widget _buildDetailItem(IconData icon, String text) {

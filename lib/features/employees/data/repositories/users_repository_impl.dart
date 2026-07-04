@@ -49,4 +49,16 @@ class UsersRepositoryImpl implements UsersRepository {
       data: user.copyWith(updatedAt: DateTime.now()).toJson(),
     );
   }
+
+  @override
+  Future<void> deleteUser(String uid) async {
+    await _firestoreService.updateDocument(
+      path: 'users',
+      documentId: uid,
+      data: {
+        'isDeleted': true,
+        'updatedAt': DateTime.now().toIso8601String(),
+      },
+    );
+  }
 }

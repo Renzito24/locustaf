@@ -3,6 +3,7 @@ import 'package:go_router/go_router.dart';
 import '../../features/splash/presentation/screens/splash_screen.dart';
 import '../../features/authentication/presentation/screens/login_screen.dart';
 import '../../features/authentication/application/auth_state_listenable.dart';
+import '../../features/authentication/data/models/user_model.dart';
 import '../../features/authentication/presentation/screens/profile_screen.dart';
 import '../../features/dashboard/presentation/widgets/dashboard_layout.dart';
 import '../../features/dashboard/presentation/screens/home_screen.dart';
@@ -35,6 +36,21 @@ class AppRouter {
 
       if (loggedIn && (goingToLogin || goingToSplash)) {
         return '/dashboard';
+      }
+
+      final role = _auth.role;
+      final path = state.matchedLocation;
+
+      if (role != null) {
+        if (role == UserRole.employee && path != '/' && !path.startsWith('/login') && !path.startsWith('/dashboard') && !path.startsWith('/profile')) {
+          return '/dashboard';
+        }
+        if (role == UserRole.supervisor) {
+          final restricted = ['/workplaces', '/history', '/justificativos', '/medical_documents', '/employees/create', '/employees/edit'];
+          if (restricted.any((r) => path.startsWith(r))) {
+            return '/dashboard';
+          }
+        }
       }
 
       return null;
