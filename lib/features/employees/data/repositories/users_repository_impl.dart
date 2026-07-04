@@ -14,4 +14,9 @@ class UsersRepositoryImpl implements UsersRepository {
       fromJson: UserModel.fromJson,
     );
   }
+
+  @override
+  Future<void> createUser(UserModel user, String password) async {
+    throw UnimplementedError();
+  }
 }
