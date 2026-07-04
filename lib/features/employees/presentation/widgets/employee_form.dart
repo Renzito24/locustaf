@@ -4,10 +4,19 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/constants/app_sizes.dart';
 import '../../../../core/utils/validators.dart';
+import '../../../authentication/data/models/user_model.dart';
+import '../providers/update_employee_notifier.dart';
 import '../providers/users_provider.dart';
 
 class EmployeeForm extends ConsumerStatefulWidget {
-  const EmployeeForm({super.key});
+  final bool isEditing;
+  final UserModel? initialData;
+
+  const EmployeeForm({
+    super.key,
+    this.isEditing = false,
+    this.initialData,
+  });
 
   @override
   ConsumerState<EmployeeForm> createState() => _EmployeeFormState();
@@ -15,16 +24,27 @@ class EmployeeForm extends ConsumerStatefulWidget {
 
 class _EmployeeFormState extends ConsumerState<EmployeeForm> {
   final _formKey = GlobalKey<FormState>();
-  final _nombreController = TextEditingController();
-  final _apellidoController = TextEditingController();
-  final _emailController = TextEditingController();
-  final _dniController = TextEditingController();
-  final _telefonoController = TextEditingController();
+  late final TextEditingController _nombreController;
+  late final TextEditingController _apellidoController;
+  late final TextEditingController _emailController;
+  late final TextEditingController _dniController;
+  late final TextEditingController _telefonoController;
   final _passwordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
 
   bool _obscurePassword = true;
   bool _obscureConfirm = true;
+
+  @override
+  void initState() {
+    super.initState();
+    final data = widget.initialData;
+    _nombreController = TextEditingController(text: data?.nombre ?? '');
+    _apellidoController = TextEditingController(text: data?.apellido ?? '');
+    _emailController = TextEditingController(text: data?.email ?? '');
+    _dniController = TextEditingController(text: data?.dni ?? '');
+    _telefonoController = TextEditingController(text: data?.telefono ?? '');
+  }
 
   @override
   void dispose() {
@@ -41,23 +61,41 @@ class _EmployeeFormState extends ConsumerState<EmployeeForm> {
   Future<void> _submit() async {
     if (!_formKey.currentState!.validate()) return;
 
-    final data = EmployeeFormData(
-      nombre: _nombreController.text.trim(),
-      apellido: _apellidoController.text.trim(),
-      email: _emailController.text.trim(),
-      dni: _dniController.text.trim(),
-      telefono: _telefonoController.text.trim().isEmpty
-          ? null
-          : _telefonoController.text.trim(),
-      password: _passwordController.text,
-    );
-
-    await ref.read(createEmployeeProvider.notifier).createEmployee(data);
+    if (widget.isEditing) {
+      final updatedUser = widget.initialData!.copyWith(
+        nombre: _nombreController.text.trim(),
+        apellido: _apellidoController.text.trim(),
+        email: _emailController.text.trim(),
+        dni: _dniController.text.trim(),
+        telefono: _telefonoController.text.trim().isEmpty
+            ? null
+            : _telefonoController.text.trim(),
+      );
+      await ref
+          .read(updateEmployeeProvider.notifier)
+          .updateEmployee(updatedUser);
+    } else {
+      final data = EmployeeFormData(
+        nombre: _nombreController.text.trim(),
+        apellido: _apellidoController.text.trim(),
+        email: _emailController.text.trim(),
+        dni: _dniController.text.trim(),
+        telefono: _telefonoController.text.trim().isEmpty
+            ? null
+            : _telefonoController.text.trim(),
+        password: _passwordController.text,
+      );
+      await ref
+          .read(createEmployeeProvider.notifier)
+          .createEmployee(data);
+    }
   }
 
   @override
   Widget build(BuildContext context) {
-    final createState = ref.watch(createEmployeeProvider);
+    final isSaving = widget.isEditing
+        ? ref.watch(updateEmployeeProvider).isLoading
+        : ref.watch(createEmployeeProvider).isLoading;
 
     return Form(
       key: _formKey,
@@ -73,7 +111,8 @@ class _EmployeeFormState extends ConsumerState<EmployeeForm> {
                     labelText: 'Nombre *',
                     border: OutlineInputBorder(),
                   ),
-                  validator: (value) => Validators.required(value, 'El nombre'),
+                  validator: (value) =>
+                      Validators.required(value, 'El nombre'),
                 ),
               ),
               const SizedBox(width: AppSizes.md),
@@ -84,7 +123,8 @@ class _EmployeeFormState extends ConsumerState<EmployeeForm> {
                     labelText: 'Apellido *',
                     border: OutlineInputBorder(),
                   ),
-                  validator: (value) => Validators.required(value, 'El apellido'),
+                  validator: (value) =>
+                      Validators.required(value, 'El apellido'),
                 ),
               ),
             ],
@@ -92,10 +132,11 @@ class _EmployeeFormState extends ConsumerState<EmployeeForm> {
           const SizedBox(height: AppSizes.md),
           TextFormField(
             controller: _emailController,
+            enabled: !widget.isEditing,
             keyboardType: TextInputType.emailAddress,
-            decoration: const InputDecoration(
+            decoration: InputDecoration(
               labelText: 'Correo electrónico *',
-              border: OutlineInputBorder(),
+              border: const OutlineInputBorder(),
             ),
             validator: (value) => Validators.email(value),
           ),
@@ -125,60 +166,62 @@ class _EmployeeFormState extends ConsumerState<EmployeeForm> {
               ),
             ],
           ),
-          const SizedBox(height: AppSizes.md),
-          Row(
-            children: [
-              Expanded(
-                child: TextFormField(
-                  controller: _passwordController,
-                  obscureText: _obscurePassword,
-                  decoration: InputDecoration(
-                    labelText: 'Contraseña *',
-                    border: const OutlineInputBorder(),
-                    suffixIcon: IconButton(
-                      icon: Icon(
-                        _obscurePassword
-                            ? Icons.visibility_off
-                            : Icons.visibility,
+          if (!widget.isEditing) ...[
+            const SizedBox(height: AppSizes.md),
+            Row(
+              children: [
+                Expanded(
+                  child: TextFormField(
+                    controller: _passwordController,
+                    obscureText: _obscurePassword,
+                    decoration: InputDecoration(
+                      labelText: 'Contraseña *',
+                      border: const OutlineInputBorder(),
+                      suffixIcon: IconButton(
+                        icon: Icon(
+                          _obscurePassword
+                              ? Icons.visibility_off
+                              : Icons.visibility,
+                        ),
+                        onPressed: () => setState(
+                            () => _obscurePassword = !_obscurePassword),
                       ),
-                      onPressed: () =>
-                          setState(() => _obscurePassword = !_obscurePassword),
                     ),
+                    validator: (value) => Validators.password(value),
                   ),
-                  validator: (value) => Validators.password(value),
                 ),
-              ),
-              const SizedBox(width: AppSizes.md),
-              Expanded(
-                child: TextFormField(
-                  controller: _confirmPasswordController,
-                  obscureText: _obscureConfirm,
-                  decoration: InputDecoration(
-                    labelText: 'Confirmar contraseña *',
-                    border: const OutlineInputBorder(),
-                    suffixIcon: IconButton(
-                      icon: Icon(
-                        _obscureConfirm
-                            ? Icons.visibility_off
-                            : Icons.visibility,
+                const SizedBox(width: AppSizes.md),
+                Expanded(
+                  child: TextFormField(
+                    controller: _confirmPasswordController,
+                    obscureText: _obscureConfirm,
+                    decoration: InputDecoration(
+                      labelText: 'Confirmar contraseña *',
+                      border: const OutlineInputBorder(),
+                      suffixIcon: IconButton(
+                        icon: Icon(
+                          _obscureConfirm
+                              ? Icons.visibility_off
+                              : Icons.visibility,
+                        ),
+                        onPressed: () => setState(
+                            () => _obscureConfirm = !_obscureConfirm),
                       ),
-                      onPressed: () =>
-                          setState(() => _obscureConfirm = !_obscureConfirm),
                     ),
+                    validator: (value) {
+                      if (value == null || value.isEmpty) {
+                        return 'Confirme la contraseña';
+                      }
+                      if (value != _passwordController.text) {
+                        return 'Las contraseñas no coinciden';
+                      }
+                      return null;
+                    },
                   ),
-                  validator: (value) {
-                    if (value == null || value.isEmpty) {
-                      return 'Confirme la contraseña';
-                    }
-                    if (value != _passwordController.text) {
-                      return 'Las contraseñas no coinciden';
-                    }
-                    return null;
-                  },
                 ),
-              ),
-            ],
-          ),
+              ],
+            ),
+          ],
           const SizedBox(height: AppSizes.md),
           TextFormField(
             enabled: false,
@@ -202,7 +245,7 @@ class _EmployeeFormState extends ConsumerState<EmployeeForm> {
             width: double.infinity,
             height: 48,
             child: ElevatedButton(
-              onPressed: createState.isLoading ? null : _submit,
+              onPressed: isSaving ? null : _submit,
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppColors.primary,
                 foregroundColor: Colors.white,
@@ -210,7 +253,7 @@ class _EmployeeFormState extends ConsumerState<EmployeeForm> {
                   borderRadius: BorderRadius.circular(8),
                 ),
               ),
-              child: createState.isLoading
+              child: isSaving
                   ? const SizedBox(
                       width: 20,
                       height: 20,
@@ -219,9 +262,9 @@ class _EmployeeFormState extends ConsumerState<EmployeeForm> {
                         color: Colors.white,
                       ),
                     )
-                  : const Text(
-                      'Crear empleado',
-                      style: TextStyle(fontSize: 16),
+                  : Text(
+                      widget.isEditing ? 'Guardar cambios' : 'Crear empleado',
+                      style: const TextStyle(fontSize: 16),
                     ),
             ),
           ),

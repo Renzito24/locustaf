@@ -4,4 +4,6 @@ abstract class UsersRepository {
   Stream<List<UserModel>> getUsers();
 
   Future<void> createUser(UserModel user, String password);
+
+  Future<void> updateUser(UserModel user);
 }

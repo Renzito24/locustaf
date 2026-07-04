@@ -40,4 +40,13 @@ class UsersRepositoryImpl implements UsersRepository {
       rethrow;
     }
   }
+
+  @override
+  Future<void> updateUser(UserModel user) async {
+    await _firestoreService.updateDocument(
+      path: 'users',
+      documentId: user.id,
+      data: user.copyWith(updatedAt: DateTime.now()).toJson(),
+    );
+  }
 }
