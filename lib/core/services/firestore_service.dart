@@ -35,12 +35,62 @@ class FirestoreService {
     );
   }
 
+  Stream<List<T>> queryStream<T>({
+    required String path,
+    required String field,
+    required dynamic value,
+    required T Function(Map<String, dynamic> json) fromJson,
+  }) {
+    return _firestore
+        .collection(path)
+        .where(field, isEqualTo: value)
+        .orderBy('checkInTime', descending: true)
+        .snapshots()
+        .map(
+      (snapshot) => snapshot.docs.map((doc) {
+        return fromJson({
+          ...doc.data(),
+          'uid': doc.id,
+        });
+      }).toList(),
+    );
+  }
+
+  Stream<List<T>> queryStreamWithoutOrder<T>({
+    required String path,
+    required String field,
+    required dynamic value,
+    required T Function(Map<String, dynamic> json) fromJson,
+  }) {
+    return _firestore
+        .collection(path)
+        .where(field, isEqualTo: value)
+        .snapshots()
+        .map(
+      (snapshot) => snapshot.docs.map((doc) {
+        return fromJson({
+          ...doc.data(),
+          'uid': doc.id,
+        });
+      }).toList(),
+    );
+  }
+
   Future<void> setDocument({
     required String path,
     required String documentId,
     required Map<String, dynamic> data,
   }) {
     return _firestore.collection(path).doc(documentId).set(data);
+  }
+
+  Future<String> addDocument({
+    required String path,
+    required Map<String, dynamic> data,
+  }) async {
+    final docRef = _firestore.collection(path).doc();
+    await docRef.set({...data, 'uid': docRef.id});
+    return docRef.id;
   }
 
   Future<Map<String, dynamic>?> getDocument({
