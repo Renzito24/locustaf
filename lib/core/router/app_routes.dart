@@ -10,4 +10,6 @@ class RoutePaths {
   static const String reports = '/reports';
   static const String profile = '/profile';
   static const String editEmployee = '/employees/edit';
+  static const String createWorkplace = '/workplaces/create';
+  static const String editWorkplace = '/workplaces/edit';
 }

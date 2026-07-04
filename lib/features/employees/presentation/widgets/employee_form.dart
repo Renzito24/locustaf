@@ -5,6 +5,7 @@ import '../../../../core/constants/app_colors.dart';
 import '../../../../core/constants/app_sizes.dart';
 import '../../../../core/utils/validators.dart';
 import '../../../authentication/data/models/user_model.dart';
+import '../../../workplaces/presentation/providers/workplace_notifier.dart';
 import '../providers/update_employee_notifier.dart';
 import '../providers/users_provider.dart';
 
@@ -31,6 +32,7 @@ class _EmployeeFormState extends ConsumerState<EmployeeForm> {
   late final TextEditingController _telefonoController;
   final _passwordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
+  String? _selectedWorkplaceId;
 
   bool _obscurePassword = true;
   bool _obscureConfirm = true;
@@ -44,6 +46,7 @@ class _EmployeeFormState extends ConsumerState<EmployeeForm> {
     _emailController = TextEditingController(text: data?.email ?? '');
     _dniController = TextEditingController(text: data?.dni ?? '');
     _telefonoController = TextEditingController(text: data?.telefono ?? '');
+    _selectedWorkplaceId = data?.lugarDeTrabajoId;
   }
 
   @override
@@ -58,6 +61,62 @@ class _EmployeeFormState extends ConsumerState<EmployeeForm> {
     super.dispose();
   }
 
+  Widget _buildWorkplaceDropdown() {
+    final workplacesAsync = ref.watch(activeWorkplacesProvider);
+    return workplacesAsync.when(
+      data: (workplaces) {
+        if (workplaces.isEmpty) {
+          return TextFormField(
+            enabled: false,
+            decoration: const InputDecoration(
+              labelText: 'Lugar de trabajo',
+              hintText: 'Sin lugares de trabajo disponibles',
+              border: OutlineInputBorder(),
+            ),
+          );
+        }
+        return DropdownButtonFormField<String?>(
+          initialValue: _selectedWorkplaceId,
+          decoration: const InputDecoration(
+            labelText: 'Lugar de trabajo (opcional)',
+            border: OutlineInputBorder(),
+          ),
+          items: [
+            const DropdownMenuItem<String?>(
+              value: null,
+              child: Text('Sin asignar'),
+            ),
+            ...workplaces.map(
+              (w) => DropdownMenuItem<String?>(
+                value: w.id,
+                child: Text(w.nombre),
+              ),
+            ),
+          ],
+          onChanged: (value) {
+            setState(() => _selectedWorkplaceId = value);
+          },
+        );
+      },
+      loading: () => TextFormField(
+        enabled: false,
+        decoration: const InputDecoration(
+          labelText: 'Lugar de trabajo',
+          hintText: 'Cargando...',
+          border: OutlineInputBorder(),
+        ),
+      ),
+      error: (_, _) => TextFormField(
+        enabled: false,
+        decoration: const InputDecoration(
+          labelText: 'Lugar de trabajo',
+          hintText: 'Sin lugares de trabajo disponibles',
+          border: OutlineInputBorder(),
+        ),
+      ),
+    );
+  }
+
   Future<void> _submit() async {
     if (!_formKey.currentState!.validate()) return;
 
@@ -70,6 +129,7 @@ class _EmployeeFormState extends ConsumerState<EmployeeForm> {
         telefono: _telefonoController.text.trim().isEmpty
             ? null
             : _telefonoController.text.trim(),
+        lugarDeTrabajoId: _selectedWorkplaceId,
       );
       await ref
           .read(updateEmployeeProvider.notifier)
@@ -84,6 +144,7 @@ class _EmployeeFormState extends ConsumerState<EmployeeForm> {
             ? null
             : _telefonoController.text.trim(),
         password: _passwordController.text,
+        lugarDeTrabajoId: _selectedWorkplaceId,
       );
       await ref
           .read(createEmployeeProvider.notifier)
@@ -232,14 +293,7 @@ class _EmployeeFormState extends ConsumerState<EmployeeForm> {
             ),
           ),
           const SizedBox(height: AppSizes.md),
-          TextFormField(
-            enabled: false,
-            decoration: const InputDecoration(
-              labelText: 'Lugar de trabajo',
-              hintText: 'Próximamente',
-              border: OutlineInputBorder(),
-            ),
-          ),
+          _buildWorkplaceDropdown(),
           const SizedBox(height: AppSizes.lg),
           SizedBox(
             width: double.infinity,

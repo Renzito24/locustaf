@@ -33,6 +33,23 @@ enum EmployeeStatusFilter {
   inactive,
 }
 
+class EmployeeWorkplaceFilter extends Notifier<String?> {
+  @override
+  String? build() => null;
+
+  void setFilter(String? workplaceId) {
+    state = workplaceId;
+  }
+
+  void clear() {
+    state = null;
+  }
+}
+
+final employeeWorkplaceFilterProvider = NotifierProvider<EmployeeWorkplaceFilter, String?>(
+  EmployeeWorkplaceFilter.new,
+);
+
 class EmployeeSearchQuery extends Notifier<String> {
   @override
   String build() => '';
@@ -93,7 +110,13 @@ final filteredEmployeesProvider = Provider<AsyncValue<List<UserModel>>>((ref) {
         break;
     }
 
-    // 5. Sort alphabetically by last name (apellido), then name (nombre)
+    // 5. Filter by workplace
+    final workplaceFilter = ref.watch(employeeWorkplaceFilterProvider);
+    if (workplaceFilter != null) {
+      employees = employees.where((u) => u.lugarDeTrabajoId == workplaceFilter).toList();
+    }
+
+    // 6. Sort alphabetically by last name (apellido), then name (nombre)
     employees.sort((a, b) {
       final comp = a.apellido.toLowerCase().compareTo(b.apellido.toLowerCase());
       if (comp != 0) return comp;

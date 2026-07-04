@@ -3,6 +3,7 @@ import 'package:equatable/equatable.dart';
 class WorkplaceModel extends Equatable {
   final String id;
   final String nombre;
+  final String? description;
   final String? direccion;
   final double? latitud;
   final double? longitud;
@@ -15,6 +16,7 @@ class WorkplaceModel extends Equatable {
   const WorkplaceModel({
     required this.id,
     required this.nombre,
+    this.description,
     this.direccion,
     this.latitud,
     this.longitud,
@@ -28,6 +30,7 @@ class WorkplaceModel extends Equatable {
   WorkplaceModel copyWith({
     String? id,
     String? nombre,
+    String? description,
     String? direccion,
     double? latitud,
     double? longitud,
@@ -40,6 +43,7 @@ class WorkplaceModel extends Equatable {
     return WorkplaceModel(
       id: id ?? this.id,
       nombre: nombre ?? this.nombre,
+      description: description ?? this.description,
       direccion: direccion ?? this.direccion,
       latitud: latitud ?? this.latitud,
       longitud: longitud ?? this.longitud,
@@ -55,6 +59,7 @@ class WorkplaceModel extends Equatable {
     return WorkplaceModel(
       id: json['id'] as String,
       nombre: json['nombre'] as String,
+      description: json['description'] as String?,
       direccion: json['direccion'] as String?,
       latitud: (json['latitud'] as num?)?.toDouble(),
       longitud: (json['longitud'] as num?)?.toDouble(),
@@ -72,6 +77,7 @@ class WorkplaceModel extends Equatable {
     return {
       'id': id,
       'nombre': nombre,
+      'description': description,
       'direccion': direccion,
       'latitud': latitud,
       'longitud': longitud,
@@ -87,6 +93,7 @@ class WorkplaceModel extends Equatable {
   List<Object?> get props => [
         id,
         nombre,
+        description,
         direccion,
         latitud,
         longitud,
