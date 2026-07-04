@@ -18,4 +18,36 @@ class FirestoreService {
       }).toList(),
     );
   }
+
+  Future<void> setDocument({
+    required String path,
+    required String documentId,
+    required Map<String, dynamic> data,
+  }) {
+    return _firestore.collection(path).doc(documentId).set(data);
+  }
+
+  Future<Map<String, dynamic>?> getDocument({
+    required String path,
+    required String documentId,
+  }) async {
+    final doc = await _firestore.collection(path).doc(documentId).get();
+    if (!doc.exists) return null;
+    return {...doc.data()!, 'id': doc.id};
+  }
+
+  Future<void> updateDocument({
+    required String path,
+    required String documentId,
+    required Map<String, dynamic> data,
+  }) {
+    return _firestore.collection(path).doc(documentId).update(data);
+  }
+
+  Future<void> deleteDocument({
+    required String path,
+    required String documentId,
+  }) {
+    return _firestore.collection(path).doc(documentId).delete();
+  }
 }

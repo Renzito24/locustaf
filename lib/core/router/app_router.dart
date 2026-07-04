@@ -7,6 +7,7 @@ import '../../features/authentication/presentation/screens/profile_screen.dart';
 import '../../features/dashboard/presentation/widgets/dashboard_layout.dart';
 import '../../features/dashboard/presentation/screens/home_screen.dart';
 import '../../features/employees/presentation/screens/employees_screen.dart';
+import '../../features/employees/presentation/screens/create_employee_screen.dart';
 import '../../features/workplaces/presentation/screens/workplaces_screen.dart';
 import '../../features/attendance/presentation/screens/attendance_screen.dart';
 import '../../features/history/presentation/screens/history_screen.dart';

@@ -1,11 +1,13 @@
 import '../../../../core/services/firestore_service.dart';
+import '../../../authentication/data/services/auth_service.dart';
 import '../../../authentication/data/models/user_model.dart';
 import '../../domain/repositories/users_repository.dart';
 
 class UsersRepositoryImpl implements UsersRepository {
   final FirestoreService _firestoreService;
+  final AuthService _authService;
 
-  UsersRepositoryImpl(this._firestoreService);
+  UsersRepositoryImpl(this._firestoreService, this._authService);
 
   @override
   Stream<List<UserModel>> getUsers() {
@@ -17,6 +19,19 @@ class UsersRepositoryImpl implements UsersRepository {
 
   @override
   Future<void> createUser(UserModel user, String password) async {
-    throw UnimplementedError();
+    final credential = await _authService.register(
+      email: user.email,
+      password: password,
+    );
+
+    final uid = credential.user!.uid;
+
+    final newUser = user.copyWith(id: uid, createdAt: DateTime.now());
+
+    await _firestoreService.setDocument(
+      path: 'users',
+      documentId: uid,
+      data: newUser.toJson(),
+    );
   }
 }

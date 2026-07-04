@@ -2,6 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../authentication/data/models/user_model.dart';
+import '../../../authentication/presentation/providers/auth_provider.dart';
 import '../../../../core/services/firestore_service.dart';
 import '../../data/repositories/users_repository_impl.dart';
 import '../../domain/repositories/users_repository.dart';
@@ -16,8 +17,9 @@ final firestoreServiceProvider = Provider<FirestoreService>((ref) {
 });
 
 final usersRepositoryProvider = Provider<UsersRepository>((ref) {
-  final service = ref.read(firestoreServiceProvider);
-  return UsersRepositoryImpl(service);
+  final firestoreService = ref.read(firestoreServiceProvider);
+  final authService = ref.read(authServiceProvider);
+  return UsersRepositoryImpl(firestoreService, authService);
 });
 
 final usersStreamProvider = StreamProvider<List<UserModel>>((ref) {
@@ -98,4 +100,60 @@ final filteredEmployeesProvider = Provider<AsyncValue<List<UserModel>>>((ref) {
     return employees;
   });
 });
+
+class EmployeeFormData {
+  final String nombre;
+  final String apellido;
+  final String email;
+  final String dni;
+  final String? telefono;
+  final String password;
+  final String? lugarDeTrabajoId;
+
+  const EmployeeFormData({
+    required this.nombre,
+    required this.apellido,
+    required this.email,
+    required this.dni,
+    this.telefono,
+    required this.password,
+    this.lugarDeTrabajoId,
+  });
+}
+
+class CreateEmployeeNotifier extends AsyncNotifier<void> {
+  @override
+  Future<void> build() => Future.value();
+
+  Future<void> createEmployee(EmployeeFormData data) async {
+    state = const AsyncLoading();
+    final repo = ref.read(usersRepositoryProvider);
+    try {
+      final user = UserModel(
+        id: '',
+        nombre: data.nombre,
+        apellido: data.apellido,
+        email: data.email,
+        dni: data.dni,
+        telefono: data.telefono,
+        rol: UserRole.empleado,
+        lugarDeTrabajoId: data.lugarDeTrabajoId,
+        createdAt: DateTime.now(),
+      );
+      await repo.createUser(user, data.password);
+      state = const AsyncData(null);
+    } catch (e, st) {
+      state = AsyncError(e, st);
+    }
+  }
+
+  void reset() {
+    state = const AsyncData(null);
+  }
+}
+
+final createEmployeeProvider =
+    AsyncNotifierProvider<CreateEmployeeNotifier, void>(
+  CreateEmployeeNotifier.new,
+);
 
