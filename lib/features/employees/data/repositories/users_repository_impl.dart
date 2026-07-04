@@ -25,13 +25,19 @@ class UsersRepositoryImpl implements UsersRepository {
     );
 
     final uid = credential.user!.uid;
+    final firebaseUser = credential.user!;
 
     final newUser = user.copyWith(id: uid, createdAt: DateTime.now());
 
-    await _firestoreService.setDocument(
-      path: 'users',
-      documentId: uid,
-      data: newUser.toJson(),
-    );
+    try {
+      await _firestoreService.setDocument(
+        path: 'users',
+        documentId: uid,
+        data: newUser.toJson(),
+      );
+    } catch (e) {
+      await _authService.deleteUser(firebaseUser);
+      rethrow;
+    }
   }
 }

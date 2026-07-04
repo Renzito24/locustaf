@@ -21,14 +21,16 @@ class AuthService {
   Stream<User?> get authStateChanges => _firebaseAuth.authStateChanges();
 
   Future<UserCredential> register({
-
     required String email,
     required String password,
-    }) async {
+  }) async {
+    return await _firebaseAuth.createUserWithEmailAndPassword(
+      email: email,
+      password: password,
+    );
+  }
 
-      return await _firebaseAuth.createUserWithEmailAndPassword(
-        email: email,
-        password: password,
-      );
-}
+  Future<void> deleteUser(User user) async {
+    await user.delete();
+  }
 }

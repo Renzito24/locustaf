@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/constants/app_sizes.dart';
+import '../../../../core/utils/validators.dart';
 import '../providers/users_provider.dart';
 
 class EmployeeForm extends ConsumerStatefulWidget {
@@ -72,12 +73,7 @@ class _EmployeeFormState extends ConsumerState<EmployeeForm> {
                     labelText: 'Nombre *',
                     border: OutlineInputBorder(),
                   ),
-                  validator: (value) {
-                    if (value == null || value.trim().isEmpty) {
-                      return 'El nombre es obligatorio';
-                    }
-                    return null;
-                  },
+                  validator: (value) => Validators.required(value, 'El nombre'),
                 ),
               ),
               const SizedBox(width: AppSizes.md),
@@ -88,12 +84,7 @@ class _EmployeeFormState extends ConsumerState<EmployeeForm> {
                     labelText: 'Apellido *',
                     border: OutlineInputBorder(),
                   ),
-                  validator: (value) {
-                    if (value == null || value.trim().isEmpty) {
-                      return 'El apellido es obligatorio';
-                    }
-                    return null;
-                  },
+                  validator: (value) => Validators.required(value, 'El apellido'),
                 ),
               ),
             ],
@@ -106,16 +97,7 @@ class _EmployeeFormState extends ConsumerState<EmployeeForm> {
               labelText: 'Correo electrónico *',
               border: OutlineInputBorder(),
             ),
-            validator: (value) {
-              if (value == null || value.trim().isEmpty) {
-                return 'El correo electrónico es obligatorio';
-              }
-              final emailRegex = RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$');
-              if (!emailRegex.hasMatch(value.trim())) {
-                return 'Ingrese un correo electrónico válido';
-              }
-              return null;
-            },
+            validator: (value) => Validators.email(value),
           ),
           const SizedBox(height: AppSizes.md),
           Row(
@@ -127,12 +109,7 @@ class _EmployeeFormState extends ConsumerState<EmployeeForm> {
                     labelText: 'DNI *',
                     border: OutlineInputBorder(),
                   ),
-                  validator: (value) {
-                    if (value == null || value.trim().isEmpty) {
-                      return 'El DNI es obligatorio';
-                    }
-                    return null;
-                  },
+                  validator: (value) => Validators.dni(value),
                 ),
               ),
               const SizedBox(width: AppSizes.md),
@@ -168,15 +145,7 @@ class _EmployeeFormState extends ConsumerState<EmployeeForm> {
                           setState(() => _obscurePassword = !_obscurePassword),
                     ),
                   ),
-                  validator: (value) {
-                    if (value == null || value.isEmpty) {
-                      return 'La contraseña es obligatoria';
-                    }
-                    if (value.length < 6) {
-                      return 'La contraseña debe tener al menos 6 caracteres';
-                    }
-                    return null;
-                  },
+                  validator: (value) => Validators.password(value),
                 ),
               ),
               const SizedBox(width: AppSizes.md),
