@@ -112,13 +112,31 @@ class HomeScreen extends ConsumerWidget {
       child: LayoutBuilder(
         builder: (context, constraints) {
           final crossAxisCount = constraints.maxWidth > 900 ? 4 : (constraints.maxWidth > 600 ? 2 : 1);
+          const spacing = 16.0;
+          final totalItems = 4;
+          final numRows = (totalItems / crossAxisCount).ceil();
+          final itemWidth = (constraints.maxWidth - spacing * (crossAxisCount - 1)) / crossAxisCount;
+
+          final double aspectRatio;
+          if (constraints.maxHeight.isFinite) {
+            final gridHeightAtDefault = (itemWidth / 1.6) * numRows + spacing * (numRows - 1);
+            if (gridHeightAtDefault > constraints.maxHeight) {
+              final maxItemHeight = (constraints.maxHeight - spacing * (numRows - 1)) / numRows;
+              aspectRatio = maxItemHeight > 0 ? itemWidth / maxItemHeight : 1.6;
+            } else {
+              aspectRatio = 1.6;
+            }
+          } else {
+            aspectRatio = 1.6;
+          }
+
           return GridView.count(
             crossAxisCount: crossAxisCount,
             shrinkWrap: true,
             physics: const NeverScrollableScrollPhysics(),
-            mainAxisSpacing: 16,
-            crossAxisSpacing: 16,
-            childAspectRatio: 1.6,
+            mainAxisSpacing: spacing,
+            crossAxisSpacing: spacing,
+            childAspectRatio: aspectRatio,
             children: [
               _KpiCard(
                 icon: Icons.people,
