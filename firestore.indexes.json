@@ -1,0 +1,12 @@
+{
+  "indexes": [
+    {
+      "collectionGroup": "attendances",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "userId", "order": "ASCENDING" },
+        { "fieldPath": "checkInTime", "order": "DESCENDING" }
+      ]
+    }
+  ]
+}

@@ -94,11 +94,11 @@ service cloud.firestore {
     // ====================================================================
     // INCIDENCES
     // Admin  : full access
-    // Superv : no access
+    // Superv : read only
     // Empl   : no access (read own reserved for future use)
     // ====================================================================
     match /incidences/{docId} {
-      allow read: if isAdmin();
+      allow read: if isAdmin() || isSupervisor();
       allow create: if isAdmin();
       allow update: if isAdmin();
       allow delete: if isAdmin();

@@ -1,0 +1,52 @@
+{
+  "users": [
+    {
+      "nombre": "Admin",
+      "apellido": "Sistema",
+      "email": "admin@locustaf.com",
+      "password": "Admin123!",
+      "dni": "00000000",
+      "telefono": "+54 11 5555-0001",
+      "rol": "admin",
+      "isActive": true,
+      "isDeleted": false,
+      "lugarDeTrabajoId": null
+    },
+    {
+      "nombre": "Supervisor",
+      "apellido": "General",
+      "email": "supervisor@locustaf.com",
+      "password": "Super123!",
+      "dni": "11111111",
+      "telefono": "+54 11 5555-0002",
+      "rol": "supervisor",
+      "isActive": true,
+      "isDeleted": false,
+      "lugarDeTrabajoId": "__WORKPLACE_ID__"
+    },
+    {
+      "nombre": "Empleado",
+      "apellido": "Prueba",
+      "email": "employee@locustaf.com",
+      "password": "Empl123!",
+      "dni": "22222222",
+      "telefono": "+54 11 5555-0003",
+      "rol": "employee",
+      "isActive": true,
+      "isDeleted": false,
+      "lugarDeTrabajoId": "__WORKPLACE_ID__"
+    }
+  ],
+  "workplaces": [
+    {
+      "nombre": "Sucursal Central",
+      "description": "Sucursal principal de LOCUSTAF",
+      "direccion": "Av. Corrientes 1234, CABA",
+      "latitud": -34.6037,
+      "longitud": -58.3816,
+      "radio": 100,
+      "codigo": "SC001",
+      "isActive": true
+    }
+  ]
+}
