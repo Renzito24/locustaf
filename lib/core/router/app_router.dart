@@ -51,15 +51,15 @@ class AppRouter {
       final path = state.matchedLocation;
 
       if (role != null) {
-        if (role == UserRole.employee && path != '/' && !path.startsWith('/login') && !path.startsWith('/dashboard') && !path.startsWith('/profile')) {
+        if (role == UserRole.employee && path != '/' && !path.startsWith('/login') && !path.startsWith('/dashboard') && !path.startsWith('/profile') && !path.startsWith('/attendance')) {
           return '/dashboard';
         }
-          if (role == UserRole.supervisor) {
-            final restricted = ['/workplaces', '/history', '/justificativos', '/medical_documents', '/medical_documents/create', '/medical_documents/edit', '/incidences', '/incidences/create', '/incidences/edit', '/employees/create', '/employees/edit'];
-            if (restricted.any((r) => path.startsWith(r))) {
-              return '/dashboard';
-            }
+        if (role == UserRole.supervisor) {
+          final restricted = ['/workplaces', '/attendance', '/medical_documents', '/justificativos', '/reports', '/employees/create', '/employees/edit'];
+          if (restricted.any((r) => path.startsWith(r))) {
+            return '/dashboard';
           }
+        }
       }
 
       return null;
