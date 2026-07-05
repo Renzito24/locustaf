@@ -26,6 +26,29 @@ class IncidencesScreen extends ConsumerWidget {
     final usersAsync = ref.watch(usersStreamProvider);
     final isAdmin = ref.watch(isAdminProvider);
 
+    ref.listen<AsyncValue<void>>(incidenceDeleteProvider, (prev, next) {
+      next.whenOrNull(
+        data: (_) {
+          ref.read(incidenceDeleteProvider.notifier).reset();
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Incidencia eliminada correctamente'),
+              backgroundColor: AppColors.success,
+            ),
+          );
+        },
+        error: (error, _) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Error al eliminar: $error'),
+              backgroundColor: AppColors.error,
+              duration: const Duration(seconds: 5),
+            ),
+          );
+        },
+      );
+    });
+
     return Padding(
       padding: const EdgeInsets.all(24.0),
       child: Column(
@@ -100,24 +123,25 @@ class IncidencesScreen extends ConsumerWidget {
     AsyncValue<List<UserModel>> usersAsync,
     bool isAdmin,
   ) {
-    if (incidences.isEmpty) {
-      return Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(Icons.warning_amber_outlined, size: 64, color: Colors.grey.shade400),
-            const SizedBox(height: 16),
-            const Text('Sin incidencias', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: AppColors.textPrimary)),
-            const SizedBox(height: 8),
-            const Text('No hay incidencias para los filtros seleccionados.', style: TextStyle(color: AppColors.textSecondary)),
-          ],
-        ),
-      );
-    }
-
     return usersAsync.when(
       data: (users) {
         final userMap = {for (final u in users) u.id: u};
+
+        if (incidences.isEmpty) {
+          return Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(Icons.warning_amber_outlined, size: 64, color: Colors.grey.shade400),
+                const SizedBox(height: 16),
+                const Text('Sin incidencias', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: AppColors.textPrimary)),
+                const SizedBox(height: 8),
+                const Text('No hay incidencias para los filtros seleccionados.', style: TextStyle(color: AppColors.textSecondary)),
+              ],
+            ),
+          );
+        }
+
         return LayoutBuilder(
           builder: (context, constraints) {
             if (constraints.maxWidth < 800) {
@@ -197,8 +221,33 @@ class IncidencesScreen extends ConsumerWidget {
           },
         );
       },
-      loading: () => const Center(child: CircularProgressIndicator()),
-      error: (_, _) => const Center(child: Text('Error al cargar empleados')),
+      loading: () => const Center(
+        child: CircularProgressIndicator(
+          valueColor: AlwaysStoppedAnimation<Color>(AppColors.primary),
+        ),
+      ),
+      error: (_, _) => Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.error_outline, size: 64, color: Colors.grey.shade400),
+            const SizedBox(height: 16),
+            const Text(
+              'Error al cargar empleados',
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+                color: AppColors.textPrimary,
+              ),
+            ),
+            const SizedBox(height: 8),
+            const Text(
+              'No se pudieron obtener los datos de los empleados.',
+              style: TextStyle(color: AppColors.textSecondary),
+            ),
+          ],
+        ),
+      ),
     );
   }
 

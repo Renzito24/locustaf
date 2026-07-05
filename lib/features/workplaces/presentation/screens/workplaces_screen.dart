@@ -13,6 +13,29 @@ class WorkplacesScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final workplacesAsync = ref.watch(workplacesStreamProvider);
 
+    ref.listen<AsyncValue<void>>(workplaceDeleteProvider, (prev, next) {
+      next.whenOrNull(
+        data: (_) {
+          ref.read(workplaceDeleteProvider.notifier).reset();
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Lugar de trabajo desactivado correctamente'),
+              backgroundColor: AppColors.success,
+            ),
+          );
+        },
+        error: (error, _) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Error: $error'),
+              backgroundColor: AppColors.error,
+              duration: const Duration(seconds: 5),
+            ),
+          );
+        },
+      );
+    });
+
     return Padding(
       padding: const EdgeInsets.all(24.0),
       child: Column(
@@ -82,8 +105,33 @@ class WorkplacesScreen extends ConsumerWidget {
                   itemBuilder: (context, index) => _buildWorkplaceCard(context, ref, workplaces[index]),
                 );
               },
-              loading: () => const Center(child: CircularProgressIndicator()),
-              error: (e, _) => Center(child: Text('Error: $e')),
+              loading: () => const Center(
+                child: CircularProgressIndicator(
+                  valueColor: AlwaysStoppedAnimation<Color>(AppColors.primary),
+                ),
+              ),
+              error: (e, _) => Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(Icons.error_outline, size: 64, color: Colors.grey.shade400),
+                    const SizedBox(height: 16),
+                    const Text(
+                      'Error al cargar lugares de trabajo',
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                        color: AppColors.textPrimary,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      e.toString(),
+                      style: const TextStyle(color: AppColors.textSecondary),
+                    ),
+                  ],
+                ),
+              ),
             ),
           ),
         ],

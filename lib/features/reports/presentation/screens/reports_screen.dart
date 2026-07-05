@@ -11,13 +11,21 @@ class ReportsScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final usersAsync = ref.watch(allUsersStreamProvider);
+    final workplacesAsync = ref.watch(allWorkplacesStreamProvider);
+    final attendancesAsync = ref.watch(allAttendancesStreamProvider);
+
     final totalEmployees = ref.watch(totalActiveEmployeesProvider);
     final presentToday = ref.watch(employeesPresentTodayProvider);
     final absentToday = ref.watch(employeesAbsentTodayProvider);
     final activeWorkplaces = ref.watch(activeWorkplacesCountProvider);
     final reportRows = ref.watch(filteredAttendanceReportProvider);
     final filter = ref.watch(attendanceReportFilterProvider);
-    final workplacesAsync = ref.watch(workplacesStreamProvider);
+    final workplacesListAsync = ref.watch(workplacesStreamProvider);
+
+    final anyLoaded = usersAsync.hasValue || workplacesAsync.hasValue || attendancesAsync.hasValue;
+    final isLoading = !anyLoaded && (usersAsync.isLoading || workplacesAsync.isLoading || attendancesAsync.isLoading);
+    final hasError = usersAsync.hasError || workplacesAsync.hasError || attendancesAsync.hasError;
 
     return Padding(
       padding: const EdgeInsets.all(24.0),
@@ -41,20 +49,59 @@ class ReportsScreen extends ConsumerWidget {
             ),
           ),
           const SizedBox(height: 24),
-          _buildMetricCards(totalEmployees, presentToday, absentToday, activeWorkplaces),
-          const SizedBox(height: 24),
-          _buildFilters(context, ref, filter, workplacesAsync),
-          const SizedBox(height: 16),
-          const Text(
-            'Reporte de asistencia',
-            style: TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.w600,
-              color: AppColors.textPrimary,
+          if (hasError)
+            Expanded(
+              child: Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(Icons.error_outline, size: 64, color: Colors.grey.shade400),
+                    const SizedBox(height: 16),
+                    const Text(
+                      'Error al cargar datos',
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                        color: AppColors.textPrimary,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    const Text(
+                      'No se pudieron obtener los datos del sistema.',
+                      style: TextStyle(color: AppColors.textSecondary),
+                    ),
+                  ],
+                ),
+              ),
+            )
+          else if (isLoading)
+            const Expanded(
+              child: Center(
+                child: CircularProgressIndicator(
+                  valueColor: AlwaysStoppedAnimation<Color>(AppColors.primary),
+                ),
+              ),
+            )
+          else
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _buildMetricCards(totalEmployees, presentToday, absentToday, activeWorkplaces),
+                const SizedBox(height: 24),
+                _buildFilters(context, ref, filter, workplacesListAsync),
+                const SizedBox(height: 16),
+                const Text(
+                  'Reporte de asistencia',
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w600,
+                    color: AppColors.textPrimary,
+                  ),
+                ),
+                const SizedBox(height: 12),
+                Expanded(child: _buildReportTable(reportRows)),
+              ],
             ),
-          ),
-          const SizedBox(height: 12),
-          Expanded(child: _buildReportTable(reportRows)),
         ],
       ),
     );
@@ -92,9 +139,9 @@ class ReportsScreen extends ConsumerWidget {
             ),
             _MetricCard(
               icon: Icons.business,
-              label: 'Workplaces activos',
+              label: 'Sucursales activas',
               value: workplaces.toString(),
-              color: const Color(0xFF8B5CF6),
+              color: AppColors.warning,
             ),
           ],
         );

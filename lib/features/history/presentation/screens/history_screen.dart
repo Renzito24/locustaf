@@ -18,6 +18,7 @@ class HistoryScreen extends ConsumerWidget {
     final total = ref.watch(totalRecordsProvider);
     final active = ref.watch(activeRecordsProvider);
     final completed = ref.watch(completedRecordsProvider);
+    final attendancesAsync = ref.watch(allAttendancesProvider);
 
     return Padding(
       padding: const EdgeInsets.all(24.0),
@@ -42,7 +43,7 @@ class HistoryScreen extends ConsumerWidget {
           const SizedBox(height: 24),
           const HistoryFilterBar(),
           const SizedBox(height: 20),
-          Expanded(child: _buildContent(context, records)),
+          Expanded(child: _buildContent(context, records, attendancesAsync)),
         ],
       ),
     );
@@ -84,16 +85,101 @@ class HistoryScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildContent(BuildContext context, List<HistoryRecordModel> records) {
-    if (records.isEmpty) {
-      return Center(
+  Widget _buildContent(
+    BuildContext context,
+    List<HistoryRecordModel> records,
+    AsyncValue<List<AttendanceModel>> attendancesAsync,
+  ) {
+    return attendancesAsync.when(
+      data: (_) {
+        if (records.isEmpty) {
+          return Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(Icons.history, size: 64, color: Colors.grey.shade400),
+                const SizedBox(height: 16),
+                const Text(
+                  'Sin registros de asistencia',
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    color: AppColors.textPrimary,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                const Text(
+                  'No hay asistencias para los filtros seleccionados.',
+                  style: TextStyle(color: AppColors.textSecondary),
+                ),
+              ],
+            ),
+          );
+        }
+
+        return LayoutBuilder(
+          builder: (context, constraints) {
+            if (constraints.maxWidth < 800) {
+              return ListView.separated(
+                padding: const EdgeInsets.only(bottom: 24),
+                itemCount: records.length,
+                separatorBuilder: (_, _) => const SizedBox(height: 8),
+                itemBuilder: (context, index) {
+                  final record = records[index];
+                  return HistoryCard(
+                    record: record,
+                    onTap: () => HistoryDetailDialog.show(context, record),
+                  );
+                },
+              );
+            }
+
+            return SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              child: DataTable(
+                columnSpacing: 20,
+                headingRowColor: WidgetStateProperty.all(AppColors.primary.withValues(alpha: 0.05)),
+                columns: const [
+                  DataColumn(label: Text('Empleado', style: TextStyle(fontWeight: FontWeight.bold))),
+                  DataColumn(label: Text('Lugar de trabajo', style: TextStyle(fontWeight: FontWeight.bold))),
+                  DataColumn(label: Text('Fecha', style: TextStyle(fontWeight: FontWeight.bold))),
+                  DataColumn(label: Text('Ingreso', style: TextStyle(fontWeight: FontWeight.bold))),
+                  DataColumn(label: Text('Egreso', style: TextStyle(fontWeight: FontWeight.bold))),
+                  DataColumn(label: Text('Duración', style: TextStyle(fontWeight: FontWeight.bold))),
+                  DataColumn(label: Text('Estado', style: TextStyle(fontWeight: FontWeight.bold))),
+                ],
+                rows: records.map((r) {
+                  return DataRow(
+                    onSelectChanged: (_) => HistoryDetailDialog.show(context, r),
+                    cells: [
+                      DataCell(Text(r.employeeName)),
+                      DataCell(Text(r.workplaceName ?? '-')),
+                      DataCell(Text(r.date)),
+                      DataCell(Text(r.checkInFormatted)),
+                      DataCell(Text(r.checkOutFormatted)),
+                      DataCell(Text(r.durationFormatted)),
+                      DataCell(_buildStatusChip(r)),
+                    ],
+                  );
+                }).toList(),
+              ),
+            );
+          },
+        );
+      },
+      loading: () => const Center(
+        child: CircularProgressIndicator(
+          valueColor: AlwaysStoppedAnimation<Color>(AppColors.primary),
+        ),
+      ),
+      error: (e, _) => Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.history, size: 64, color: Colors.grey.shade400),
+            Icon(Icons.error_outline, size: 64, color: Colors.grey.shade400),
             const SizedBox(height: 16),
             const Text(
-              'Sin registros de asistencia',
+              'Error al cargar el historial',
               style: TextStyle(
                 fontSize: 18,
                 fontWeight: FontWeight.bold,
@@ -101,63 +187,13 @@ class HistoryScreen extends ConsumerWidget {
               ),
             ),
             const SizedBox(height: 8),
-            const Text(
-              'No hay asistencias para los filtros seleccionados.',
-              style: TextStyle(color: AppColors.textSecondary),
+            Text(
+              e.toString(),
+              style: const TextStyle(color: AppColors.textSecondary),
             ),
           ],
         ),
-      );
-    }
-
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        if (constraints.maxWidth < 800) {
-          return ListView.separated(
-            padding: const EdgeInsets.only(bottom: 24),
-            itemCount: records.length,
-            separatorBuilder: (_, _) => const SizedBox(height: 8),
-            itemBuilder: (context, index) {
-              final record = records[index];
-              return HistoryCard(
-                record: record,
-                onTap: () => HistoryDetailDialog.show(context, record),
-              );
-            },
-          );
-        }
-
-        return SingleChildScrollView(
-          scrollDirection: Axis.horizontal,
-          child: DataTable(
-            columnSpacing: 20,
-            headingRowColor: WidgetStateProperty.all(AppColors.primary.withValues(alpha: 0.05)),
-            columns: const [
-              DataColumn(label: Text('Empleado', style: TextStyle(fontWeight: FontWeight.bold))),
-              DataColumn(label: Text('Workplace', style: TextStyle(fontWeight: FontWeight.bold))),
-              DataColumn(label: Text('Fecha', style: TextStyle(fontWeight: FontWeight.bold))),
-              DataColumn(label: Text('Ingreso', style: TextStyle(fontWeight: FontWeight.bold))),
-              DataColumn(label: Text('Egreso', style: TextStyle(fontWeight: FontWeight.bold))),
-              DataColumn(label: Text('Duración', style: TextStyle(fontWeight: FontWeight.bold))),
-              DataColumn(label: Text('Estado', style: TextStyle(fontWeight: FontWeight.bold))),
-            ],
-            rows: records.map((r) {
-              return DataRow(
-                onSelectChanged: (_) => HistoryDetailDialog.show(context, r),
-                cells: [
-                  DataCell(Text(r.employeeName)),
-                  DataCell(Text(r.workplaceName ?? '-')),
-                  DataCell(Text(r.date)),
-                  DataCell(Text(r.checkInFormatted)),
-                  DataCell(Text(r.checkOutFormatted)),
-                  DataCell(Text(r.durationFormatted)),
-                  DataCell(_buildStatusChip(r)),
-                ],
-              );
-            }).toList(),
-          ),
-        );
-      },
+      ),
     );
   }
 

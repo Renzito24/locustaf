@@ -133,7 +133,7 @@ class HistoryFilterBar extends ConsumerWidget {
           child: DropdownButtonFormField<String?>(
             initialValue: selectedId,
             decoration: const InputDecoration(
-              labelText: 'Workplace',
+              labelText: 'Lugar de trabajo',
               border: OutlineInputBorder(),
               isDense: true,
             ),
@@ -155,8 +155,8 @@ class HistoryFilterBar extends ConsumerWidget {
           ),
         );
       },
-      loading: () => const SizedBox(width: 200, child: TextField(decoration: InputDecoration(labelText: 'Workplace', border: OutlineInputBorder(), isDense: true), enabled: false)),
-      error: (_, _) => const SizedBox(width: 200, child: TextField(decoration: InputDecoration(labelText: 'Workplace', border: OutlineInputBorder(), isDense: true), enabled: false)),
+      loading: () => const SizedBox(width: 200, child: TextField(decoration: InputDecoration(labelText: 'Lugar de trabajo', border: OutlineInputBorder(), isDense: true), enabled: false)),
+      error: (_, _) => const SizedBox(width: 200, child: TextField(decoration: InputDecoration(labelText: 'Lugar de trabajo', border: OutlineInputBorder(), isDense: true), enabled: false)),
     );
   }
 

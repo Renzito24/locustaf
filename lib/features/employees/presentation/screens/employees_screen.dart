@@ -21,6 +21,52 @@ class EmployeesScreen extends ConsumerWidget {
     final filteredEmployeesAsync = ref.watch(filteredEmployeesProvider);
     final isAdmin = ref.watch(isAdminProvider);
 
+    ref.listen<AsyncValue<void>>(deleteEmployeeProvider, (prev, next) {
+      next.whenOrNull(
+        data: (_) {
+          ref.read(deleteEmployeeProvider.notifier).reset();
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Empleado eliminado correctamente'),
+              backgroundColor: AppColors.success,
+            ),
+          );
+        },
+        error: (error, _) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Error al eliminar: $error'),
+              backgroundColor: AppColors.error,
+              duration: const Duration(seconds: 5),
+            ),
+          );
+        },
+      );
+    });
+
+    ref.listen<AsyncValue<void>>(updateEmployeeProvider, (prev, next) {
+      next.whenOrNull(
+        data: (_) {
+          ref.read(updateEmployeeProvider.notifier).reset();
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Estado actualizado correctamente'),
+              backgroundColor: AppColors.success,
+            ),
+          );
+        },
+        error: (error, _) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Error al actualizar: $error'),
+              backgroundColor: AppColors.error,
+              duration: const Duration(seconds: 5),
+            ),
+          );
+        },
+      );
+    });
+
     return Padding(
       padding: const EdgeInsets.all(24.0),
       child: Column(
