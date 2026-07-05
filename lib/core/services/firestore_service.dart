@@ -40,13 +40,14 @@ class FirestoreService {
     required String field,
     required dynamic value,
     required T Function(Map<String, dynamic> json) fromJson,
+    String? orderField,
+    bool descending = true,
   }) {
-    return _firestore
-        .collection(path)
-        .where(field, isEqualTo: value)
-        .orderBy('checkInTime', descending: true)
-        .snapshots()
-        .map(
+    var query = _firestore.collection(path).where(field, isEqualTo: value);
+    if (orderField != null) {
+      query = query.orderBy(orderField, descending: descending);
+    }
+    return query.snapshots().map(
       (snapshot) => snapshot.docs.map((doc) {
         return fromJson({
           ...doc.data(),

@@ -28,7 +28,7 @@ class MedicalDocumentRepositoryImpl implements MedicalDocumentRepository {
     await _firestoreService.updateDocument(
       path: 'medical_documents',
       documentId: document.id,
-      data: document.toJson(),
+      data: document.copyWith(updatedAt: DateTime.now()).toJson(),
     );
   }
 
@@ -37,7 +37,10 @@ class MedicalDocumentRepositoryImpl implements MedicalDocumentRepository {
     await _firestoreService.updateDocument(
       path: 'medical_documents',
       documentId: id,
-      data: {'isActive': false},
+      data: {
+        'isActive': false,
+        'updatedAt': DateTime.now().toIso8601String(),
+      },
     );
   }
 }

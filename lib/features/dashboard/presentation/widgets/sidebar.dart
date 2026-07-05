@@ -15,7 +15,8 @@ class Sidebar extends ConsumerWidget {
     _MenuItem(icon: Icons.business, label: 'Lugares de trabajo', route: RoutePaths.workplaces),
     _MenuItem(icon: Icons.calendar_today, label: 'Asistencia', route: RoutePaths.attendance),
     _MenuItem(icon: Icons.history, label: 'Historial', route: RoutePaths.history),
-    _MenuItem(icon: Icons.description, label: 'Justificativos', route: RoutePaths.justificativos),
+    _MenuItem(icon: Icons.medical_services, label: 'Documentación Médica', route: RoutePaths.medicalDocuments),
+    _MenuItem(icon: Icons.report_problem, label: 'Incidencias', route: RoutePaths.incidences),
     _MenuItem(icon: Icons.bar_chart, label: 'Reportes', route: RoutePaths.reports),
     _MenuItem(icon: Icons.person, label: 'Perfil', route: RoutePaths.profile),
   ];

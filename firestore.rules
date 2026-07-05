@@ -1,0 +1,107 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ====================================================================
+    // HELPER FUNCTIONS
+    // ====================================================================
+
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function getRole() {
+      return get(
+        /databases/$(database)/documents/users/$(request.auth.uid)
+      ).data.rol;
+    }
+
+    function isAdmin() {
+      return isAuthenticated() && getRole() == 'admin';
+    }
+
+    function isSupervisor() {
+      return isAuthenticated() && getRole() == 'supervisor';
+    }
+
+    function isEmployee() {
+      return isAuthenticated() && getRole() == 'employee';
+    }
+
+    function isOwner(userId) {
+      return request.auth.uid == userId;
+    }
+
+    // ====================================================================
+    // USERS
+    // Admin  : read any, create, update, soft-delete
+    // Superv : read any
+    // Empl   : read own only
+    // ====================================================================
+    match /users/{uid} {
+      allow read: if isAuthenticated()
+        && (isAdmin() || isSupervisor() || (isEmployee() && isOwner(uid)));
+      allow create: if isAdmin();
+      allow update: if isAdmin();
+      allow delete: if isAdmin();
+    }
+
+    // ====================================================================
+    // ATTENDANCES
+    // Admin  : read any, write any
+    // Superv : read any (reports), manage own check-in/out
+    // Empl   : read own, manage own check-in/out
+    // ====================================================================
+    match /attendances/{docId} {
+      allow read: if isAuthenticated()
+        && (isAdmin() || isSupervisor() || isOwner(resource.data.userId));
+      allow create: if isAuthenticated()
+        && (isAdmin() || isSupervisor() || isEmployee())
+        && (isAdmin() || request.resource.data.userId == request.auth.uid);
+      allow update: if isAuthenticated()
+        && (isAdmin() || isSupervisor() || isEmployee())
+        && (isAdmin() || resource.data.userId == request.auth.uid);
+      allow delete: if isAdmin();
+    }
+
+    // ====================================================================
+    // WORKPLACES
+    // Admin  : full access
+    // Superv : read only (reports)
+    // Empl   : no access
+    // ====================================================================
+    match /workplaces/{docId} {
+      allow read: if isAuthenticated()
+        && (isAdmin() || isSupervisor());
+      allow create: if isAdmin();
+      allow update: if isAdmin();
+      allow delete: if isAdmin();
+    }
+
+    // ====================================================================
+    // MEDICAL DOCUMENTS
+    // Admin  : full access
+    // Superv : no access
+    // Empl   : no access (read own reserved for future use)
+    // ====================================================================
+    match /medical_documents/{docId} {
+      allow read: if isAdmin();
+      allow create: if isAdmin();
+      allow update: if isAdmin();
+      allow delete: if isAdmin();
+    }
+
+    // ====================================================================
+    // INCIDENCES
+    // Admin  : full access
+    // Superv : no access
+    // Empl   : no access (read own reserved for future use)
+    // ====================================================================
+    match /incidences/{docId} {
+      allow read: if isAdmin();
+      allow create: if isAdmin();
+      allow update: if isAdmin();
+      allow delete: if isAdmin();
+    }
+  }
+}

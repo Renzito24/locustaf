@@ -14,6 +14,8 @@ class AttendanceRepositoryImpl implements AttendanceRepository {
       field: 'userId',
       value: userId,
       fromJson: AttendanceModel.fromJson,
+      orderField: 'checkInTime',
+      descending: true,
     );
   }
 

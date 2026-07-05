@@ -28,7 +28,7 @@ class IncidenceRepositoryImpl implements IncidenceRepository {
     await _firestoreService.updateDocument(
       path: 'incidences',
       documentId: incidence.id,
-      data: incidence.toJson(),
+      data: incidence.copyWith(updatedAt: DateTime.now()).toJson(),
     );
   }
 
@@ -37,7 +37,10 @@ class IncidenceRepositoryImpl implements IncidenceRepository {
     await _firestoreService.updateDocument(
       path: 'incidences',
       documentId: id,
-      data: {'isActive': false},
+      data: {
+        'isActive': false,
+        'updatedAt': DateTime.now().toIso8601String(),
+      },
     );
   }
 }
