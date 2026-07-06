@@ -33,4 +33,8 @@ class AuthService {
   Future<void> deleteUser(User user) async {
     await user.delete();
   }
+
+  Future<void> sendPasswordReset(String email) async {
+    await _firebaseAuth.sendPasswordResetEmail(email: email);
+  }
 }

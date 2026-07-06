@@ -2,7 +2,6 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../authentication/data/models/user_model.dart';
-import '../../../authentication/presentation/providers/auth_provider.dart';
 import '../../../../core/services/firestore_service.dart';
 import '../../data/repositories/users_repository_impl.dart';
 import '../../domain/repositories/users_repository.dart';
@@ -18,8 +17,7 @@ final firestoreServiceProvider = Provider<FirestoreService>((ref) {
 
 final usersRepositoryProvider = Provider<UsersRepository>((ref) {
   final firestoreService = ref.read(firestoreServiceProvider);
-  final authService = ref.read(authServiceProvider);
-  return UsersRepositoryImpl(firestoreService, authService);
+  return UsersRepositoryImpl(firestoreService);
 });
 
 final usersStreamProvider = StreamProvider<List<UserModel>>((ref) {
@@ -76,14 +74,31 @@ class EmployeeFilterNotifier extends Notifier<EmployeeStatusFilter> {
 
 final employeeFilterProvider = NotifierProvider<EmployeeFilterNotifier, EmployeeStatusFilter>(EmployeeFilterNotifier.new);
 
+class EmployeeRoleFilter extends Notifier<UserRole?> {
+  @override
+  UserRole? build() => null;
+
+  void setFilter(UserRole? role) {
+    state = role;
+  }
+
+  void clear() {
+    state = null;
+  }
+}
+
+final employeeRoleFilterProvider = NotifierProvider<EmployeeRoleFilter, UserRole?>(
+  EmployeeRoleFilter.new,
+);
+
 final filteredEmployeesProvider = Provider<AsyncValue<List<UserModel>>>((ref) {
   final usersAsync = ref.watch(usersStreamProvider);
   final searchQuery = ref.watch(employeeSearchQueryProvider).trim().toLowerCase();
   final statusFilter = ref.watch(employeeFilterProvider);
 
   return usersAsync.whenData((users) {
-    // 1. Filter only employees
-    var employees = users.where((u) => u.rol == UserRole.employee).toList();
+    // 1. Exclude admins (show employees + supervisors)
+    var employees = users.where((u) => u.rol != UserRole.admin).toList();
 
     // 2. Exclude soft-deleted employees
     employees = employees.where((u) => !u.isDeleted).toList();
@@ -110,13 +125,19 @@ final filteredEmployeesProvider = Provider<AsyncValue<List<UserModel>>>((ref) {
         break;
     }
 
-    // 5. Filter by workplace
+    // 5. Filter by role
+    final roleFilter = ref.watch(employeeRoleFilterProvider);
+    if (roleFilter != null) {
+      employees = employees.where((u) => u.rol == roleFilter).toList();
+    }
+
+    // 6. Filter by workplace
     final workplaceFilter = ref.watch(employeeWorkplaceFilterProvider);
     if (workplaceFilter != null) {
       employees = employees.where((u) => u.lugarDeTrabajoId == workplaceFilter).toList();
     }
 
-    // 6. Sort alphabetically by last name (apellido), then name (nombre)
+    // 7. Sort alphabetically by last name (apellido), then name (nombre)
     employees.sort((a, b) {
       final comp = a.apellido.toLowerCase().compareTo(b.apellido.toLowerCase());
       if (comp != 0) return comp;
@@ -134,6 +155,7 @@ class EmployeeFormData {
   final String dni;
   final String? telefono;
   final String password;
+  final UserRole rol;
   final String? lugarDeTrabajoId;
 
   const EmployeeFormData({
@@ -143,6 +165,7 @@ class EmployeeFormData {
     required this.dni,
     this.telefono,
     required this.password,
+    required this.rol,
     this.lugarDeTrabajoId,
   });
 }
@@ -162,7 +185,7 @@ class CreateEmployeeNotifier extends AsyncNotifier<void> {
         email: data.email,
         dni: data.dni,
         telefono: data.telefono,
-        rol: UserRole.employee,
+        rol: data.rol,
         lugarDeTrabajoId: data.lugarDeTrabajoId,
         createdAt: DateTime.now(),
       );

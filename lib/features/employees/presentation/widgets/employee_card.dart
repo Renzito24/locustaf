@@ -9,6 +9,7 @@ class EmployeeCard extends StatefulWidget {
   final VoidCallback? onToggleActive;
   final VoidCallback? onHistory;
   final VoidCallback? onDelete;
+  final VoidCallback? onPasswordReset;
 
   const EmployeeCard({
     super.key,
@@ -17,6 +18,7 @@ class EmployeeCard extends StatefulWidget {
     this.onToggleActive,
     this.onHistory,
     this.onDelete,
+    this.onPasswordReset,
   });
 
   @override
@@ -142,6 +144,25 @@ class _EmployeeCardState extends State<EmployeeCard> {
 
               const SizedBox(width: 8),
 
+              // Role Badge
+              if (employee.rol == UserRole.supervisor)
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: AppColors.warning.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Text(
+                    employee.rol.label,
+                    style: const TextStyle(
+                      color: AppColors.warning,
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+              if (employee.rol == UserRole.supervisor) const SizedBox(width: 8),
+
               // Actions Menu
               PopupMenuButton<String>(
                 icon: const Icon(
@@ -158,6 +179,9 @@ class _EmployeeCardState extends State<EmployeeCard> {
                       break;
                     case 'history':
                       widget.onHistory?.call();
+                      break;
+                    case 'passwordReset':
+                      _confirmPasswordReset(context);
                       break;
                     case 'delete':
                       _confirmDelete(context);
@@ -189,6 +213,21 @@ class _EmployeeCardState extends State<EmployeeCard> {
                             Icon(Icons.history_outlined, size: 18),
                             SizedBox(width: 8),
                             Text('Historial'),
+                          ],
+                        ),
+                      ),
+                    );
+                  }
+                  if (widget.onPasswordReset != null) {
+                    items.add(const PopupMenuDivider());
+                    items.add(
+                      PopupMenuItem<String>(
+                        value: 'passwordReset',
+                        child: const Row(
+                          children: [
+                            Icon(Icons.lock_reset_outlined, size: 18),
+                            SizedBox(width: 8),
+                            Text('Restablecer contraseña'),
                           ],
                         ),
                       ),
@@ -256,9 +295,9 @@ class _EmployeeCardState extends State<EmployeeCard> {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Eliminar empleado'),
+        title: const Text('Eliminar usuario'),
         content: const Text(
-          '¿Seguro que deseas eliminar este empleado?',
+          '¿Seguro que deseas eliminar este usuario?',
         ),
         actions: [
           TextButton(
@@ -276,6 +315,33 @@ class _EmployeeCardState extends State<EmployeeCard> {
 
     if (confirmed == true) {
       widget.onDelete?.call();
+    }
+  }
+
+  Future<void> _confirmPasswordReset(BuildContext context) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Restablecer contraseña'),
+        content: Text(
+          'Se enviará un correo de restablecimiento a ${widget.employee.email}. ¿Desea continuar?',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: const Text('Cancelar'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(true),
+            style: TextButton.styleFrom(foregroundColor: AppColors.primary),
+            child: const Text('Enviar'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true) {
+      widget.onPasswordReset?.call();
     }
   }
 

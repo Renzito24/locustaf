@@ -140,7 +140,7 @@ class AppRouter {
             builder: (context, state) => const ProfileScreen(),
           ),
           GoRoute(
-            path: '/employees/create',
+            path: RoutePaths.createEmployee,
             builder: (context, state) => const CreateEmployeeScreen(),
           ),
           GoRoute(

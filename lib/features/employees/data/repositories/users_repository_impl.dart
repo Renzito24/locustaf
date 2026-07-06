@@ -1,13 +1,14 @@
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_core/firebase_core.dart';
+
 import '../../../../core/services/firestore_service.dart';
-import '../../../authentication/data/services/auth_service.dart';
 import '../../../authentication/data/models/user_model.dart';
 import '../../domain/repositories/users_repository.dart';
 
 class UsersRepositoryImpl implements UsersRepository {
   final FirestoreService _firestoreService;
-  final AuthService _authService;
 
-  UsersRepositoryImpl(this._firestoreService, this._authService);
+  UsersRepositoryImpl(this._firestoreService);
 
   @override
   Stream<List<UserModel>> getUsers() {
@@ -19,25 +20,35 @@ class UsersRepositoryImpl implements UsersRepository {
 
   @override
   Future<void> createUser(UserModel user, String password) async {
-    final credential = await _authService.register(
-      email: user.email,
-      password: password,
+    final adminApp = await Firebase.initializeApp(
+      name: 'adminCreation',
+      options: Firebase.app().options,
     );
+    final adminAuth = FirebaseAuth.instanceFor(app: adminApp);
 
-    final uid = credential.user!.uid;
-    final firebaseUser = credential.user!;
-
-    final newUser = user.copyWith(id: uid, createdAt: DateTime.now());
-
+    User? firebaseUser;
     try {
+      final result = await adminAuth.createUserWithEmailAndPassword(
+        email: user.email,
+        password: password,
+      );
+      firebaseUser = result.user;
+      final uid = firebaseUser!.uid;
+
+      final newUser = user.copyWith(id: uid, createdAt: DateTime.now());
       await _firestoreService.setDocument(
         path: 'users',
         documentId: uid,
         data: newUser.toJson(),
       );
     } catch (e) {
-      await _authService.deleteUser(firebaseUser);
+      if (firebaseUser != null) {
+        await firebaseUser.delete();
+      }
       rethrow;
+    } finally {
+      await adminAuth.signOut();
+      await adminApp.delete();
     }
   }
 

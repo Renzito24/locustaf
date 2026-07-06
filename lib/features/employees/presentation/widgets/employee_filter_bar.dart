@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/constants/app_colors.dart';
+import '../../../authentication/data/models/user_model.dart';
 import '../../../workplaces/data/models/workplace_model.dart';
 import '../../../workplaces/presentation/providers/workplace_notifier.dart';
 import '../providers/users_provider.dart';
@@ -12,6 +13,7 @@ class EmployeeFilterBar extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final selectedFilter = ref.watch(employeeFilterProvider);
+    final selectedRole = ref.watch(employeeRoleFilterProvider);
     final workplacesAsync = ref.watch(activeWorkplacesProvider);
 
     return Wrap(
@@ -41,8 +43,60 @@ class EmployeeFilterBar extends ConsumerWidget {
           isSelected: selectedFilter == EmployeeStatusFilter.inactive,
         ),
         const SizedBox(width: 8),
+        _buildRoleChip(
+          ref: ref,
+          label: 'Todos',
+          role: null,
+          isSelected: selectedRole == null,
+        ),
+        _buildRoleChip(
+          ref: ref,
+          label: 'Empleados',
+          role: UserRole.employee,
+          isSelected: selectedRole == UserRole.employee,
+        ),
+        _buildRoleChip(
+          ref: ref,
+          label: 'Supervisores',
+          role: UserRole.supervisor,
+          isSelected: selectedRole == UserRole.supervisor,
+        ),
+        const SizedBox(width: 8),
         _buildWorkplaceDropdown(ref, workplacesAsync),
       ],
+    );
+  }
+
+  Widget _buildRoleChip({
+    required WidgetRef ref,
+    required String label,
+    required UserRole? role,
+    required bool isSelected,
+  }) {
+    return ChoiceChip(
+      label: Text(label),
+      selected: isSelected,
+      onSelected: (selected) {
+        ref.read(employeeRoleFilterProvider.notifier).setFilter(
+              selected ? role : null,
+            );
+      },
+      showCheckmark: false,
+      selectedColor: AppColors.primary,
+      backgroundColor: AppColors.surface,
+      labelStyle: TextStyle(
+        color: isSelected ? Colors.white : AppColors.textSecondary,
+        fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
+        fontSize: 13,
+      ),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(20),
+      ),
+      side: BorderSide(
+        color: isSelected ? AppColors.primary : Colors.grey.shade300,
+        width: 1,
+      ),
     );
   }
 

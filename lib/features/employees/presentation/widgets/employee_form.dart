@@ -33,9 +33,7 @@ class _EmployeeFormState extends ConsumerState<EmployeeForm> {
   final _passwordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
   String? _selectedWorkplaceId;
-
-  bool _obscurePassword = true;
-  bool _obscureConfirm = true;
+  UserRole _selectedRole = UserRole.employee;
 
   @override
   void initState() {
@@ -47,7 +45,13 @@ class _EmployeeFormState extends ConsumerState<EmployeeForm> {
     _dniController = TextEditingController(text: data?.dni ?? '');
     _telefonoController = TextEditingController(text: data?.telefono ?? '');
     _selectedWorkplaceId = data?.lugarDeTrabajoId;
+    if (data?.rol != null) {
+      _selectedRole = data!.rol;
+    }
   }
+
+  bool _obscurePassword = true;
+  bool _obscureConfirm = true;
 
   @override
   void dispose() {
@@ -129,6 +133,7 @@ class _EmployeeFormState extends ConsumerState<EmployeeForm> {
         telefono: _telefonoController.text.trim().isEmpty
             ? null
             : _telefonoController.text.trim(),
+        rol: _selectedRole,
         lugarDeTrabajoId: _selectedWorkplaceId,
       );
       await ref
@@ -144,6 +149,7 @@ class _EmployeeFormState extends ConsumerState<EmployeeForm> {
             ? null
             : _telefonoController.text.trim(),
         password: _passwordController.text,
+        rol: _selectedRole,
         lugarDeTrabajoId: _selectedWorkplaceId,
       );
       await ref
@@ -284,13 +290,31 @@ class _EmployeeFormState extends ConsumerState<EmployeeForm> {
             ),
           ],
           const SizedBox(height: AppSizes.md),
-          TextFormField(
-            enabled: false,
+          DropdownButtonFormField<UserRole>(
+            initialValue: _selectedRole,
             decoration: const InputDecoration(
-              labelText: 'Rol',
-              hintText: 'Empleado',
+              labelText: 'Rol *',
               border: OutlineInputBorder(),
             ),
+            items: const [
+              DropdownMenuItem(
+                value: UserRole.employee,
+                child: Text('Empleado'),
+              ),
+              DropdownMenuItem(
+                value: UserRole.supervisor,
+                child: Text('Supervisor'),
+              ),
+            ],
+            onChanged: (value) {
+              if (value != null) {
+                setState(() => _selectedRole = value);
+              }
+            },
+            validator: (value) {
+              if (value == null) return 'Seleccione un rol';
+              return null;
+            },
           ),
           const SizedBox(height: AppSizes.md),
           _buildWorkplaceDropdown(),
@@ -317,7 +341,7 @@ class _EmployeeFormState extends ConsumerState<EmployeeForm> {
                       ),
                     )
                   : Text(
-                      widget.isEditing ? 'Guardar cambios' : 'Crear empleado',
+                      widget.isEditing ? 'Guardar cambios' : 'Crear usuario',
                       style: const TextStyle(fontSize: 16),
                     ),
             ),

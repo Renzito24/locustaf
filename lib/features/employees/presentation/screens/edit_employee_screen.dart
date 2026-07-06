@@ -26,7 +26,7 @@ class EditEmployeeScreen extends ConsumerWidget {
           ref.read(updateEmployeeProvider.notifier).reset();
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
-              content: Text('Empleado actualizado correctamente'),
+              content: Text('Usuario actualizado correctamente'),
               backgroundColor: AppColors.success,
             ),
           );
@@ -50,7 +50,7 @@ class EditEmployeeScreen extends ConsumerWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const Text(
-            'Editar Empleado',
+            'Editar Usuario',
             style: TextStyle(
               color: AppColors.textPrimary,
               fontSize: 24,

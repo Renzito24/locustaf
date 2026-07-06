@@ -11,6 +11,7 @@ class RoutePaths {
   static const String incidences = '/incidences';
   static const String reports = '/reports';
   static const String profile = '/profile';
+  static const String createEmployee = '/employees/create';
   static const String editEmployee = '/employees/edit';
   static const String createWorkplace = '/workplaces/create';
   static const String editWorkplace = '/workplaces/edit';

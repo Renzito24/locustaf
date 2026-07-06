@@ -36,7 +36,7 @@ class CreateEmployeeScreen extends ConsumerWidget {
           ref.read(createEmployeeProvider.notifier).reset();
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
-              content: Text('Empleado creado correctamente'),
+              content: Text('Usuario creado correctamente'),
               backgroundColor: AppColors.success,
             ),
           );
@@ -60,7 +60,7 @@ class CreateEmployeeScreen extends ConsumerWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const Text(
-            'Alta de Empleado',
+            'Nuevo Usuario',
             style: TextStyle(
               color: AppColors.textPrimary,
               fontSize: 24,
@@ -69,7 +69,7 @@ class CreateEmployeeScreen extends ConsumerWidget {
           ),
           const SizedBox(height: 4),
           const Text(
-            'Complete el formulario para registrar un nuevo empleado.',
+            'Complete el formulario para registrar un nuevo usuario.',
             style: TextStyle(
               color: AppColors.textSecondary,
               fontSize: 14,

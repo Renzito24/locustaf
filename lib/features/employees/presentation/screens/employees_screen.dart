@@ -6,6 +6,7 @@ import '../../../../core/constants/app_colors.dart';
 import '../../../../core/router/app_routes.dart';
 import '../../../authentication/data/models/user_model.dart';
 import '../providers/delete_employee_notifier.dart';
+import '../providers/reset_password_notifier.dart';
 import '../providers/update_employee_notifier.dart';
 import '../providers/users_provider.dart';
 import '../widgets/employee_card.dart';
@@ -27,7 +28,7 @@ class EmployeesScreen extends ConsumerWidget {
           ref.read(deleteEmployeeProvider.notifier).reset();
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
-              content: Text('Empleado eliminado correctamente'),
+              content: Text('Usuario eliminado correctamente'),
               backgroundColor: AppColors.success,
             ),
           );
@@ -67,24 +68,74 @@ class EmployeesScreen extends ConsumerWidget {
       );
     });
 
+    ref.listen<AsyncValue<void>>(resetPasswordProvider, (prev, next) {
+      next.whenOrNull(
+        data: (_) {
+          ref.read(resetPasswordProvider.notifier).reset();
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Correo de restablecimiento enviado correctamente'),
+              backgroundColor: AppColors.success,
+            ),
+          );
+        },
+        error: (error, _) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Error al enviar correo: $error'),
+              backgroundColor: AppColors.error,
+              duration: const Duration(seconds: 5),
+            ),
+          );
+        },
+      );
+    });
+
     return Padding(
       padding: const EdgeInsets.all(24.0),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           // Header Section
-          const Text(
-            'Gestión de Empleados',
-            style: TextStyle(
-              color: AppColors.textPrimary,
-              fontSize: 24,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-          const SizedBox(height: 4),
-          const Text(
-            'Administra, busca y filtra el personal de la empresa.',
-            style: TextStyle(color: AppColors.textSecondary, fontSize: 14),
+          Row(
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'Gestión de Empleados',
+                      style: TextStyle(
+                        color: AppColors.textPrimary,
+                        fontSize: 24,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    const Text(
+                      'Administra, busca y filtra el personal de la empresa.',
+                      style: TextStyle(
+                          color: AppColors.textSecondary, fontSize: 14),
+                    ),
+                  ],
+                ),
+              ),
+              if (isAdmin)
+                ElevatedButton.icon(
+                  onPressed: () => context.push(RoutePaths.createEmployee),
+                  icon: const Icon(Icons.person_add),
+                  label: const Text('Nuevo Usuario'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.primary,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 20, vertical: 12),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                  ),
+                ),
+            ],
           ),
           const SizedBox(height: 24),
 
@@ -173,6 +224,13 @@ class EmployeesScreen extends ConsumerWidget {
                                   .deleteEmployee(employee.id);
                             }
                           : null,
+                      onPasswordReset: isAdmin
+                          ? () {
+                              ref
+                                  .read(resetPasswordProvider.notifier)
+                                  .resetPassword(employee.email);
+                            }
+                          : null,
                     );
                   },
                 );
@@ -188,7 +246,7 @@ class EmployeesScreen extends ConsumerWidget {
                     ),
                     SizedBox(height: 16),
                     Text(
-                      'Cargando empleados...',
+                      'Cargando usuarios...',
                       style: TextStyle(color: AppColors.textSecondary),
                     ),
                   ],
@@ -250,7 +308,7 @@ class EmployeesScreen extends ConsumerWidget {
           ),
           const SizedBox(height: 16),
           const Text(
-            'No se encontraron empleados',
+            'No se encontraron usuarios',
             style: TextStyle(
               fontSize: 18,
               fontWeight: FontWeight.bold,
