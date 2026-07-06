@@ -5,4 +5,5 @@ abstract class WorkplaceRepository {
   Future<void> createWorkplace(WorkplaceModel workplace);
   Future<void> updateWorkplace(WorkplaceModel workplace);
   Future<void> softDeleteWorkplace(String id);
+  Future<void> reactivateWorkplace(String id);
 }

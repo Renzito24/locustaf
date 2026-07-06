@@ -95,6 +95,17 @@ class WorkplaceDeleteNotifier extends AsyncNotifier<void> {
   void reset() {
     state = const AsyncData(null);
   }
+
+  Future<void> reactivateWorkplace(String id) async {
+    state = const AsyncLoading();
+    final repo = ref.read(workplaceRepositoryProvider);
+    try {
+      await repo.reactivateWorkplace(id);
+      state = const AsyncData(null);
+    } catch (e, st) {
+      state = AsyncError(e, st);
+    }
+  }
 }
 
 final workplaceDeleteProvider =

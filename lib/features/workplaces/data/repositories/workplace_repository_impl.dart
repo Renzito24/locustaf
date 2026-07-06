@@ -48,4 +48,16 @@ class WorkplaceRepositoryImpl implements WorkplaceRepository {
       },
     );
   }
+
+  @override
+  Future<void> reactivateWorkplace(String id) async {
+    await _firestoreService.updateDocument(
+      path: 'workplaces',
+      documentId: id,
+      data: {
+        'isActive': true,
+        'updatedAt': DateTime.now().toIso8601String(),
+      },
+    );
+  }
 }

@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../data/models/workplace_model.dart';
 import '../providers/workplace_notifier.dart';
+import '../widgets/workplace_map_picker.dart';
 
 class WorkplaceFormScreen extends ConsumerWidget {
   const WorkplaceFormScreen({super.key});
@@ -44,6 +45,12 @@ class _WorkplaceFormState extends ConsumerState<_WorkplaceForm> {
   late final TextEditingController _nombreController;
   late final TextEditingController _descriptionController;
   late final TextEditingController _direccionController;
+  late final TextEditingController _latitudController;
+  late final TextEditingController _longitudController;
+  late final TextEditingController _codigoController;
+  late final TextEditingController _radioController;
+
+  bool _isActive = true;
 
   @override
   void initState() {
@@ -52,6 +59,17 @@ class _WorkplaceFormState extends ConsumerState<_WorkplaceForm> {
     _nombreController = TextEditingController(text: data?.nombre ?? '');
     _descriptionController = TextEditingController(text: data?.description ?? '');
     _direccionController = TextEditingController(text: data?.direccion ?? '');
+    _latitudController = TextEditingController(
+      text: data?.latitud?.toStringAsFixed(6) ?? '',
+    );
+    _longitudController = TextEditingController(
+      text: data?.longitud?.toStringAsFixed(6) ?? '',
+    );
+    _codigoController = TextEditingController(text: data?.codigo ?? '');
+    _radioController = TextEditingController(
+      text: data?.radio?.toString() ?? '',
+    );
+    _isActive = data?.isActive ?? true;
   }
 
   @override
@@ -59,11 +77,22 @@ class _WorkplaceFormState extends ConsumerState<_WorkplaceForm> {
     _nombreController.dispose();
     _descriptionController.dispose();
     _direccionController.dispose();
+    _latitudController.dispose();
+    _longitudController.dispose();
+    _codigoController.dispose();
+    _radioController.dispose();
     super.dispose();
   }
 
   Future<void> _submit() async {
     if (!_formKey.currentState!.validate()) return;
+
+    final lat = double.tryParse(_latitudController.text.trim());
+    final lng = double.tryParse(_longitudController.text.trim());
+    final radio = double.tryParse(_radioController.text.trim());
+    final codigo = _codigoController.text.trim().isEmpty
+        ? null
+        : _codigoController.text.trim();
 
     if (widget.isEditing) {
       final updated = widget.initialData!.copyWith(
@@ -74,6 +103,11 @@ class _WorkplaceFormState extends ConsumerState<_WorkplaceForm> {
         direccion: _direccionController.text.trim().isEmpty
             ? null
             : _direccionController.text.trim(),
+        latitud: lat,
+        longitud: lng,
+        radio: radio,
+        codigo: codigo,
+        isActive: _isActive,
       );
       await ref.read(workplaceUpdateProvider.notifier).updateWorkplace(updated);
     } else {
@@ -86,6 +120,11 @@ class _WorkplaceFormState extends ConsumerState<_WorkplaceForm> {
         direccion: _direccionController.text.trim().isEmpty
             ? null
             : _direccionController.text.trim(),
+        latitud: lat,
+        longitud: lng,
+        radio: radio,
+        codigo: codigo,
+        isActive: _isActive,
         createdAt: DateTime.now(),
       );
       await ref.read(workplaceCreateProvider.notifier).createWorkplace(workplace);
@@ -181,19 +220,128 @@ class _WorkplaceFormState extends ConsumerState<_WorkplaceForm> {
                       TextFormField(
                         controller: _descriptionController,
                         decoration: const InputDecoration(
-                          labelText: 'Descripción (opcional)',
+                          labelText: 'Descripción',
                           border: OutlineInputBorder(),
                         ),
                         maxLines: 3,
+                        validator: (value) {
+                          if (value == null || value.trim().isEmpty) {
+                            return 'La descripción es obligatoria';
+                          }
+                          return null;
+                        },
                       ),
                       const SizedBox(height: 16),
-                      TextFormField(
-                        controller: _direccionController,
-                        decoration: const InputDecoration(
-                          labelText: 'Dirección (opcional)',
-                          border: OutlineInputBorder(),
-                        ),
+                      WorkplaceMapPicker(
+                        initialLatitude: widget.initialData?.latitud,
+                        initialLongitude: widget.initialData?.longitud,
+                        initialAddress: widget.initialData?.direccion,
+                        onLatitudeChanged: (lat) {
+                          _latitudController.text = lat.toStringAsFixed(6);
+                        },
+                        onLongitudeChanged: (lng) {
+                          _longitudController.text = lng.toStringAsFixed(6);
+                        },
+                        onAddressChanged: (address) {
+                          if (address != null) {
+                            _direccionController.text = address;
+                          }
+                        },
                       ),
+                      const SizedBox(height: 16),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: TextFormField(
+                              controller: _latitudController,
+                              decoration: const InputDecoration(
+                                labelText: 'Latitud *',
+                                border: OutlineInputBorder(),
+                                hintText: '-34.6037',
+                              ),
+                              keyboardType:
+                                  const TextInputType.numberWithOptions(decimal: true, signed: true),
+                              validator: (value) {
+                                if (value == null || value.trim().isEmpty) {
+                                  return 'Obligatorio';
+                                }
+                                if (double.tryParse(value.trim()) == null) {
+                                  return 'Número inválido';
+                                }
+                                return null;
+                              },
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: TextFormField(
+                              controller: _longitudController,
+                              decoration: const InputDecoration(
+                                labelText: 'Longitud *',
+                                border: OutlineInputBorder(),
+                                hintText: '-58.3816',
+                              ),
+                              keyboardType:
+                                  const TextInputType.numberWithOptions(decimal: true, signed: true),
+                              validator: (value) {
+                                if (value == null || value.trim().isEmpty) {
+                                  return 'Obligatorio';
+                                }
+                                if (double.tryParse(value.trim()) == null) {
+                                  return 'Número inválido';
+                                }
+                                return null;
+                              },
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 16),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: TextFormField(
+                              controller: _radioController,
+                              decoration: const InputDecoration(
+                                labelText: 'Radio (metros)',
+                                border: OutlineInputBorder(),
+                                hintText: '100',
+                              ),
+                              keyboardType: TextInputType.number,
+                              validator: (value) {
+                                if (value != null && value.trim().isNotEmpty) {
+                                  if (double.tryParse(value.trim()) == null) {
+                                    return 'Número inválido';
+                                  }
+                                }
+                                return null;
+                              },
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: TextFormField(
+                              controller: _codigoController,
+                              decoration: const InputDecoration(
+                                labelText: 'Código',
+                                border: OutlineInputBorder(),
+                                hintText: 'OF-A',
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                      if (widget.isEditing) ...[
+                        const SizedBox(height: 16),
+                        SwitchListTile(
+                          title: const Text('Activo'),
+                          value: _isActive,
+                          onChanged: (value) {
+                            setState(() => _isActive = value);
+                          },
+                          contentPadding: EdgeInsets.zero,
+                        ),
+                      ],
                       const SizedBox(height: 24),
                       SizedBox(
                         width: double.infinity,

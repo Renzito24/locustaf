@@ -13,7 +13,7 @@ class Sidebar extends ConsumerWidget {
   static const List<_MenuItem> _items = [
     _MenuItem(icon: Icons.home, label: 'Inicio', route: RoutePaths.dashboard, visibleFor: {UserRole.admin, UserRole.supervisor, UserRole.employee}),
     _MenuItem(icon: Icons.people, label: 'Empleados', route: RoutePaths.employees, visibleFor: {UserRole.admin, UserRole.supervisor}),
-    _MenuItem(icon: Icons.business, label: 'Lugares de trabajo', route: RoutePaths.workplaces, visibleFor: {UserRole.admin}),
+    _MenuItem(icon: Icons.business, label: 'Lugares de trabajo', route: RoutePaths.workplaces, visibleFor: {UserRole.admin, UserRole.supervisor}),
     _MenuItem(icon: Icons.calendar_today, label: 'Asistencia', route: RoutePaths.attendance, visibleFor: {UserRole.admin, UserRole.employee}),
     _MenuItem(icon: Icons.history, label: 'Historial', route: RoutePaths.history, visibleFor: {UserRole.admin, UserRole.supervisor}),
     _MenuItem(icon: Icons.medical_services, label: 'Documentación Médica', route: RoutePaths.medicalDocuments, visibleFor: {UserRole.admin}),

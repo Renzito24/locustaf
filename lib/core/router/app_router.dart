@@ -55,7 +55,7 @@ class AppRouter {
           return '/dashboard';
         }
         if (role == UserRole.supervisor) {
-          final restricted = ['/workplaces', '/attendance', '/medical_documents', '/justificativos', '/reports', '/employees/create', '/employees/edit'];
+          final restricted = ['/attendance', '/medical_documents', '/justificativos', '/reports', '/employees/create', '/employees/edit', '/workplaces/create', '/workplaces/edit'];
           if (restricted.any((r) => path.startsWith(r))) {
             return '/dashboard';
           }
