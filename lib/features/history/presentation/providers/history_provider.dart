@@ -143,7 +143,7 @@ final filteredHistoryProvider = Provider<List<HistoryRecordModel>>((ref) {
         ? workplaceMap[user!.lugarDeTrabajoId]
         : null;
     return HistoryRecordModel(
-      id: a.uid,
+      id: a.id,
       employeeName: user?.nombreCompleto ?? 'Usuario ${a.userId.substring(0, 6)}',
       employeeEmail: user?.email ?? '',
       workplaceName: workplaceName,

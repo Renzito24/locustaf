@@ -1,4 +1,7 @@
 import '../../../../core/services/firestore_service.dart';
+import '../../../authentication/data/models/user_model.dart';
+import '../../../workplaces/data/models/workplace_model.dart';
+import '../../domain/exceptions/attendance_exception.dart';
 import '../../domain/repositories/attendance_repository.dart';
 import '../models/attendance_model.dart';
 
@@ -29,54 +32,106 @@ class AttendanceRepositoryImpl implements AttendanceRepository {
 
   @override
   Stream<AttendanceModel?> getActiveAttendance(String userId) {
-    return _firestoreService.queryStreamWithoutOrder<AttendanceModel>(
+    return _firestoreService.queryStreamWithFilters<AttendanceModel>(
       path: 'attendances',
-      field: 'userId',
-      value: userId,
+      filters: {
+        'userId': userId,
+        'status': 'active',
+      },
       fromJson: AttendanceModel.fromJson,
     ).map((list) {
-      final active = list.where((a) => a.status == AttendanceStatus.active).toList();
-      if (active.isEmpty) return null;
-      active.sort((a, b) => b.checkInTime.compareTo(a.checkInTime));
-      return active.first;
+      if (list.isEmpty) return null;
+      return list.first;
     });
   }
 
   @override
-  Future<void> checkIn(String userId, String date) async {
-    final now = DateTime.now();
-    await _firestoreService.addDocument(
-      path: 'attendances',
-      data: {
-        'userId': userId,
-        'checkInTime': now.toIso8601String(),
-        'date': date,
+  Future<void> checkIn(AttendanceModel attendance) async {
+    final lockRef =
+        _firestoreService.collection('_attendance_locks').doc(attendance.userId);
+
+    await _firestoreService.runTransaction((transaction) async {
+      final lockDoc = await transaction.get(lockRef);
+      if (lockDoc.exists) {
+        final data = lockDoc.data() as Map<String, dynamic>;
+        throw AttendanceException(
+          'Ya tenés una asistencia activa desde las ${data['checkInTime'] ?? 'desconocido'}. '
+          'Finalizala antes de registrar una nueva.',
+        );
+      }
+
+      final attendanceRef =
+          _firestoreService.collection('attendances').doc();
+      final data = attendance.toJson();
+      data['id'] = attendanceRef.id;
+
+      transaction.set(attendanceRef, data);
+      transaction.set(lockRef, {
+        'attendanceId': attendanceRef.id,
+        'checkInTime': attendance.checkInTime.toIso8601String(),
         'status': 'active',
-      },
-    );
+      });
+    });
   }
 
   @override
-  Future<void> checkOut(String attendanceUid) async {
-    final now = DateTime.now();
-    final docSnapshot = await _firestoreService.getDocument(
-      path: 'attendances',
-      documentId: attendanceUid,
-    );
-    if (docSnapshot == null) return;
+  Future<void> checkOut(String attendanceId, String userId) async {
+    final attendanceRef =
+        _firestoreService.collection('attendances').doc(attendanceId);
+    final lockRef =
+        _firestoreService.collection('_attendance_locks').doc(userId);
 
-    final checkInTime = DateTime.parse(docSnapshot['checkInTime'] as String);
-    final duration = now.difference(checkInTime);
-    final durationMinutes = duration.inMinutes;
+    await _firestoreService.runTransaction((transaction) async {
+      final attendanceDoc = await transaction.get(attendanceRef);
+      if (!attendanceDoc.exists) {
+        throw AttendanceException('Registro de asistencia no encontrado.');
+      }
+      final attendanceData =
+          attendanceDoc.data() as Map<String, dynamic>;
+      if (attendanceData['userId'] != userId) {
+        throw AttendanceException('Este registro no te pertenece.');
+      }
+      if (attendanceData['status'] == 'completed') {
+        throw AttendanceException('Esta asistencia ya fue finalizada.');
+      }
 
-    await _firestoreService.updateDocument(
-      path: 'attendances',
-      documentId: attendanceUid,
-      data: {
+      final lockDoc = await transaction.get(lockRef);
+      if (!lockDoc.exists) {
+        throw AttendanceException('No se encontró un bloqueo de sesión activo. '
+            'Es posible que la sesión ya haya sido finalizada.');
+      }
+
+      final now = DateTime.now();
+      final checkInTime =
+          DateTime.parse(attendanceData['checkInTime'] as String);
+      final durationMinutes = now.difference(checkInTime).inMinutes;
+
+      transaction.update(attendanceRef, {
         'checkOutTime': now.toIso8601String(),
         'durationMinutes': durationMinutes,
         'status': 'completed',
-      },
+      });
+      transaction.delete(lockRef);
+    });
+  }
+
+  @override
+  Future<UserModel?> getUser(String userId) async {
+    final doc = await _firestoreService.getDocument(
+      path: 'users',
+      documentId: userId,
     );
+    if (doc == null) return null;
+    return UserModel.fromJson(doc);
+  }
+
+  @override
+  Future<WorkplaceModel?> getWorkplace(String workplaceId) async {
+    final doc = await _firestoreService.getDocument(
+      path: 'workplaces',
+      documentId: workplaceId,
+    );
+    if (doc == null) return null;
+    return WorkplaceModel.fromJson(doc);
   }
 }

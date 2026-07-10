@@ -58,7 +58,8 @@ final todayAttendancesProvider = Provider<List<AttendanceModel>>((ref) {
 
 final employeesPresentTodayProvider = Provider<int>((ref) {
   final today = ref.watch(todayAttendancesProvider);
-  return today.length;
+  final uniqueUserIds = today.map((a) => a.userId).toSet();
+  return uniqueUserIds.length;
 });
 
 final employeesAbsentTodayProvider = Provider<int>((ref) {

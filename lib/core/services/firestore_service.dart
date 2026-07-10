@@ -5,6 +5,13 @@ class FirestoreService {
 
   FirestoreService(this._firestore);
 
+  /// Ejecuta una transacción atómica de Firestore.
+  /// Útil para operaciones que requieren leer y escribir de forma atómica
+  /// (ej: verificar que no exista una asistencia activa antes de crearla).
+  Future<T> runTransaction<T>(Future<T> Function(Transaction transaction) callback) {
+    return _firestore.runTransaction(callback);
+  }
+
   Stream<List<T>> collectionStream<T>({
     required String path,
     required T Function(Map<String, dynamic> json) fromJson,
@@ -51,7 +58,7 @@ class FirestoreService {
       (snapshot) => snapshot.docs.map((doc) {
         return fromJson({
           ...doc.data(),
-          'uid': doc.id,
+          'id': doc.id,
         });
       }).toList(),
     );
@@ -71,7 +78,7 @@ class FirestoreService {
       (snapshot) => snapshot.docs.map((doc) {
         return fromJson({
           ...doc.data(),
-          'uid': doc.id,
+          'id': doc.id,
         });
       }).toList(),
     );
@@ -98,6 +105,32 @@ class FirestoreService {
     );
   }
 
+  /// Similar a [collectionStreamWhere] pero con soporte de ordenamiento.
+  /// Requiere un índice compuesto que cubra todos los campos en [filters] más [orderField].
+  Stream<List<T>> queryStreamWithFilters<T>({
+    required String path,
+    required Map<String, dynamic> filters,
+    required T Function(Map<String, dynamic> json) fromJson,
+    String? orderField,
+    bool descending = false,
+  }) {
+    var query = _firestore.collection(path) as Query<Map<String, dynamic>>;
+    filters.forEach((field, value) {
+      query = query.where(field, isEqualTo: value);
+    });
+    if (orderField != null) {
+      query = query.orderBy(orderField, descending: descending);
+    }
+    return query.snapshots().map(
+      (snapshot) => snapshot.docs.map((doc) {
+        return fromJson({
+          ...doc.data(),
+          'id': doc.id,
+        });
+      }).toList(),
+    );
+  }
+
   Future<void> setDocument({
     required String path,
     required String documentId,
@@ -106,12 +139,24 @@ class FirestoreService {
     return _firestore.collection(path).doc(documentId).set(data);
   }
 
+  /// IMPORTANTE: Se escribe tanto 'id' como 'uid' para mantener compatibilidad
+  /// con documentos existentes en la colección 'attendances' que usaban 'uid'.
+  ///
+  /// [Migración futura]: Cuando todos los documentos de 'attendances' tengan el campo
+  /// 'id', se debe eliminar la escritura de 'uid' en este método y actualizar
+  /// AttendanceModel.fromJson para que solo lea 'id'. Para migrar los documentos
+  /// existentes, ejecutar un script que copie 'uid' → 'id' en todos los documentos
+  /// de la colección 'attendances'.
   Future<String> addDocument({
     required String path,
     required Map<String, dynamic> data,
   }) async {
     final docRef = _firestore.collection(path).doc();
-    await docRef.set({...data, 'uid': docRef.id});
+    await docRef.set({
+      ...data,
+      'id': docRef.id,
+      'uid': docRef.id,
+    });
     return docRef.id;
   }
 
@@ -137,5 +182,11 @@ class FirestoreService {
     required String documentId,
   }) {
     return _firestore.collection(path).doc(documentId).delete();
+  }
+
+  /// Expone el acceso a una colección para casos donde se necesita
+  /// acceso directo (ej: transacciones con DocReference).
+  CollectionReference<Map<String, dynamic>> collection(String path) {
+    return _firestore.collection(path);
   }
 }
