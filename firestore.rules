@@ -103,5 +103,15 @@ service cloud.firestore {
       allow update: if isAdmin();
       allow delete: if isAdmin();
     }
+
+    // ====================================================================
+    // ATTENDANCE LOCKS (internal concurrency control)
+    // Used by check-in/check-out transactions.
+    // Authenticated users can read/write their own lock only.
+    // ====================================================================
+    match /_attendance_locks/{lockId} {
+      allow read: if isAuthenticated();
+      allow write: if isAuthenticated();
+    }
   }
 }

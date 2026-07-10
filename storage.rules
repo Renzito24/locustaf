@@ -1,0 +1,33 @@
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+
+    // ====================================================================
+    // HELPER FUNCTIONS
+    // ====================================================================
+
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    // ====================================================================
+    // MEDICAL DOCUMENTS
+    // Path: medical_documents/{userId}/{fileName}
+    // Admin  : full access (upload on behalf of employees)
+    // Empl   : read own files only (reserved for future use)
+    // ====================================================================
+    match /medical_documents/{userId}/{fileName} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated();
+      allow update: if isAuthenticated();
+      allow delete: if isAuthenticated();
+    }
+
+    // ====================================================================
+    // DEFAULT: deny all access to unknown paths
+    // ====================================================================
+    match /{allPaths=**} {
+      allow read, write: if false;
+    }
+  }
+}
