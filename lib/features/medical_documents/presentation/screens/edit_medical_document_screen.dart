@@ -39,6 +39,7 @@ class EditMedicalDocumentScreen extends ConsumerWidget {
               MedicalDocumentForm(
                 existingDocument: document,
                 isLoading: updateState.isLoading,
+                uploadProgress: updateState.uploadProgress,
                 errorMessage: updateState.error?.toString(),
                 onSubmit: (data) async {
                   final updated = document.copyWith(
@@ -49,9 +50,12 @@ class EditMedicalDocumentScreen extends ConsumerWidget {
                     archivoUrl: data.archivoUrl,
                     updatedAt: DateTime.now(),
                   );
-                  await ref.read(medicalDocumentUpdateProvider.notifier).updateDocument(updated);
+                  final notifier = ref.read(medicalDocumentUpdateProvider.notifier);
+                  await notifier.updateDocument(document: updated, file: data.archivoFile);
                   if (context.mounted) {
-                    ref.read(medicalDocumentUpdateProvider.notifier).reset();
+                    final currentState = ref.read(medicalDocumentUpdateProvider);
+                    if (currentState.hasError) return;
+                    notifier.reset();
                     context.pop();
                   }
                 },

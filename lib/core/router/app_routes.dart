@@ -6,7 +6,6 @@ class RoutePaths {
   static const String workplaces = '/workplaces';
   static const String attendance = '/attendance';
   static const String history = '/history';
-  static const String justificativos = '/justificativos';
   static const String medicalDocuments = '/medical_documents';
   static const String incidences = '/incidences';
   static const String reports = '/reports';

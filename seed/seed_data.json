@@ -37,6 +37,47 @@
       "lugarDeTrabajoId": "__WORKPLACE_ID__"
     }
   ],
+  "medical_documents": [
+    {
+      "userId": "__EMPLOYEE_ID__",
+      "tipo": "enfermedad",
+      "fechaInicio": "2026-06-01T00:00:00Z",
+      "fechaFin": "2026-06-15T00:00:00Z",
+      "motivo": "Certificado médico por gripe",
+      "archivoUrl": null,
+      "archivoNombre": null,
+      "mimeType": null,
+      "estado": "pendiente",
+      "observacionRechazo": null,
+      "isActive": true
+    },
+    {
+      "userId": "__EMPLOYEE_ID__",
+      "tipo": "accidente",
+      "fechaInicio": "2026-07-01T00:00:00Z",
+      "fechaFin": "2026-07-10T00:00:00Z",
+      "motivo": "Accidente laboral - descanso prescrito",
+      "archivoUrl": null,
+      "archivoNombre": null,
+      "mimeType": null,
+      "estado": "aprobado",
+      "observacionRechazo": null,
+      "isActive": true
+    },
+    {
+      "userId": "__EMPLOYEE_ID__",
+      "tipo": "personal",
+      "fechaInicio": "2026-05-01T00:00:00Z",
+      "fechaFin": "2026-05-20T00:00:00Z",
+      "motivo": "Licencia por asuntos personales",
+      "archivoUrl": null,
+      "archivoNombre": null,
+      "mimeType": null,
+      "estado": "rechazado",
+      "observacionRechazo": "Documentación insuficiente",
+      "isActive": true
+    }
+  ],
   "workplaces": [
     {
       "nombre": "Sucursal Central",

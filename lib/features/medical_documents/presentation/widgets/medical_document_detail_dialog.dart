@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 import '../../../../core/constants/app_colors.dart';
 import '../../data/models/medical_document_model.dart';
@@ -88,7 +89,11 @@ class MedicalDocumentDetailDialog extends StatelessWidget {
               if (document.motivo.isNotEmpty)
                 _DetailRow(label: 'Observaciones', value: document.motivo),
               if (document.archivoUrl != null && document.archivoUrl!.isNotEmpty)
-                _DetailRow(label: 'Documento', value: document.archivoUrl!),
+                _FileRow(
+                  label: 'Archivo',
+                  fileName: document.archivoNombre ?? document.archivoUrl!,
+                  url: document.archivoUrl!,
+                ),
             ],
           ),
         ),
@@ -109,6 +114,62 @@ class MedicalDocumentDetailDialog extends StatelessWidget {
       case VigenciaEstado.vencido:
         return AppColors.error;
     }
+  }
+}
+
+class _FileRow extends StatelessWidget {
+  final String label;
+  final String fileName;
+  final String url;
+
+  const _FileRow({
+    required this.label,
+    required this.fileName,
+    required this.url,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 6),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const SizedBox(
+            width: 130,
+            child: Text(
+              'Archivo',
+              style: TextStyle(color: AppColors.textSecondary, fontSize: 14),
+            ),
+          ),
+          Expanded(
+            child: GestureDetector(
+              onTap: () => Clipboard.setData(ClipboardData(text: url)),
+              child: Row(
+                children: [
+                  const Icon(Icons.attach_file, size: 16, color: AppColors.primary),
+                  const SizedBox(width: 4),
+                  Flexible(
+                    child: Text(
+                      fileName,
+                      style: const TextStyle(
+                        color: AppColors.primary,
+                        fontSize: 14,
+                        fontWeight: FontWeight.w500,
+                        decoration: TextDecoration.underline,
+                      ),
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                  const SizedBox(width: 4),
+                  const Icon(Icons.copy, size: 14, color: AppColors.textSecondary),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
   }
 }
 

@@ -36,8 +36,10 @@ class CreateMedicalDocumentScreen extends ConsumerWidget {
               const SizedBox(height: 24),
               MedicalDocumentForm(
                 isLoading: createState.isLoading,
+                uploadProgress: createState.uploadProgress,
                 errorMessage: createState.error?.toString(),
                 onSubmit: (data) async {
+                  final now = DateTime.now();
                   final doc = MedicalDocumentModel(
                     id: '',
                     userId: data.userId,
@@ -46,11 +48,14 @@ class CreateMedicalDocumentScreen extends ConsumerWidget {
                     fechaFin: data.fechaFin,
                     motivo: data.motivo,
                     archivoUrl: data.archivoUrl,
-                    createdAt: DateTime.now(),
+                    createdAt: now,
                   );
-                  await ref.read(medicalDocumentCreateProvider.notifier).createDocument(doc);
+                  final notifier = ref.read(medicalDocumentCreateProvider.notifier);
+                  await notifier.createDocument(document: doc, file: data.archivoFile);
                   if (context.mounted) {
-                    ref.read(medicalDocumentCreateProvider.notifier).reset();
+                    final currentState = ref.read(medicalDocumentCreateProvider);
+                    if (currentState.hasError) return;
+                    notifier.reset();
                     context.pop();
                   }
                 },

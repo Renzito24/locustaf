@@ -21,7 +21,6 @@ import '../../features/incidences/presentation/screens/incidences_screen.dart';
 import '../../features/medical_documents/data/models/medical_document_model.dart';
 import '../../features/medical_documents/presentation/screens/create_medical_document_screen.dart';
 import '../../features/medical_documents/presentation/screens/edit_medical_document_screen.dart';
-import '../../features/medical_documents/presentation/screens/justificativos_screen.dart';
 import '../../features/medical_documents/presentation/screens/medical_documents_screen.dart';
 import '../../features/reports/presentation/screens/reports_screen.dart';
 import 'app_routes.dart';
@@ -55,7 +54,7 @@ class AppRouter {
           return '/dashboard';
         }
         if (role == UserRole.supervisor) {
-          final restricted = ['/attendance', '/medical_documents', '/justificativos', '/reports', '/employees/create', '/employees/edit', '/workplaces/create', '/workplaces/edit'];
+          final restricted = ['/attendance', '/medical_documents', '/reports', '/employees/create', '/employees/edit', '/workplaces/create', '/workplaces/edit'];
           if (restricted.any((r) => path.startsWith(r))) {
             return '/dashboard';
           }
@@ -96,10 +95,6 @@ class AppRouter {
           GoRoute(
             path: RoutePaths.history,
             builder: (context, state) => const HistoryScreen(),
-          ),
-          GoRoute(
-            path: RoutePaths.justificativos,
-            builder: (context, state) => const JustificativosScreen(),
           ),
           GoRoute(
             path: RoutePaths.medicalDocuments,

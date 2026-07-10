@@ -1,16 +1,20 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:file_picker/file_picker.dart';
+import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../../core/services/storage_service.dart';
 import '../../../employees/presentation/providers/users_provider.dart';
 import '../../data/models/medical_document_model.dart';
 import '../../data/repositories/medical_document_repository_impl.dart';
 import '../../domain/repositories/medical_document_repository.dart';
-import '../../../../core/services/firestore_service.dart';
 
-final _firestoreService = FirestoreService(FirebaseFirestore.instance);
+final storageServiceProvider = Provider<StorageService>((ref) {
+  return StorageService(FirebaseStorage.instance);
+});
 
 final medicalDocumentRepositoryProvider = Provider<MedicalDocumentRepository>((ref) {
-  return MedicalDocumentRepositoryImpl(_firestoreService);
+  final firestoreService = ref.read(firestoreServiceProvider);
+  return MedicalDocumentRepositoryImpl(firestoreService);
 });
 
 final medicalDocumentsStreamProvider = StreamProvider<List<MedicalDocumentModel>>((ref) {
@@ -133,63 +137,189 @@ final vencidosCountProvider = Provider<int>((ref) {
   return ref.watch(filteredMedicalDocumentsProvider).where((d) => d.vigencia == VigenciaEstado.vencido).length;
 });
 
-class MedicalDocumentCreateNotifier extends AsyncNotifier<void> {
-  @override
-  Future<void> build() => Future.value();
+// ─── Estados de acción ──────────────────────────────────────────────────────
 
-  Future<void> createDocument(MedicalDocumentModel document) async {
-    state = const AsyncLoading();
+class MedicalDocumentActionState {
+  final bool isLoading;
+  final double uploadProgress;
+  final String? error;
+
+  const MedicalDocumentActionState({
+    this.isLoading = false,
+    this.uploadProgress = 0,
+    this.error,
+  });
+
+  bool get hasError => error != null;
+
+  const MedicalDocumentActionState.idle() : this();
+}
+
+// ─── Create Notifier ────────────────────────────────────────────────────────
+
+class MedicalDocumentCreateNotifier extends Notifier<MedicalDocumentActionState> {
+  @override
+  MedicalDocumentActionState build() => const MedicalDocumentActionState.idle();
+
+  Future<void> createDocument({
+    required MedicalDocumentModel document,
+    PlatformFile? file,
+  }) async {
+    state = MedicalDocumentActionState(isLoading: true, uploadProgress: 0);
+
     final repo = ref.read(medicalDocumentRepositoryProvider);
+    final storageService = ref.read(storageServiceProvider);
+    String? uploadedUrl;
+    String? mimeType;
+    String? fileName;
+
     try {
-      await repo.createDocument(document);
-      state = const AsyncData(null);
-    } catch (e, st) {
-      state = AsyncError(e, st);
+      if (file != null) {
+        final docId = ref.read(firestoreServiceProvider).generateId('medical_documents');
+        final storagePath = 'medical_documents/${document.userId}/${docId}_${file.name}';
+
+        uploadedUrl = await storageService.uploadFile(
+          path: storagePath,
+          file: file,
+          onProgress: (progress) {
+            state = MedicalDocumentActionState(isLoading: true, uploadProgress: progress);
+          },
+        );
+        mimeType = file.extension;
+        fileName = file.name;
+      }
+
+      state = MedicalDocumentActionState(isLoading: true, uploadProgress: 1);
+
+      final doc = document.copyWith(
+        archivoUrl: uploadedUrl ?? document.archivoUrl,
+        archivoNombre: fileName,
+        mimeType: mimeType,
+      );
+
+      await repo.createDocument(doc);
+
+      state = const MedicalDocumentActionState(isLoading: false, uploadProgress: 1);
+    } on StorageServiceException catch (e) {
+      // Upload falló — no hay nada que limpiar
+      state = MedicalDocumentActionState(error: e.message);
+    } catch (e) {
+      // Si subió el archivo pero Firestore falló → rollback: eliminar archivo
+      if (uploadedUrl != null) {
+        try {
+          await storageService.deleteFile(uploadedUrl);
+        } catch (_) {}
+      }
+      state = MedicalDocumentActionState(error: e.toString());
     }
   }
 
   void reset() {
-    state = const AsyncData(null);
+    state = const MedicalDocumentActionState.idle();
   }
 }
 
-final medicalDocumentCreateProvider = AsyncNotifierProvider<MedicalDocumentCreateNotifier, void>(
+final medicalDocumentCreateProvider = NotifierProvider<MedicalDocumentCreateNotifier, MedicalDocumentActionState>(
   MedicalDocumentCreateNotifier.new,
 );
 
-class MedicalDocumentUpdateNotifier extends AsyncNotifier<void> {
-  @override
-  Future<void> build() => Future.value();
+// ─── Update Notifier ────────────────────────────────────────────────────────
 
-  Future<void> updateDocument(MedicalDocumentModel document) async {
-    state = const AsyncLoading();
+class MedicalDocumentUpdateNotifier extends Notifier<MedicalDocumentActionState> {
+  @override
+  MedicalDocumentActionState build() => const MedicalDocumentActionState.idle();
+
+  Future<void> updateDocument({
+    required MedicalDocumentModel document,
+    PlatformFile? file,
+  }) async {
+    state = MedicalDocumentActionState(isLoading: true, uploadProgress: 0);
+
     final repo = ref.read(medicalDocumentRepositoryProvider);
+    final storageService = ref.read(storageServiceProvider);
+    String? uploadedUrl;
+    String? newFileName;
+    String? newMimeType;
+
     try {
-      await repo.updateDocument(document);
-      state = const AsyncData(null);
-    } catch (e, st) {
-      state = AsyncError(e, st);
+      if (file != null) {
+        final docId = document.id.isEmpty
+            ? ref.read(firestoreServiceProvider).generateId('medical_documents')
+            : document.id;
+        final storagePath = 'medical_documents/${document.userId}/${docId}_${file.name}';
+
+        // 1. Subir nuevo archivo primero
+        uploadedUrl = await storageService.uploadFile(
+          path: storagePath,
+          file: file,
+          onProgress: (progress) {
+            state = MedicalDocumentActionState(isLoading: true, uploadProgress: progress);
+          },
+        );
+        newFileName = file.name;
+        newMimeType = file.extension;
+
+        // 2. Eliminar archivo anterior (nuevo ya está seguro en Storage)
+        if (document.archivoUrl != null) {
+          await storageService.deleteFile(document.archivoUrl!);
+        }
+      }
+
+      state = MedicalDocumentActionState(isLoading: true, uploadProgress: 1);
+
+      final updated = document.copyWith(
+        archivoUrl: uploadedUrl ?? document.archivoUrl,
+        archivoNombre: newFileName ?? document.archivoNombre,
+        mimeType: newMimeType ?? document.mimeType,
+        updatedAt: DateTime.now(),
+      );
+
+      await repo.updateDocument(updated);
+
+      state = const MedicalDocumentActionState(isLoading: false, uploadProgress: 1);
+    } on StorageServiceException catch (e) {
+      // Upload falló — no hay nada que limpiar (old file intacto)
+      state = MedicalDocumentActionState(error: e.message);
+    } catch (e) {
+      // Rollback: si el nuevo archivo se subió pero Firestore falló, limpiarlo
+      if (uploadedUrl != null) {
+        try {
+          await storageService.deleteFile(uploadedUrl);
+        } catch (_) {}
+      }
+      state = MedicalDocumentActionState(error: e.toString());
     }
   }
 
   void reset() {
-    state = const AsyncData(null);
+    state = const MedicalDocumentActionState.idle();
   }
 }
 
-final medicalDocumentUpdateProvider = AsyncNotifierProvider<MedicalDocumentUpdateNotifier, void>(
+final medicalDocumentUpdateProvider = NotifierProvider<MedicalDocumentUpdateNotifier, MedicalDocumentActionState>(
   MedicalDocumentUpdateNotifier.new,
 );
+
+// ─── Delete Notifier ────────────────────────────────────────────────────────
 
 class MedicalDocumentDeleteNotifier extends AsyncNotifier<void> {
   @override
   Future<void> build() => Future.value();
 
-  Future<void> softDelete(String id) async {
+  Future<void> softDelete(String id, {String? archivoUrl}) async {
     state = const AsyncLoading();
     final repo = ref.read(medicalDocumentRepositoryProvider);
+
     try {
+      // 1. Firestore primero (soft-delete es reversible)
       await repo.softDeleteDocument(id);
+
+      // 2. Storage después (deleteFile ya es tolerante a fallos)
+      if (archivoUrl != null) {
+        final storageService = ref.read(storageServiceProvider);
+        await storageService.deleteFile(archivoUrl);
+      }
+
       state = const AsyncData(null);
     } catch (e, st) {
       state = AsyncError(e, st);

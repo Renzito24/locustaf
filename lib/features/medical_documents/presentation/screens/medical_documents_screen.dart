@@ -322,11 +322,14 @@ class MedicalDocumentsScreen extends ConsumerWidget {
         content: Text('¿Eliminar el documento de tipo "${doc.tipo.label}"?'),
         actions: [
           TextButton(onPressed: () => Navigator.of(ctx).pop(), child: const Text('Cancelar')),
-          FilledButton(
-            onPressed: () {
-              Navigator.of(ctx).pop();
-              ref.read(medicalDocumentDeleteProvider.notifier).softDelete(doc.id);
-            },
+            FilledButton(
+              onPressed: () {
+                Navigator.of(ctx).pop();
+                ref.read(medicalDocumentDeleteProvider.notifier).softDelete(
+                  doc.id,
+                  archivoUrl: doc.archivoUrl,
+                );
+              },
             style: FilledButton.styleFrom(backgroundColor: AppColors.error),
             child: const Text('Eliminar'),
           ),

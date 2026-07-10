@@ -12,6 +12,13 @@ class FirestoreService {
     return _firestore.runTransaction(callback);
   }
 
+  /// Genera un ID único para un documento en la colección especificada,
+  /// sin escribir el documento. Útil cuando se necesita el ID antes de
+  /// realizar operaciones como upload a Storage.
+  String generateId(String collection) {
+    return _firestore.collection(collection).doc().id;
+  }
+
   Stream<List<T>> collectionStream<T>({
     required String path,
     required T Function(Map<String, dynamic> json) fromJson,

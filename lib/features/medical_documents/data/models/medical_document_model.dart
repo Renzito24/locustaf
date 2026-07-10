@@ -87,6 +87,7 @@ class MedicalDocumentModel extends Equatable {
   final DateTime fechaFin;
   final String motivo;
   final String? archivoUrl;
+  final String? archivoNombre;
   final String? mimeType;
   final MedicalDocumentEstado estado;
   final String? observacionRechazo;
@@ -102,6 +103,7 @@ class MedicalDocumentModel extends Equatable {
     required this.fechaFin,
     required this.motivo,
     this.archivoUrl,
+    this.archivoNombre,
     this.mimeType,
     this.estado = MedicalDocumentEstado.pendiente,
     this.observacionRechazo,
@@ -130,6 +132,7 @@ class MedicalDocumentModel extends Equatable {
     DateTime? fechaFin,
     String? motivo,
     String? archivoUrl,
+    String? archivoNombre,
     String? mimeType,
     MedicalDocumentEstado? estado,
     String? observacionRechazo,
@@ -145,6 +148,7 @@ class MedicalDocumentModel extends Equatable {
       fechaFin: fechaFin ?? this.fechaFin,
       motivo: motivo ?? this.motivo,
       archivoUrl: archivoUrl ?? this.archivoUrl,
+      archivoNombre: archivoNombre ?? this.archivoNombre,
       mimeType: mimeType ?? this.mimeType,
       estado: estado ?? this.estado,
       observacionRechazo: observacionRechazo ?? this.observacionRechazo,
@@ -163,6 +167,7 @@ class MedicalDocumentModel extends Equatable {
       fechaFin: DateTime.parse(json['fechaFin'] as String),
       motivo: json['motivo'] as String,
       archivoUrl: json['archivoUrl'] as String?,
+      archivoNombre: json['archivoNombre'] as String?,
       mimeType: json['mimeType'] as String?,
       estado: json['estado'] != null
           ? MedicalDocumentEstadoExtension.fromString(
@@ -186,6 +191,7 @@ class MedicalDocumentModel extends Equatable {
       'fechaFin': fechaFin.toIso8601String(),
       'motivo': motivo,
       'archivoUrl': archivoUrl,
+      'archivoNombre': archivoNombre,
       'mimeType': mimeType,
       'estado': estado.name,
       'observacionRechazo': observacionRechazo,
@@ -204,6 +210,7 @@ class MedicalDocumentModel extends Equatable {
         fechaFin,
         motivo,
         archivoUrl,
+        archivoNombre,
         mimeType,
         estado,
         observacionRechazo,

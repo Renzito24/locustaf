@@ -50,6 +50,7 @@ Future<void> main(List<String> args) async {
   }
 
   // Step 3: Create users
+  String? employeeId;
   print('\n--- Creating users ---');
   for (final u in users) {
     final data = (u as Map<String, dynamic>);
@@ -73,6 +74,28 @@ Future<void> main(List<String> args) async {
     final docId = await _createFirestoreDocument('users', data, adminIdToken, documentId: uid);
     if (docId != null) {
       print('  Created user: $email (id: $docId)');
+    }
+
+    if (data['rol'] == 'employee') {
+      employeeId = uid;
+    }
+  }
+
+  // Step 4: Create medical documents
+  final medicalDocs = seedData['medical_documents'] as List<dynamic>?;
+  if (medicalDocs != null && employeeId != null) {
+    print('\n--- Creating medical documents ---');
+    for (final doc in medicalDocs) {
+      final data = (doc as Map<String, dynamic>);
+      if (data['userId'] == '__EMPLOYEE_ID__') {
+        data['userId'] = employeeId;
+      }
+      final now = DateTime.now().toIso8601String();
+      data['createdAt'] = now;
+      final docId = await _createFirestoreDocument('medical_documents', data, adminIdToken);
+      if (docId != null) {
+        print('  Created medical document: ${data['tipo']} (id: $docId)');
+      }
     }
   }
 

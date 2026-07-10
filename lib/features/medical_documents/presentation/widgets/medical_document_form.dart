@@ -1,3 +1,4 @@
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -13,6 +14,7 @@ class MedicalDocumentFormData {
   final DateTime fechaFin;
   final String motivo;
   final String? archivoUrl;
+  final PlatformFile? archivoFile;
 
   const MedicalDocumentFormData({
     required this.userId,
@@ -21,12 +23,14 @@ class MedicalDocumentFormData {
     required this.fechaFin,
     required this.motivo,
     this.archivoUrl,
+    this.archivoFile,
   });
 }
 
 class MedicalDocumentForm extends ConsumerStatefulWidget {
   final MedicalDocumentModel? existingDocument;
   final bool isLoading;
+  final double uploadProgress;
   final String? errorMessage;
   final void Function(MedicalDocumentFormData data) onSubmit;
 
@@ -34,6 +38,7 @@ class MedicalDocumentForm extends ConsumerStatefulWidget {
     super.key,
     this.existingDocument,
     this.isLoading = false,
+    this.uploadProgress = 0,
     this.errorMessage,
     required this.onSubmit,
   });
@@ -49,8 +54,9 @@ class _MedicalDocumentFormState extends ConsumerState<MedicalDocumentForm> {
   late DateTime _fechaInicio;
   late DateTime _fechaFin;
   late String _motivo;
-  final _archivoUrlController = TextEditingController();
   final _motivoController = TextEditingController();
+  PlatformFile? _archivoFile;
+  String? _archivoUrl;
 
   @override
   void initState() {
@@ -62,17 +68,18 @@ class _MedicalDocumentFormState extends ConsumerState<MedicalDocumentForm> {
     _fechaFin = doc?.fechaFin ?? DateTime.now().add(const Duration(days: 30));
     _motivo = doc?.motivo ?? '';
     _motivoController.text = _motivo;
-    _archivoUrlController.text = doc?.archivoUrl ?? '';
+    _archivoUrl = doc?.archivoUrl;
   }
 
   @override
   void dispose() {
     _motivoController.dispose();
-    _archivoUrlController.dispose();
     super.dispose();
   }
 
   bool get isEditing => widget.existingDocument != null;
+
+  bool get _isUploading => widget.isLoading && widget.uploadProgress > 0 && widget.uploadProgress < 1;
 
   @override
   Widget build(BuildContext context) {
@@ -192,28 +199,37 @@ class _MedicalDocumentFormState extends ConsumerState<MedicalDocumentForm> {
             },
           ),
           const SizedBox(height: 16),
-          TextFormField(
-            controller: _archivoUrlController,
-            decoration: const InputDecoration(
-              labelText: 'URL del documento (opcional)',
-              hintText: 'https://...',
-              border: OutlineInputBorder(),
-              isDense: true,
+          _buildFilePickerSection(),
+          const SizedBox(height: 16),
+          if (_isUploading)
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                LinearProgressIndicator(
+                  value: widget.uploadProgress,
+                  backgroundColor: AppColors.primary.withValues(alpha: 0.1),
+                  color: AppColors.primary,
+                  minHeight: 6,
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  'Subiendo archivo... ${(widget.uploadProgress * 100).toStringAsFixed(0)}%',
+                  style: const TextStyle(fontSize: 12, color: AppColors.textSecondary),
+                ),
+              ],
             ),
-            onChanged: (value) {},
-          ),
-          const SizedBox(height: 24),
+          SizedBox(height: widget.uploadProgress > 0 && widget.uploadProgress < 1 ? 16 : 0),
           SizedBox(
             width: double.infinity,
             child: ElevatedButton(
-              onPressed: widget.isLoading ? null : _submit,
+              onPressed: (widget.isLoading && !_isUploading) ? null : _submit,
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppColors.primary,
                 foregroundColor: Colors.white,
                 padding: const EdgeInsets.symmetric(vertical: 14),
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
               ),
-              child: widget.isLoading
+              child: _isUploading
                   ? const SizedBox(
                       width: 20,
                       height: 20,
@@ -225,6 +241,66 @@ class _MedicalDocumentFormState extends ConsumerState<MedicalDocumentForm> {
         ],
       ),
     );
+  }
+
+  Widget _buildFilePickerSection() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        if (_archivoFile != null || _archivoUrl != null)
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+            margin: const EdgeInsets.only(bottom: 8),
+            decoration: BoxDecoration(
+              border: Border.all(color: Colors.grey.shade300),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Row(
+              children: [
+                const Icon(Icons.attach_file, size: 18, color: AppColors.primary),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    _archivoFile?.name ?? _archivoUrl!,
+                    style: const TextStyle(fontSize: 13, color: AppColors.textPrimary),
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+                if (_archivoFile != null)
+                  IconButton(
+                    icon: const Icon(Icons.close, size: 16),
+                    onPressed: () => setState(() => _archivoFile = null),
+                    visualDensity: VisualDensity.compact,
+                  ),
+              ],
+            ),
+          ),
+        OutlinedButton.icon(
+          onPressed: widget.isLoading ? null : _pickFile,
+          icon: const Icon(Icons.upload_file, size: 18),
+          label: Text(_archivoFile != null ? 'Cambiar archivo' : 'Seleccionar archivo (opcional)'),
+          style: OutlinedButton.styleFrom(
+            foregroundColor: AppColors.primary,
+            side: BorderSide(color: Colors.grey.shade300),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Future<void> _pickFile() async {
+    final result = await FilePicker.platform.pickFiles(
+      type: FileType.custom,
+      allowedExtensions: ['pdf', 'jpg', 'jpeg', 'png'],
+    );
+    if (result != null && result.files.isNotEmpty) {
+      setState(() {
+        _archivoFile = result.files.first;
+        _archivoUrl = null;
+      });
+    }
   }
 
   Widget _buildDatePicker({
@@ -272,9 +348,8 @@ class _MedicalDocumentFormState extends ConsumerState<MedicalDocumentForm> {
       fechaInicio: _fechaInicio,
       fechaFin: _fechaFin,
       motivo: _motivo.trim(),
-      archivoUrl: _archivoUrlController.text.trim().isEmpty
-          ? null
-          : _archivoUrlController.text.trim(),
+      archivoUrl: _archivoUrl,
+      archivoFile: _archivoFile,
     ));
   }
 }

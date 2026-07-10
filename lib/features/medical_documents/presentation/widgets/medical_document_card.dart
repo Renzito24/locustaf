@@ -59,6 +59,23 @@ class MedicalDocumentCard extends StatelessWidget {
                 ],
               ),
               const SizedBox(height: 6),
+              if (document.archivoUrl != null)
+                Padding(
+                  padding: const EdgeInsets.only(top: 6),
+                  child: Row(
+                    children: [
+                      const Icon(Icons.attach_file, size: 14, color: AppColors.primary),
+                      const SizedBox(width: 4),
+                      Expanded(
+                        child: Text(
+                          document.archivoNombre ?? 'Archivo adjunto',
+                          style: const TextStyle(fontSize: 12, color: AppColors.primary),
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
               if (document.motivo.isNotEmpty)
                 Text(
                   document.motivo,
