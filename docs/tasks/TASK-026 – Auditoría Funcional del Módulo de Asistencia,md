@@ -1,0 +1,113 @@
+# TASK-026 – Auditoría Funcional del Módulo de Asistencia
+
+## Objetivo
+
+Realizar una auditoría completa del módulo de asistencia para determinar el estado actual de implementación, validar las reglas de negocio existentes e identificar funcionalidades faltantes antes de continuar con el desarrollo.
+
+---
+
+## Alcance
+
+### Arquitectura
+
+Revisar toda la feature de asistencia.
+
+Identificar:
+
+- Modelos.
+- Repositorios.
+- Providers.
+- Servicios.
+- Pantallas.
+- Navegación.
+- Dependencias.
+
+Documentar cómo está implementado el flujo completo.
+
+---
+
+### Flujo de asistencia
+
+Verificar el funcionamiento de:
+
+- Check-In.
+- Check-Out.
+- Estado actual de la jornada.
+- Historial.
+- Bloqueos mediante `_attendance_locks`.
+
+---
+
+### Reglas de negocio
+
+Verificar si están implementadas las siguientes reglas:
+
+- Una única entrada por jornada.
+- No permitir doble check-in.
+- No permitir check-out sin check-in.
+- Validación del turno asignado.
+- Horario permitido.
+- Tolerancia.
+- Horas trabajadas.
+- Horas extra.
+- Asistencia incompleta.
+- Ausencias.
+
+---
+
+### Geolocalización
+
+Verificar:
+
+- Obtención de ubicación.
+- Permisos.
+- Precisión.
+- Distancia al lugar de trabajo.
+- Validación del radio permitido.
+- Casos de error.
+
+---
+
+### Integridad de datos
+
+Verificar:
+
+- Transacciones.
+- Consistencia en Firestore.
+- Manejo de errores.
+- Rollback cuando corresponda.
+
+---
+
+### Experiencia de usuario
+
+Revisar:
+
+- Estados de carga.
+- Mensajes de error.
+- Feedback visual.
+- Indicadores de progreso.
+- Flujo completo desde la interfaz.
+
+---
+
+## Entregables
+
+Al finalizar la auditoría se deberá entregar:
+
+- Estado actual del módulo.
+- Funcionalidades implementadas.
+- Funcionalidades incompletas.
+- Funcionalidades faltantes.
+- Riesgos detectados.
+- Bugs encontrados.
+- Mejoras recomendadas.
+- Plan de implementación priorizado.
+
+---
+
+## Criterios de aceptación
+
+- El estado del módulo queda completamente documentado.
+- Se identifican claramente las funcionalidades terminadas y pendientes.
+- Se establece un plan para completar el módulo sin duplicar trabajo.

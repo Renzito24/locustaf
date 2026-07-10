@@ -1,16 +1,12 @@
 import 'package:file_picker/file_picker.dart';
-import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../../core/providers/firebase_providers.dart';
 import '../../../../core/services/storage_service.dart';
 import '../../../employees/presentation/providers/users_provider.dart';
 import '../../data/models/medical_document_model.dart';
 import '../../data/repositories/medical_document_repository_impl.dart';
 import '../../domain/repositories/medical_document_repository.dart';
-
-final storageServiceProvider = Provider<StorageService>((ref) {
-  return StorageService(FirebaseStorage.instance);
-});
 
 final medicalDocumentRepositoryProvider = Provider<MedicalDocumentRepository>((ref) {
   final firestoreService = ref.read(firestoreServiceProvider);

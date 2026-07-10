@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../../../core/constants/app_colors.dart';
 import 'sidebar.dart';
 
 class DashboardLayout extends StatelessWidget {
@@ -18,7 +19,7 @@ class DashboardLayout extends StatelessWidget {
           const Sidebar(),
           Expanded(
             child: Container(
-              color: const Color(0xFFF3F4F6),
+              color: AppColors.background,
               child: child,
             ),
           ),

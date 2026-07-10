@@ -42,6 +42,12 @@ class AppRouter {
         return goingToLogin ? null : '/login';
       }
 
+      // Si el usuario está autenticado pero su cuenta está bloqueada
+      // (desactivada o eliminada), forzar cierre de sesión.
+      if (loggedIn && _auth.isUserBlocked) {
+        return goingToLogin ? null : '/login?blocked=true';
+      }
+
       if (loggedIn && (goingToLogin || goingToSplash)) {
         return '/dashboard';
       }

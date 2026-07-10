@@ -1,14 +1,9 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../data/models/workplace_model.dart';
 import '../../data/repositories/workplace_repository_impl.dart';
 import '../../domain/repositories/workplace_repository.dart';
-import '../../../../core/services/firestore_service.dart';
-
-final firestoreServiceProvider = Provider<FirestoreService>((ref) {
-  return FirestoreService(FirebaseFirestore.instance);
-});
+import '../../../../core/providers/firebase_providers.dart';
 
 final workplaceRepositoryProvider = Provider<WorkplaceRepository>((ref) {
   final svc = ref.read(firestoreServiceProvider);

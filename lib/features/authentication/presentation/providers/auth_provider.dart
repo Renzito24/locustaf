@@ -1,11 +1,10 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../data/models/user_model.dart';
 import '../../data/services/auth_service.dart';
 import '../../data/repositories/auth_repository_impl.dart';
-import '../../../../core/services/firestore_service.dart';
+import '../../../../core/providers/firebase_providers.dart';
 
 /// 1. Provider de FirebaseAuth
 final firebaseAuthProvider = Provider<FirebaseAuth>((ref) {
@@ -41,7 +40,7 @@ final currentAppUserProvider = StreamProvider<UserModel?>((ref) {
   if (authUser == null) {
     return Stream.value(null);
   }
-  final svc = FirestoreService(FirebaseFirestore.instance);
+  final svc = ref.read(firestoreServiceProvider);
   return svc.documentStream<UserModel>(
     path: 'users',
     documentId: authUser.uid,

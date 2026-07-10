@@ -73,7 +73,7 @@ class _EmployeeCardState extends State<EmployeeCard> {
                   gradient: LinearGradient(
                     colors: [
                       AppColors.primary.withValues(alpha: 0.8),
-                      AppColors.secondary.withValues(alpha: 0.8),
+                      AppColors.info.withValues(alpha: 0.8),
                     ],
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,

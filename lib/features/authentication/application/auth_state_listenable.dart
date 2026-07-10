@@ -20,6 +20,8 @@ class AuthStateListenable extends ChangeNotifier {
   late final StreamSubscription _authSub;
   StreamSubscription<Object?>? _userDocSub;
   UserRole? _role;
+  bool? _isActive;
+  bool? _isDeleted;
 
   User? get user => FirebaseAuth.instance.currentUser;
 
@@ -31,10 +33,16 @@ class AuthStateListenable extends ChangeNotifier {
   bool get isSupervisor => _role == UserRole.supervisor;
   bool get isEmployee => _role == UserRole.employee;
 
+  bool get isUserActive => _isActive == true;
+  bool get isUserDeleted => _isDeleted == true;
+  bool get isUserBlocked => _isActive == false || _isDeleted == true;
+
   void _onAuthChanged(User? user) {
     _userDocSub?.cancel();
     _userDocSub = null;
     _role = null;
+    _isActive = null;
+    _isDeleted = null;
     if (user != null) {
       _startListeningUserDoc(user.uid);
     }
@@ -49,6 +57,8 @@ class AuthStateListenable extends ChangeNotifier {
       fromJson: UserModel.fromJson,
     ).listen((userModel) {
       _role = userModel?.rol;
+      _isActive = userModel?.isActive;
+      _isDeleted = userModel?.isDeleted;
       notifyListeners();
     });
   }

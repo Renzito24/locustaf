@@ -104,7 +104,7 @@ class AttendanceScreen extends ConsumerWidget {
           const SizedBox(height: 12),
           Expanded(
             child: attendancesAsync.when(
-              data: (list) => _buildHistoryList(list),
+              data: (list) => _buildHistoryList(list, ref),
               loading: () => const Center(
                 child: CircularProgressIndicator(
                   valueColor: AlwaysStoppedAnimation<Color>(AppColors.primary),
@@ -314,7 +314,7 @@ class AttendanceScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildHistoryList(List<AttendanceModel> list) {
+  Widget _buildHistoryList(List<AttendanceModel> list, WidgetRef ref) {
     if (list.isEmpty) {
       return Center(
         child: Column(
@@ -331,12 +331,23 @@ class AttendanceScreen extends ConsumerWidget {
       );
     }
 
+    // Construir mapa de workplaceId → nombre
+    final workplaceMap = <String, String>{};
+    ref.watch(activeWorkplacesProvider).whenData((list) {
+      for (final w in list) {
+        workplaceMap[w.id] = w.nombre;
+      }
+    });
+
     return ListView.separated(
       itemCount: list.length,
       separatorBuilder: (_, _) => const Divider(height: 1),
       itemBuilder: (context, index) {
         final record = list[index];
         final isActive = record.status == AttendanceStatus.active;
+        final workplaceName = record.workplaceId != null
+            ? workplaceMap[record.workplaceId!]
+            : null;
         return ListTile(
           leading: Icon(
             isActive ? Icons.play_circle_outline : Icons.check_circle_outline,
@@ -357,14 +368,14 @@ class AttendanceScreen extends ConsumerWidget {
                 '${record.durationMinutes != null ? '  |  ${_formatDuration(record.durationMinutes!)}' : ''}',
                 style: const TextStyle(fontSize: 13),
               ),
-              if (record.workplaceId != null && !isActive)
+              if (workplaceName != null && !isActive)
                 Text(
-                  'Lugar: ${record.workplaceId}',
+                  'Lugar: $workplaceName',
                   style: TextStyle(fontSize: 11, color: Colors.grey.shade500),
                 ),
             ],
           ),
-          isThreeLine: record.workplaceId != null && !isActive,
+          isThreeLine: workplaceName != null && !isActive,
         );
       },
     );

@@ -1,29 +1,29 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../attendance/data/models/attendance_model.dart';
 import '../../../authentication/data/models/user_model.dart';
 import '../../../workplaces/data/models/workplace_model.dart';
-import '../../../../core/services/firestore_service.dart';
-
-final _firestoreService = FirestoreService(FirebaseFirestore.instance);
+import '../../../../core/providers/firebase_providers.dart';
 
 final allUsersStreamProvider = StreamProvider<List<UserModel>>((ref) {
-  return _firestoreService.collectionStream<UserModel>(
+  final svc = ref.read(firestoreServiceProvider);
+  return svc.collectionStream<UserModel>(
     path: 'users',
     fromJson: UserModel.fromJson,
   );
 });
 
 final allWorkplacesStreamProvider = StreamProvider<List<WorkplaceModel>>((ref) {
-  return _firestoreService.collectionStream<WorkplaceModel>(
+  final svc = ref.read(firestoreServiceProvider);
+  return svc.collectionStream<WorkplaceModel>(
     path: 'workplaces',
     fromJson: WorkplaceModel.fromJson,
   );
 });
 
 final allAttendancesStreamProvider = StreamProvider<List<AttendanceModel>>((ref) {
-  return _firestoreService.collectionStream<AttendanceModel>(
+  final svc = ref.read(firestoreServiceProvider);
+  return svc.collectionStream<AttendanceModel>(
     path: 'attendances',
     fromJson: AttendanceModel.fromJson,
   );
@@ -65,7 +65,7 @@ final employeesPresentTodayProvider = Provider<int>((ref) {
 final employeesAbsentTodayProvider = Provider<int>((ref) {
   final total = ref.watch(totalActiveEmployeesProvider);
   final present = ref.watch(employeesPresentTodayProvider);
-  return total - present;
+  return (total - present).clamp(0, total);
 });
 
 class AttendanceReportRow {

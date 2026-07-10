@@ -21,6 +21,27 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   bool isLoading = false;
   String? errorMessage;
 
+  @override
+  void initState() {
+    super.initState();
+    // Verificar si el usuario fue redirigido por estar bloqueado
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final uri = GoRouterState.of(context).uri;
+      if (uri.queryParameters['blocked'] == 'true') {
+        _autoLogoutBlockedUser();
+      }
+    });
+  }
+
+  Future<void> _autoLogoutBlockedUser() async {
+    final authSvc = ref.read(authServiceProvider);
+    await authSvc.logout();
+    if (!mounted) return;
+    setState(() {
+      errorMessage = 'Tu cuenta ha sido desactivada o eliminada. Contactá al administrador.';
+    });
+  }
+
   String _mensajeError(Object error) {
     if (error is FirebaseAuthException) {
       switch (error.code) {

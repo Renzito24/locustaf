@@ -1,16 +1,14 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../employees/presentation/providers/users_provider.dart';
 import '../../data/models/incidence_model.dart';
 import '../../data/repositories/incidence_repository_impl.dart';
 import '../../domain/repositories/incidence_repository.dart';
-import '../../../../core/services/firestore_service.dart';
-
-final _firestoreService = FirestoreService(FirebaseFirestore.instance);
+import '../../../../core/providers/firebase_providers.dart';
 
 final incidenceRepositoryProvider = Provider<IncidenceRepository>((ref) {
-  return IncidenceRepositoryImpl(_firestoreService);
+  final firestoreService = ref.read(firestoreServiceProvider);
+  return IncidenceRepositoryImpl(firestoreService);
 });
 
 final incidencesStreamProvider = StreamProvider<List<IncidenceModel>>((ref) {

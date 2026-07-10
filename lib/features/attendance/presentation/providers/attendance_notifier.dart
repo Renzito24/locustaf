@@ -1,4 +1,3 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../data/models/attendance_model.dart';
@@ -6,11 +5,7 @@ import '../../data/repositories/attendance_repository_impl.dart';
 import '../../data/services/location_service.dart';
 import '../../domain/exceptions/attendance_exception.dart';
 import '../../domain/repositories/attendance_repository.dart';
-import '../../../../core/services/firestore_service.dart';
-
-final firestoreServiceProvider = Provider<FirestoreService>((ref) {
-  return FirestoreService(FirebaseFirestore.instance);
-});
+import '../../../../core/providers/firebase_providers.dart';
 
 final attendanceRepositoryProvider = Provider<AttendanceRepository>((ref) {
   final svc = ref.read(firestoreServiceProvider);

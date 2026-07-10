@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../../authentication/data/models/user_model.dart';
 import '../../../authentication/presentation/providers/auth_provider.dart';
+import '../../../../core/constants/app_colors.dart';
 import '../../../../core/router/app_routes.dart';
 import 'sidebar_menu_item.dart';
 
@@ -31,7 +32,7 @@ class Sidebar extends ConsumerWidget {
 
     return Container(
       width: 240,
-      color: const Color(0xFF1A56DB),
+      color: AppColors.sidebar,
       child: Column(
         children: [
           const SizedBox(height: 16),
@@ -40,7 +41,7 @@ class Sidebar extends ConsumerWidget {
             child: Text(
               'LOCUSTAF',
               style: TextStyle(
-                color: Colors.white,
+                color: AppColors.sidebarTextActive,
                 fontSize: 20,
                 fontWeight: FontWeight.bold,
               ),

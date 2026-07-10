@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../../../../core/constants/app_colors.dart';
+
 class SidebarMenuItem extends StatelessWidget {
   final IconData icon;
   final String label;
@@ -20,7 +22,7 @@ class SidebarMenuItem extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
       child: Material(
         color: isActive
-            ? Colors.white.withValues(alpha: 0.15)
+            ? AppColors.sidebarItemHover
             : Colors.transparent,
         borderRadius: BorderRadius.circular(8),
         child: InkWell(
@@ -30,12 +32,12 @@ class SidebarMenuItem extends StatelessWidget {
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
             child: Row(
               children: [
-                Icon(icon, color: Colors.white, size: 20),
+                Icon(icon, color: AppColors.sidebarText, size: 20),
                 const SizedBox(width: 16),
                 Text(
                   label,
                   style: TextStyle(
-                    color: Colors.white,
+                    color: isActive ? AppColors.sidebarTextActive : AppColors.sidebarText,
                     fontSize: 14,
                     fontWeight: isActive ? FontWeight.w600 : FontWeight.normal,
                   ),
