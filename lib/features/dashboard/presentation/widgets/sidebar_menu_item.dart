@@ -19,29 +19,55 @@ class SidebarMenuItem extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+      padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
       child: Material(
         color: isActive
-            ? AppColors.sidebarItemHover
+            ? AppColors.gold.withValues(alpha: 0.12)
             : Colors.transparent,
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: BorderRadius.circular(10),
         child: InkWell(
-          borderRadius: BorderRadius.circular(8),
+          borderRadius: BorderRadius.circular(10),
           onTap: onTap,
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          hoverColor: AppColors.sidebarItemHover,
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 200),
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
+            decoration: isActive
+                ? BoxDecoration(
+                    borderRadius: BorderRadius.circular(10),
+                    border: Border.all(
+                      color: AppColors.gold.withValues(alpha: 0.2),
+                      width: 1,
+                    ),
+                  )
+                : null,
             child: Row(
               children: [
-                Icon(icon, color: AppColors.sidebarText, size: 20),
-                const SizedBox(width: 16),
-                Text(
-                  label,
-                  style: TextStyle(
-                    color: isActive ? AppColors.sidebarTextActive : AppColors.sidebarText,
-                    fontSize: 14,
-                    fontWeight: isActive ? FontWeight.w600 : FontWeight.normal,
+                Icon(
+                  icon,
+                  color: isActive ? AppColors.gold : AppColors.sidebarText,
+                  size: 20,
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    label,
+                    style: TextStyle(
+                      color: isActive ? AppColors.sidebarTextActive : AppColors.sidebarText,
+                      fontSize: 14,
+                      fontWeight: isActive ? FontWeight.w600 : FontWeight.normal,
+                    ),
                   ),
                 ),
+                if (isActive)
+                  Container(
+                    width: 6,
+                    height: 6,
+                    decoration: const BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: AppColors.gold,
+                    ),
+                  ),
               ],
             ),
           ),

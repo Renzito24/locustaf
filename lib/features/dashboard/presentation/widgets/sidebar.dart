@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import '../../../authentication/data/models/user_model.dart';
 import '../../../authentication/presentation/providers/auth_provider.dart';
 import '../../../../core/constants/app_colors.dart';
+import '../../../../core/theme/app_theme.dart';
 import '../../../../core/router/app_routes.dart';
 import 'sidebar_menu_item.dart';
 
@@ -12,15 +13,15 @@ class Sidebar extends ConsumerWidget {
   const Sidebar({super.key});
 
   static const List<_MenuItem> _items = [
-    _MenuItem(icon: Icons.home, label: 'Inicio', route: RoutePaths.dashboard, visibleFor: {UserRole.admin, UserRole.supervisor, UserRole.employee}),
-    _MenuItem(icon: Icons.people, label: 'Empleados', route: RoutePaths.employees, visibleFor: {UserRole.admin, UserRole.supervisor}),
-    _MenuItem(icon: Icons.business, label: 'Lugares de trabajo', route: RoutePaths.workplaces, visibleFor: {UserRole.admin, UserRole.supervisor}),
-    _MenuItem(icon: Icons.calendar_today, label: 'Asistencia', route: RoutePaths.attendance, visibleFor: {UserRole.admin, UserRole.employee}),
-    _MenuItem(icon: Icons.history, label: 'Historial', route: RoutePaths.history, visibleFor: {UserRole.admin, UserRole.supervisor}),
-    _MenuItem(icon: Icons.medical_services, label: 'Documentación Médica', route: RoutePaths.medicalDocuments, visibleFor: {UserRole.admin}),
-    _MenuItem(icon: Icons.report_problem, label: 'Incidencias', route: RoutePaths.incidences, visibleFor: {UserRole.admin, UserRole.supervisor}),
-    _MenuItem(icon: Icons.bar_chart, label: 'Reportes', route: RoutePaths.reports, visibleFor: {UserRole.admin}),
-    _MenuItem(icon: Icons.person, label: 'Perfil', route: RoutePaths.profile, visibleFor: {UserRole.admin, UserRole.supervisor, UserRole.employee}),
+    _MenuItem(icon: Icons.home_outlined, label: 'Inicio', route: RoutePaths.dashboard, visibleFor: {UserRole.admin, UserRole.supervisor, UserRole.employee}),
+    _MenuItem(icon: Icons.people_outline, label: 'Empleados', route: RoutePaths.employees, visibleFor: {UserRole.admin, UserRole.supervisor}),
+    _MenuItem(icon: Icons.business_outlined, label: 'Lugares', route: RoutePaths.workplaces, visibleFor: {UserRole.admin, UserRole.supervisor}),
+    _MenuItem(icon: Icons.fingerprint, label: 'Asistencia', route: RoutePaths.attendance, visibleFor: {UserRole.admin, UserRole.employee}),
+    _MenuItem(icon: Icons.history_outlined, label: 'Historial', route: RoutePaths.history, visibleFor: {UserRole.admin, UserRole.supervisor}),
+    _MenuItem(icon: Icons.medical_services_outlined, label: 'Documentación', route: RoutePaths.medicalDocuments, visibleFor: {UserRole.admin}),
+    _MenuItem(icon: Icons.warning_amber_outlined, label: 'Incidencias', route: RoutePaths.incidences, visibleFor: {UserRole.admin, UserRole.supervisor}),
+    _MenuItem(icon: Icons.bar_chart_outlined, label: 'Reportes', route: RoutePaths.reports, visibleFor: {UserRole.admin}),
+    _MenuItem(icon: Icons.person_outline, label: 'Perfil', route: RoutePaths.profile, visibleFor: {UserRole.admin, UserRole.supervisor, UserRole.employee}),
   ];
 
   @override
@@ -32,25 +33,57 @@ class Sidebar extends ConsumerWidget {
 
     return Container(
       width: 240,
-      color: AppColors.sidebar,
+      decoration: const BoxDecoration(
+        color: AppColors.sidebar,
+        border: Border(
+          right: BorderSide(color: AppColors.gold, width: 0.3),
+        ),
+      ),
       child: Column(
         children: [
-          const SizedBox(height: 16),
-          const Padding(
-            padding: EdgeInsets.symmetric(vertical: 16),
-            child: Text(
+          // Logo
+          const SizedBox(height: 24),
+          ShaderMask(
+            shaderCallback: (bounds) => AppTheme.goldGradient.createShader(bounds),
+            child: const Text(
               'LOCUSTAF',
               style: TextStyle(
-                color: AppColors.sidebarTextActive,
+                color: Colors.white,
                 fontSize: 20,
                 fontWeight: FontWeight.bold,
+                letterSpacing: 3,
               ),
             ),
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: 4),
+          Text(
+            'Control de asistencia',
+            style: TextStyle(
+              color: AppColors.textMuted.withValues(alpha: 0.5),
+              fontSize: 11,
+              letterSpacing: 0.5,
+            ),
+          ),
+          const SizedBox(height: 24),
+          // Divider
+          Container(
+            height: 1,
+            margin: const EdgeInsets.symmetric(horizontal: 20),
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: [
+                  AppColors.gold.withValues(alpha: 0),
+                  AppColors.gold.withValues(alpha: 0.3),
+                  AppColors.gold.withValues(alpha: 0),
+                ],
+              ),
+            ),
+          ),
+          const SizedBox(height: 16),
+          // Menu items
           Expanded(
             child: ListView(
-              padding: const EdgeInsets.symmetric(vertical: 8),
+              padding: const EdgeInsets.symmetric(horizontal: 8),
               children: [
                 for (final item in visibleItems)
                   SidebarMenuItem(
@@ -62,16 +95,31 @@ class Sidebar extends ConsumerWidget {
               ],
             ),
           ),
+          // Logout
+          Container(
+            height: 1,
+            margin: const EdgeInsets.symmetric(horizontal: 20),
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: [
+                  AppColors.gold.withValues(alpha: 0),
+                  AppColors.gold.withValues(alpha: 0.3),
+                  AppColors.gold.withValues(alpha: 0),
+                ],
+              ),
+            ),
+          ),
+          const SizedBox(height: 8),
           SidebarMenuItem(
-            icon: Icons.logout,
-            label: 'Cerrar sesion',
+            icon: Icons.logout_outlined,
+            label: 'Cerrar sesión',
             onTap: () async {
               final container = ProviderScope.containerOf(context);
               final logout = container.read(logoutProvider);
               await logout();
             },
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: 16),
         ],
       ),
     );

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/constants/app_colors.dart';
+import '../../../../core/theme/app_theme.dart';
 import '../../../authentication/presentation/providers/auth_provider.dart';
 import '../../../workplaces/presentation/providers/workplace_notifier.dart';
 import '../../data/models/attendance_model.dart';
@@ -21,33 +22,22 @@ class AttendanceScreen extends ConsumerWidget {
       if (prev?.status == next.status) return;
       if (next.status == AttendanceActionStatus.success) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(next.message ?? 'Operación exitosa'),
-            backgroundColor: AppColors.success,
-            behavior: SnackBarBehavior.floating,
-          ),
+          AppTheme.successSnackBar(next.message ?? 'Operación exitosa'),
         );
       } else if (next.status == AttendanceActionStatus.error) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(next.message ?? 'Error'),
-            backgroundColor: AppColors.error,
-            behavior: SnackBarBehavior.floating,
-            duration: const Duration(seconds: 6),
-            action: next.message?.contains('GPS') == true || next.message?.contains('permiso') == true || next.message?.contains('precisión') == true
-                ? SnackBarAction(
-                    label: 'Cerrar',
-                    textColor: Colors.white,
-                    onPressed: () {},
-                  )
-                : null,
-          ),
+          AppTheme.errorSnackBar(next.message ?? 'Error'),
         );
       }
     });
 
     if (userId == null) {
-      return const Center(child: Text('Usuario no autenticado'));
+      return Center(
+        child: Text(
+          'Usuario no autenticado',
+          style: AppTheme.bodyLg.copyWith(color: AppColors.textMuted),
+        ),
+      );
     }
 
     final activeAttendanceAsync = ref.watch(activeAttendanceProvider(userId));
@@ -59,68 +49,26 @@ class AttendanceScreen extends ConsumerWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
-            'Asistencia',
-            style: TextStyle(
-              fontSize: 24,
-              fontWeight: FontWeight.bold,
-              color: AppColors.textPrimary,
-            ),
-          ),
+          Text('Asistencia', style: AppTheme.headingLg),
           const SizedBox(height: 4),
-          const Text(
+          Text(
             'Registrá tu ingreso y salida del trabajo.',
-            style: TextStyle(color: AppColors.textSecondary, fontSize: 14),
+            style: AppTheme.bodyLg,
           ),
           const SizedBox(height: 24),
           activeAttendanceAsync.when(
             data: (active) => _buildActiveSection(context, ref, active, userId, isActionLoading),
-            loading: () => const Center(
-              child: CircularProgressIndicator(
-                valueColor: AlwaysStoppedAnimation<Color>(AppColors.primary),
-              ),
-            ),
-            error: (e, _) => Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(Icons.error_outline, size: 48, color: Colors.grey.shade400),
-                  const SizedBox(height: 12),
-                  Text('Error al cargar: $e',
-                      style: const TextStyle(color: AppColors.textSecondary)),
-                ],
-              ),
-            ),
+            loading: () => AppTheme.loadingState(message: 'Cargando asistencia...'),
+            error: (e, _) => AppTheme.errorState('Error al cargar: $e'),
           ),
           const SizedBox(height: 24),
-          const Text(
-            'Historial',
-            style: TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.w600,
-              color: AppColors.textPrimary,
-            ),
-          ),
+          Text('Historial', style: AppTheme.headingMd),
           const SizedBox(height: 12),
           Expanded(
             child: attendancesAsync.when(
               data: (list) => _buildHistoryList(list, ref),
-              loading: () => const Center(
-                child: CircularProgressIndicator(
-                  valueColor: AlwaysStoppedAnimation<Color>(AppColors.primary),
-                ),
-              ),
-              error: (e, _) => Center(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(Icons.error_outline, size: 48, color: Colors.grey.shade400),
-                    const SizedBox(height: 12),
-                    Text('Error al cargar: $e',
-                        style: const TextStyle(color: AppColors.textSecondary)),
-                  ],
-                ),
-              ),
+              loading: () => AppTheme.loadingState(message: 'Cargando historial...'),
+              error: (e, _) => AppTheme.errorState('Error al cargar: $e'),
             ),
           ),
         ],
@@ -136,35 +84,54 @@ class AttendanceScreen extends ConsumerWidget {
     bool isActionLoading,
   ) {
     if (active == null) {
-      return Card(
-        elevation: 0,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(12),
-          side: BorderSide(color: Colors.grey.shade200),
-        ),
-        child: Padding(
-          padding: const EdgeInsets.all(24),
-          child: Column(
-            children: [
-              Icon(Icons.login, size: 48, color: AppColors.primary.withValues(alpha: 0.7)),
-              const SizedBox(height: 16),
-              const Text(
-                'No has iniciado tu jornada',
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w600,
-                  color: AppColors.textPrimary,
+      return Container(
+        decoration: AppTheme.cardDecoration(),
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          children: [
+            Container(
+              width: 64,
+              height: 64,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: AppColors.gold.withValues(alpha: 0.12),
+              ),
+              child: Icon(
+                Icons.login,
+                size: 32,
+                color: AppColors.gold.withValues(alpha: 0.8),
+              ),
+            ),
+            const SizedBox(height: 16),
+            const Text(
+              'No has iniciado tu jornada',
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.w600,
+                color: AppColors.textWhite,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Para registrar tu ingreso, necesitás tener el GPS activado y estar en tu lugar de trabajo.',
+              textAlign: TextAlign.center,
+              style: AppTheme.bodyMd,
+            ),
+            const SizedBox(height: 20),
+            SizedBox(
+              width: double.infinity,
+              child: DecoratedBox(
+                decoration: BoxDecoration(
+                  gradient: AppTheme.goldGradient,
+                  borderRadius: BorderRadius.circular(AppTheme.radiusLg),
+                  boxShadow: [
+                    BoxShadow(
+                      color: AppColors.gold.withValues(alpha: 0.3),
+                      blurRadius: 12,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
                 ),
-              ),
-              const SizedBox(height: 8),
-              const Text(
-                'Para registrar tu ingreso, necesitás tener el GPS activado y estar en tu lugar de trabajo.',
-                textAlign: TextAlign.center,
-                style: TextStyle(color: AppColors.textSecondary, fontSize: 13),
-              ),
-              const SizedBox(height: 20),
-              SizedBox(
-                width: double.infinity,
                 child: ElevatedButton.icon(
                   onPressed: isActionLoading
                       ? null
@@ -183,20 +150,21 @@ class AttendanceScreen extends ConsumerWidget {
                       : const Icon(Icons.login),
                   label: Text(isActionLoading ? 'Verificando ubicación...' : 'Iniciar jornada'),
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.primary,
+                    backgroundColor: Colors.transparent,
+                    shadowColor: Colors.transparent,
                     foregroundColor: Colors.white,
-                    disabledBackgroundColor: AppColors.primary.withValues(alpha: 0.6),
-                    disabledForegroundColor: Colors.white70,
+                    disabledBackgroundColor: Colors.transparent,
+                    disabledForegroundColor: Colors.white60,
                     padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
-                    textStyle: const TextStyle(fontSize: 16),
+                    textStyle: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
                     shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8),
+                      borderRadius: BorderRadius.circular(AppTheme.radiusLg),
                     ),
                   ),
                 ),
               ),
-            ],
-          ),
+            ),
+          ],
         ),
       );
     }
@@ -210,85 +178,82 @@ class AttendanceScreen extends ConsumerWidget {
       }
     });
 
-    return Card(
-      elevation: 0,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
-        side: BorderSide(color: Colors.grey.shade200),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Container(
-                  width: 40,
-                  height: 40,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: AppColors.success.withValues(alpha: 0.1),
-                  ),
-                  child: const Icon(Icons.access_time, color: AppColors.success, size: 20),
+    return Container(
+      decoration: AppTheme.cardDecoration(),
+      padding: const EdgeInsets.all(20),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                width: 40,
+                height: 40,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: AppColors.success.withValues(alpha: 0.1),
                 ),
-                const SizedBox(width: 12),
-                Text(
-                  'Jornada activa',
-                  style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.w600,
-                    color: AppColors.success,
-                  ),
+                child: const Icon(Icons.access_time, color: AppColors.success, size: 20),
+              ),
+              const SizedBox(width: 12),
+              const Text(
+                'Jornada activa',
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w600,
+                  color: AppColors.success,
                 ),
-              ],
-            ),
-            const SizedBox(height: 16),
-            _infoRow('Inicio', _formatDateTime(active.checkInTime)),
-            if (workplaceName != null) ...[
-              const SizedBox(height: 8),
-              _infoRow('Lugar', workplaceName!),
+              ),
             ],
-            if (active.checkInLatitud != null && active.checkInLongitud != null) ...[
-              const SizedBox(height: 8),
-              _infoRow('Ubicación',
-                  '${active.checkInLatitud!.toStringAsFixed(6)}, ${active.checkInLongitud!.toStringAsFixed(6)}'),
-            ],
-            const SizedBox(height: 20),
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton.icon(
-                onPressed: isActionLoading
-                    ? null
-                    : () {
-                        ref.read(attendanceActionProvider.notifier).checkOut(active.id, userId);
-                      },
-                icon: isActionLoading
-                    ? const SizedBox(
-                        width: 18,
-                        height: 18,
-                        child: CircularProgressIndicator(
-                          strokeWidth: 2,
-                          color: Colors.white,
-                        ),
-                      )
-                    : const Icon(Icons.logout),
-                label: Text(isActionLoading ? 'Finalizando...' : 'Finalizar jornada'),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.warning,
-                  foregroundColor: Colors.white,
-                  disabledBackgroundColor: AppColors.warning.withValues(alpha: 0.6),
-                  disabledForegroundColor: Colors.white70,
-                  padding: const EdgeInsets.symmetric(vertical: 16),
-                  textStyle: const TextStyle(fontSize: 16),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(8),
-                  ),
+          ),
+          const SizedBox(height: 16),
+          _infoRow('Inicio', _formatDateTime(active.checkInTime)),
+          if (workplaceName != null) ...[
+            const SizedBox(height: 8),
+            _infoRow('Lugar', workplaceName!),
+          ],
+          if (active.checkInLatitud != null && active.checkInLongitud != null) ...[
+            const SizedBox(height: 8),
+            _infoRow('Ubicación',
+                '${active.checkInLatitud!.toStringAsFixed(6)}, ${active.checkInLongitud!.toStringAsFixed(6)}'),
+          ],
+          const SizedBox(height: 20),
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton.icon(
+              onPressed: isActionLoading
+                  ? null
+                  : () {
+                      ref.read(attendanceActionProvider.notifier).checkOut(active.id, userId);
+                    },
+              icon: isActionLoading
+                  ? const SizedBox(
+                      width: 18,
+                      height: 18,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: Colors.white,
+                      ),
+                    )
+                  : const Icon(Icons.logout),
+              label: Text(isActionLoading ? 'Finalizando...' : 'Finalizar jornada'),
+              style: AppTheme.primaryButtonStyle(isLoading: isActionLoading).copyWith(
+                backgroundColor: WidgetStateProperty.all(
+                  isActionLoading
+                      ? AppColors.warning.withValues(alpha: 0.6)
+                      : AppColors.warning,
+                ),
+                foregroundColor: WidgetStateProperty.all(Colors.white),
+                textStyle: WidgetStateProperty.all(
+                  const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                ),
+                padding: WidgetStateProperty.all(
+                  const EdgeInsets.symmetric(vertical: 16),
                 ),
               ),
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
@@ -298,14 +263,14 @@ class AttendanceScreen extends ConsumerWidget {
       children: [
         Text(
           '$label: ',
-          style: const TextStyle(color: AppColors.textSecondary),
+          style: AppTheme.bodyMd,
         ),
         Expanded(
           child: Text(
             value,
             style: const TextStyle(
               fontWeight: FontWeight.w600,
-              color: AppColors.textPrimary,
+              color: AppColors.textWhite,
             ),
             overflow: TextOverflow.ellipsis,
           ),
@@ -316,22 +281,13 @@ class AttendanceScreen extends ConsumerWidget {
 
   Widget _buildHistoryList(List<AttendanceModel> list, WidgetRef ref) {
     if (list.isEmpty) {
-      return Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(Icons.history, size: 48, color: Colors.grey.shade400),
-            const SizedBox(height: 12),
-            const Text(
-              'Sin registros de asistencia',
-              style: TextStyle(color: AppColors.textSecondary, fontSize: 16),
-            ),
-          ],
-        ),
+      return AppTheme.emptyState(
+        icon: Icons.history,
+        title: 'Sin registros de asistencia',
+        subtitle: 'Aún no se registraron jornadas.',
       );
     }
 
-    // Construir mapa de workplaceId → nombre
     final workplaceMap = <String, String>{};
     ref.watch(activeWorkplacesProvider).whenData((list) {
       for (final w in list) {
@@ -341,7 +297,10 @@ class AttendanceScreen extends ConsumerWidget {
 
     return ListView.separated(
       itemCount: list.length,
-      separatorBuilder: (_, _) => const Divider(height: 1),
+      separatorBuilder: (_, _) => Divider(
+        height: 1,
+        color: AppColors.gold.withValues(alpha: 0.08),
+      ),
       itemBuilder: (context, index) {
         final record = list[index];
         final isActive = record.status == AttendanceStatus.active;
@@ -351,12 +310,13 @@ class AttendanceScreen extends ConsumerWidget {
         return ListTile(
           leading: Icon(
             isActive ? Icons.play_circle_outline : Icons.check_circle_outline,
-            color: isActive ? AppColors.success : AppColors.textSecondary,
+            color: isActive ? AppColors.success : AppColors.textMuted,
           ),
           title: Text(
             record.date,
             style: TextStyle(
               fontWeight: isActive ? FontWeight.w600 : FontWeight.normal,
+              color: AppColors.textWhite,
             ),
           ),
           subtitle: Column(
@@ -366,12 +326,15 @@ class AttendanceScreen extends ConsumerWidget {
                 'Entrada: ${_formatTime(record.checkInTime)}'
                 '${record.checkOutTime != null ? '  |  Salida: ${_formatTime(record.checkOutTime!)}' : ''}'
                 '${record.durationMinutes != null ? '  |  ${_formatDuration(record.durationMinutes!)}' : ''}',
-                style: const TextStyle(fontSize: 13),
+                style: AppTheme.bodyMd,
               ),
               if (workplaceName != null && !isActive)
                 Text(
                   'Lugar: $workplaceName',
-                  style: TextStyle(fontSize: 11, color: Colors.grey.shade500),
+                  style: AppTheme.bodyMd.copyWith(
+                    fontSize: 11,
+                    color: AppColors.textMuted.withValues(alpha: 0.7),
+                  ),
                 ),
             ],
           ),

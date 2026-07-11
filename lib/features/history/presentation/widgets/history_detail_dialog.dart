@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../../core/constants/app_colors.dart';
+import '../../../../core/theme/app_theme.dart';
 import '../../../attendance/data/models/attendance_model.dart';
 import '../../data/models/history_record_model.dart';
 
@@ -19,7 +20,13 @@ class HistoryDetailDialog extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Dialog(
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      backgroundColor: AppColors.cardDark,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(AppTheme.radiusXl),
+        side: BorderSide(
+          color: AppColors.gold.withValues(alpha: 0.25),
+        ),
+      ),
       child: ConstrainedBox(
         constraints: const BoxConstraints(maxWidth: 480),
         child: Padding(
@@ -35,28 +42,34 @@ class HistoryDetailDialog extends StatelessWidget {
                     height: 40,
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
-                      color: AppColors.primary.withValues(alpha: 0.1),
+                      color: AppColors.gold.withValues(alpha: 0.12),
                     ),
-                    child: const Icon(Icons.info_outline, color: AppColors.primary, size: 20),
+                    child: const Icon(Icons.info_outline,
+                        color: AppColors.gold, size: 20),
                   ),
                   const SizedBox(width: 12),
-                  const Text(
-                    'Detalle de asistencia',
-                    style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                      color: AppColors.textPrimary,
+                  const Expanded(
+                    child: Text(
+                      'Detalle de asistencia',
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                        color: AppColors.textWhite,
+                      ),
                     ),
                   ),
-                  const Spacer(),
                   IconButton(
                     onPressed: () => Navigator.of(context).pop(),
-                    icon: const Icon(Icons.close),
+                    icon: Icon(Icons.close,
+                        color: AppColors.textMuted.withValues(alpha: 0.7)),
                     visualDensity: VisualDensity.compact,
                   ),
                 ],
               ),
-              const Divider(height: 24),
+              Divider(
+                height: 24,
+                color: AppColors.gold.withValues(alpha: 0.15),
+              ),
               _DetailRow(label: 'Nombre', value: record.employeeName),
               _DetailRow(label: 'Email', value: record.employeeEmail),
               _DetailRow(label: 'Workplace', value: record.workplaceName ?? '-'),
@@ -69,7 +82,7 @@ class HistoryDetailDialog extends StatelessWidget {
                 value: record.statusLabel,
                 valueColor: record.status == AttendanceStatus.active
                     ? AppColors.success
-                    : AppColors.textSecondary,
+                    : AppColors.textMuted,
               ),
             ],
           ),
@@ -101,17 +114,14 @@ class _DetailRow extends StatelessWidget {
             width: 120,
             child: Text(
               label,
-              style: const TextStyle(
-                color: AppColors.textSecondary,
-                fontSize: 14,
-              ),
+              style: AppTheme.bodyMd,
             ),
           ),
           Expanded(
             child: Text(
               value,
               style: TextStyle(
-                color: valueColor ?? AppColors.textPrimary,
+                color: valueColor ?? AppColors.textWhite,
                 fontSize: 14,
                 fontWeight: FontWeight.w500,
               ),

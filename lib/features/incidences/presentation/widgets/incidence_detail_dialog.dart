@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../../core/constants/app_colors.dart';
+import '../../../../core/theme/app_theme.dart';
 import '../../data/models/incidence_model.dart';
 
 class IncidenceDetailDialog extends StatelessWidget {
@@ -34,7 +35,11 @@ class IncidenceDetailDialog extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Dialog(
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      backgroundColor: AppColors.cardDark,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(AppTheme.radiusXl),
+        side: BorderSide(color: AppColors.gold.withValues(alpha: 0.3)),
+      ),
       child: ConstrainedBox(
         constraints: const BoxConstraints(maxWidth: 500),
         child: Padding(
@@ -50,28 +55,21 @@ class IncidenceDetailDialog extends StatelessWidget {
                     height: 40,
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
-                      color: AppColors.primary.withValues(alpha: 0.1),
+                      color: AppColors.gold.withValues(alpha: 0.15),
                     ),
-                    child: const Icon(Icons.warning_amber, color: AppColors.primary, size: 20),
+                    child: const Icon(Icons.warning_amber, color: AppColors.gold, size: 20),
                   ),
                   const SizedBox(width: 12),
-                  const Text(
-                    'Detalle de incidencia',
-                    style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                      color: AppColors.textPrimary,
-                    ),
-                  ),
+                  Text('Detalle de incidencia', style: AppTheme.headingMd),
                   const Spacer(),
                   IconButton(
                     onPressed: () => Navigator.of(context).pop(),
-                    icon: const Icon(Icons.close),
+                    icon: const Icon(Icons.close, color: AppColors.textMuted),
                     visualDensity: VisualDensity.compact,
                   ),
                 ],
               ),
-              const Divider(height: 24),
+              Divider(height: 24, color: AppColors.gold.withValues(alpha: 0.15)),
               _DetailRow(label: 'Empleado', value: employeeName),
               _DetailRow(label: 'Email', value: employeeEmail),
               _DetailRow(label: 'Tipo', value: incidence.type.label),
@@ -98,11 +96,11 @@ class IncidenceDetailDialog extends StatelessWidget {
   Color _stateColor(IncidenceState state) {
     switch (state) {
       case IncidenceState.programada:
-        return AppColors.primary;
+        return AppColors.gold;
       case IncidenceState.enCurso:
         return AppColors.success;
       case IncidenceState.finalizada:
-        return AppColors.textSecondary;
+        return AppColors.textMuted;
     }
   }
 }
@@ -123,13 +121,13 @@ class _DetailRow extends StatelessWidget {
         children: [
           SizedBox(
             width: 130,
-            child: Text(label, style: const TextStyle(color: AppColors.textSecondary, fontSize: 14)),
+            child: Text(label, style: const TextStyle(color: AppColors.textMuted, fontSize: 14)),
           ),
           Expanded(
             child: Text(
               value,
               style: TextStyle(
-                color: valueColor ?? AppColors.textPrimary,
+                color: valueColor ?? AppColors.textWhite,
                 fontSize: 14,
                 fontWeight: FontWeight.w500,
               ),

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/constants/app_colors.dart';
+import '../../../../core/theme/app_theme.dart';
 import '../../../authentication/data/models/user_model.dart';
 import '../../../employees/presentation/providers/users_provider.dart';
 import '../../data/models/incidence_model.dart';
@@ -90,7 +91,8 @@ class _IncidenceFormState extends ConsumerState<IncidenceForm> {
               margin: const EdgeInsets.only(bottom: 16),
               decoration: BoxDecoration(
                 color: AppColors.error.withValues(alpha: 0.1),
-                borderRadius: BorderRadius.circular(8),
+                borderRadius: BorderRadius.circular(AppTheme.radiusMd),
+                border: Border.all(color: AppColors.error.withValues(alpha: 0.3)),
               ),
               child: Text(
                 widget.errorMessage!,
@@ -103,11 +105,9 @@ class _IncidenceFormState extends ConsumerState<IncidenceForm> {
                   users.where((u) => u.rol == UserRole.employee && !u.isDeleted).toList();
               return DropdownButtonFormField<String>(
                 initialValue: _userId.isEmpty ? null : _userId,
-                decoration: const InputDecoration(
-                  labelText: 'Empleado',
-                  border: OutlineInputBorder(),
-                  isDense: true,
-                ),
+                decoration: AppTheme.inputDecoration(label: 'Empleado', icon: Icons.person),
+                dropdownColor: AppColors.cardDark,
+                style: const TextStyle(color: AppColors.textWhite),
                 items: employees
                     .map((e) => DropdownMenuItem<String>(
                           value: e.id,
@@ -118,23 +118,21 @@ class _IncidenceFormState extends ConsumerState<IncidenceForm> {
                 validator: (v) => (v == null || v.isEmpty) ? 'Seleccione un empleado' : null,
               );
             },
-            loading: () => const TextField(
-              decoration: InputDecoration(labelText: 'Empleado', border: OutlineInputBorder(), isDense: true),
+            loading: () => TextField(
+              decoration: AppTheme.inputDecoration(label: 'Empleado', icon: Icons.person),
               enabled: false,
             ),
-            error: (_, _) => const TextField(
-              decoration: InputDecoration(labelText: 'Empleado', border: OutlineInputBorder(), isDense: true),
+            error: (_, _) => TextField(
+              decoration: AppTheme.inputDecoration(label: 'Empleado', icon: Icons.person),
               enabled: false,
             ),
           ),
           const SizedBox(height: 16),
           DropdownButtonFormField<IncidenceType>(
             initialValue: _type,
-            decoration: const InputDecoration(
-              labelText: 'Tipo de incidencia',
-              border: OutlineInputBorder(),
-              isDense: true,
-            ),
+            decoration: AppTheme.inputDecoration(label: 'Tipo de incidencia', icon: Icons.category),
+            dropdownColor: AppColors.cardDark,
+            style: const TextStyle(color: AppColors.textWhite),
             items: IncidenceType.values
                 .map((t) => DropdownMenuItem<IncidenceType>(
                       value: t,
@@ -169,11 +167,8 @@ class _IncidenceFormState extends ConsumerState<IncidenceForm> {
           const SizedBox(height: 16),
           TextFormField(
             controller: _observacionesController,
-            decoration: const InputDecoration(
-              labelText: 'Observaciones',
-              border: OutlineInputBorder(),
-              isDense: true,
-            ),
+            decoration: AppTheme.inputDecoration(label: 'Observaciones', icon: Icons.notes),
+            style: const TextStyle(color: AppColors.textWhite),
             maxLines: 3,
             onChanged: (v) => _observaciones = v,
             validator: (v) => (v == null || v.trim().isEmpty) ? 'Ingrese las observaciones' : null,
@@ -181,32 +176,39 @@ class _IncidenceFormState extends ConsumerState<IncidenceForm> {
           const SizedBox(height: 16),
           TextFormField(
             controller: _documentoController,
-            decoration: const InputDecoration(
-              labelText: 'Documento relacionado (opcional)',
-              hintText: 'https://...',
-              border: OutlineInputBorder(),
-              isDense: true,
+            decoration: AppTheme.inputDecoration(
+              label: 'Documento relacionado (opcional)',
+              icon: Icons.link,
+              hint: 'https://...',
             ),
+            style: const TextStyle(color: AppColors.textWhite),
             onChanged: (_) {},
           ),
           const SizedBox(height: 24),
           SizedBox(
             width: double.infinity,
-            child: ElevatedButton(
-              onPressed: widget.isLoading ? null : _submit,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.primary,
-                foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(vertical: 14),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+            child: Container(
+              decoration: BoxDecoration(
+                gradient: AppTheme.goldGradient,
+                borderRadius: BorderRadius.circular(AppTheme.radiusLg),
               ),
-              child: widget.isLoading
-                  ? const SizedBox(
-                      width: 20,
-                      height: 20,
-                      child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
-                    )
-                  : Text(isEditing ? 'Guardar cambios' : 'Crear incidencia'),
+              child: ElevatedButton(
+                onPressed: widget.isLoading ? null : _submit,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.transparent,
+                  shadowColor: Colors.transparent,
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(vertical: 14),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppTheme.radiusLg)),
+                ),
+                child: widget.isLoading
+                    ? const SizedBox(
+                        width: 20,
+                        height: 20,
+                        child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                      )
+                    : Text(isEditing ? 'Guardar cambios' : 'Crear incidencia'),
+              ),
             ),
           ),
         ],
@@ -220,23 +222,37 @@ class _IncidenceFormState extends ConsumerState<IncidenceForm> {
     required void Function(DateTime) onChanged,
   }) {
     return TextField(
-      decoration: InputDecoration(
-        labelText: label,
-        border: const OutlineInputBorder(),
-        isDense: true,
+      decoration: AppTheme.inputDecoration(
+        label: label,
+        icon: Icons.calendar_today,
+      ).copyWith(
         suffixIcon: IconButton(
-          icon: const Icon(Icons.date_range, size: 18),
+          icon: const Icon(Icons.date_range, size: 18, color: AppColors.gold),
           onPressed: () async {
             final date = await showDatePicker(
               context: context,
               initialDate: value,
               firstDate: DateTime(2020),
               lastDate: DateTime(2030),
+              builder: (context, child) {
+                return Theme(
+                  data: Theme.of(context).copyWith(
+                    colorScheme: const ColorScheme.dark(
+                      primary: AppColors.gold,
+                      onPrimary: Colors.white,
+                      surface: AppColors.cardDark,
+                      onSurface: AppColors.textWhite,
+                    ),
+                  ),
+                  child: child!,
+                );
+              },
             );
             if (date != null) onChanged(date);
           },
         ),
       ),
+      style: const TextStyle(color: AppColors.textWhite),
       controller: TextEditingController(
         text: '${value.year}-${value.month.toString().padLeft(2, '0')}-${value.day.toString().padLeft(2, '0')}',
       ),
@@ -248,7 +264,7 @@ class _IncidenceFormState extends ConsumerState<IncidenceForm> {
     if (!_formKey.currentState!.validate()) return;
     if (_userId.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Seleccione un empleado')),
+        AppTheme.errorSnackBar('Seleccione un empleado'),
       );
       return;
     }

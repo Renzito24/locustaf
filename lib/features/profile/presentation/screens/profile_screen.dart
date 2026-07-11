@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../../core/constants/app_colors.dart';
+import '../../../../core/theme/app_theme.dart';
 import '../../../authentication/presentation/providers/auth_provider.dart';
 import '../../../authentication/data/models/user_model.dart';
 import '../../../workplaces/presentation/providers/workplace_notifier.dart';
@@ -24,16 +24,16 @@ class ProfileScreen extends ConsumerWidget {
       child: userAsync.when(
         data: (user) {
           if (user == null) {
-            return _buildEmptyState();
+            return AppTheme.emptyState(
+              icon: Icons.person_off_outlined,
+              title: 'No se pudo cargar el perfil',
+              subtitle: 'Iniciá sesión para ver tu perfil.',
+            );
           }
           return _buildProfile(context, user, workplacesAsync);
         },
-        loading: () => const Center(
-          child: CircularProgressIndicator(
-            valueColor: AlwaysStoppedAnimation<Color>(AppColors.primary),
-          ),
-        ),
-        error: (error, _) => _buildErrorState(error.toString()),
+        loading: () => AppTheme.loadingState(),
+        error: (error, _) => AppTheme.errorState('Error al cargar el perfil: ${error.toString()}'),
       ),
     );
   }
@@ -128,56 +128,5 @@ class ProfileScreen extends ConsumerWidget {
       'jul', 'ago', 'sep', 'oct', 'nov', 'dic',
     ];
     return '${date.day} ${months[date.month - 1]} ${date.year}';
-  }
-
-  Widget _buildEmptyState() {
-    return Center(
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(Icons.person_off_outlined, size: 64, color: Colors.grey.shade400),
-          const SizedBox(height: 16),
-          const Text(
-            'No se pudo cargar el perfil',
-            style: TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.w600,
-              color: AppColors.textPrimary,
-            ),
-          ),
-          const SizedBox(height: 4),
-          const Text(
-            'Iniciá sesión para ver tu perfil.',
-            style: TextStyle(color: AppColors.textSecondary),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildErrorState(String message) {
-    return Center(
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          const Icon(Icons.error_outline, size: 64, color: AppColors.error),
-          const SizedBox(height: 16),
-          const Text(
-            'Error al cargar el perfil',
-            style: TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.w600,
-              color: AppColors.textPrimary,
-            ),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            message,
-            textAlign: TextAlign.center,
-            style: const TextStyle(color: AppColors.textSecondary),
-          ),
-        ],
-      ),
-    );
   }
 }

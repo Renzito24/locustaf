@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/constants/app_colors.dart';
+import '../../../../core/theme/app_theme.dart';
 import '../../../attendance/data/models/attendance_model.dart';
 import '../../data/models/history_record_model.dart';
 import '../providers/history_provider.dart';
@@ -25,18 +26,11 @@ class HistoryScreen extends ConsumerWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
-            'Historial de Asistencias',
-            style: TextStyle(
-              fontSize: 24,
-              fontWeight: FontWeight.bold,
-              color: AppColors.textPrimary,
-            ),
-          ),
+          Text('Historial de Asistencias', style: AppTheme.headingLg),
           const SizedBox(height: 4),
-          const Text(
+          Text(
             'Consulta todas las jornadas registradas en el sistema.',
-            style: TextStyle(color: AppColors.textSecondary, fontSize: 14),
+            style: AppTheme.bodyLg,
           ),
           const SizedBox(height: 24),
           _buildIndicatorCards(total, active, completed),
@@ -65,7 +59,7 @@ class HistoryScreen extends ConsumerWidget {
               icon: Icons.list_alt,
               label: 'Total registros',
               value: total.toString(),
-              color: AppColors.primary,
+              color: AppColors.gold,
             ),
             _IndicatorCard(
               icon: Icons.play_circle,
@@ -77,7 +71,7 @@ class HistoryScreen extends ConsumerWidget {
               icon: Icons.check_circle,
               label: 'Jornadas finalizadas',
               value: completed.toString(),
-              color: AppColors.textSecondary,
+              color: AppColors.textMuted,
             ),
           ],
         );
@@ -93,27 +87,10 @@ class HistoryScreen extends ConsumerWidget {
     return attendancesAsync.when(
       data: (_) {
         if (records.isEmpty) {
-          return Center(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(Icons.history, size: 64, color: Colors.grey.shade400),
-                const SizedBox(height: 16),
-                const Text(
-                  'Sin registros de asistencia',
-                  style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                    color: AppColors.textPrimary,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                const Text(
-                  'No hay asistencias para los filtros seleccionados.',
-                  style: TextStyle(color: AppColors.textSecondary),
-                ),
-              ],
-            ),
+          return AppTheme.emptyState(
+            icon: Icons.history,
+            title: 'Sin registros de asistencia',
+            subtitle: 'No hay asistencias para los filtros seleccionados.',
           );
         }
 
@@ -136,83 +113,104 @@ class HistoryScreen extends ConsumerWidget {
 
             return SingleChildScrollView(
               scrollDirection: Axis.horizontal,
-              child: DataTable(
-                columnSpacing: 20,
-                headingRowColor: WidgetStateProperty.all(AppColors.primary.withValues(alpha: 0.05)),
-                columns: const [
-                  DataColumn(label: Text('Empleado', style: TextStyle(fontWeight: FontWeight.bold))),
-                  DataColumn(label: Text('Lugar de trabajo', style: TextStyle(fontWeight: FontWeight.bold))),
-                  DataColumn(label: Text('Fecha', style: TextStyle(fontWeight: FontWeight.bold))),
-                  DataColumn(label: Text('Ingreso', style: TextStyle(fontWeight: FontWeight.bold))),
-                  DataColumn(label: Text('Egreso', style: TextStyle(fontWeight: FontWeight.bold))),
-                  DataColumn(label: Text('Duración', style: TextStyle(fontWeight: FontWeight.bold))),
-                  DataColumn(label: Text('Estado', style: TextStyle(fontWeight: FontWeight.bold))),
-                ],
-                rows: records.map((r) {
-                  return DataRow(
-                    onSelectChanged: (_) => HistoryDetailDialog.show(context, r),
-                    cells: [
-                      DataCell(Text(r.employeeName)),
-                      DataCell(Text(r.workplaceName ?? '-')),
-                      DataCell(Text(r.date)),
-                      DataCell(Text(r.checkInFormatted)),
-                      DataCell(Text(r.checkOutFormatted)),
-                      DataCell(Text(r.durationFormatted)),
-                      DataCell(_buildStatusChip(r)),
-                    ],
-                  );
-                }).toList(),
+              child: Container(
+                decoration: AppTheme.cardDecoration(),
+                padding: const EdgeInsets.all(2),
+                child: DataTable(
+                  columnSpacing: 20,
+                  headingRowColor: WidgetStateProperty.all(
+                    AppColors.gold.withValues(alpha: 0.08),
+                  ),
+                  columns: const [
+                    DataColumn(
+                      label: Text('Empleado',
+                          style: TextStyle(
+                              fontWeight: FontWeight.bold,
+                              color: AppColors.gold)),
+                    ),
+                    DataColumn(
+                      label: Text('Lugar de trabajo',
+                          style: TextStyle(
+                              fontWeight: FontWeight.bold,
+                              color: AppColors.gold)),
+                    ),
+                    DataColumn(
+                      label: Text('Fecha',
+                          style: TextStyle(
+                              fontWeight: FontWeight.bold,
+                              color: AppColors.gold)),
+                    ),
+                    DataColumn(
+                      label: Text('Ingreso',
+                          style: TextStyle(
+                              fontWeight: FontWeight.bold,
+                              color: AppColors.gold)),
+                    ),
+                    DataColumn(
+                      label: Text('Egreso',
+                          style: TextStyle(
+                              fontWeight: FontWeight.bold,
+                              color: AppColors.gold)),
+                    ),
+                    DataColumn(
+                      label: Text('Duración',
+                          style: TextStyle(
+                              fontWeight: FontWeight.bold,
+                              color: AppColors.gold)),
+                    ),
+                    DataColumn(
+                      label: Text('Estado',
+                          style: TextStyle(
+                              fontWeight: FontWeight.bold,
+                              color: AppColors.gold)),
+                    ),
+                  ],
+                  rows: records.map((r) {
+                    return DataRow(
+                      onSelectChanged: (_) =>
+                          HistoryDetailDialog.show(context, r),
+                      cells: [
+                        DataCell(Text(r.employeeName,
+                            style: const TextStyle(
+                                color: AppColors.textWhite))),
+                        DataCell(Text(r.workplaceName ?? '-',
+                            style: const TextStyle(
+                                color: AppColors.textWhite))),
+                        DataCell(Text(r.date,
+                            style: const TextStyle(
+                                color: AppColors.textWhite))),
+                        DataCell(Text(r.checkInFormatted,
+                            style: const TextStyle(
+                                color: AppColors.textWhite))),
+                        DataCell(Text(r.checkOutFormatted,
+                            style: const TextStyle(
+                                color: AppColors.textWhite))),
+                        DataCell(Text(r.durationFormatted,
+                            style: const TextStyle(
+                                color: AppColors.textWhite))),
+                        DataCell(_buildStatusChip(r)),
+                      ],
+                    );
+                  }).toList(),
+                ),
               ),
             );
           },
         );
       },
-      loading: () => const Center(
-        child: CircularProgressIndicator(
-          valueColor: AlwaysStoppedAnimation<Color>(AppColors.primary),
-        ),
-      ),
-      error: (e, _) => Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(Icons.error_outline, size: 64, color: Colors.grey.shade400),
-            const SizedBox(height: 16),
-            const Text(
-              'Error al cargar el historial',
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-                color: AppColors.textPrimary,
-              ),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              e.toString(),
-              style: const TextStyle(color: AppColors.textSecondary),
-            ),
-          ],
-        ),
-      ),
+      loading: () => AppTheme.loadingState(message: 'Cargando historial...'),
+      error: (e, _) => AppTheme.errorState('Error al cargar el historial: $e'),
     );
   }
 
   Widget _buildStatusChip(HistoryRecordModel r) {
     final isActive = r.status == AttendanceStatus.active;
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-      decoration: BoxDecoration(
-        color: isActive ? AppColors.success.withValues(alpha: 0.1) : Colors.grey.withValues(alpha: 0.1),
-        borderRadius: BorderRadius.circular(10),
-      ),
-      child: Text(
-        isActive ? 'Activo' : 'Completado',
-        style: TextStyle(
-          fontSize: 12,
-          fontWeight: FontWeight.w600,
-          color: isActive ? AppColors.success : AppColors.textSecondary,
-        ),
-      ),
+    return AppTheme.badge(
+      label: isActive ? 'Activo' : 'Completado',
+      bgColor: isActive
+          ? AppColors.success.withValues(alpha: 0.15)
+          : AppColors.cardDark,
+      textColor: isActive ? AppColors.success : AppColors.textMuted,
     );
   }
 }
@@ -232,49 +230,40 @@ class _IndicatorCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Card(
-      elevation: 0,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
-        side: BorderSide(color: Colors.grey.shade200),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Row(
-          children: [
-            Container(
-              width: 40,
-              height: 40,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: color.withValues(alpha: 0.1),
+    return Container(
+      decoration: AppTheme.cardDecoration(),
+      padding: const EdgeInsets.all(16),
+      child: Row(
+        children: [
+          Container(
+            width: 40,
+            height: 40,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: color.withValues(alpha: 0.12),
+            ),
+            child: Icon(icon, color: color, size: 20),
+          ),
+          const SizedBox(width: 12),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Text(
+                value,
+                style: TextStyle(
+                  fontSize: 24,
+                  fontWeight: FontWeight.bold,
+                  color: color,
+                ),
               ),
-              child: Icon(icon, color: color, size: 20),
-            ),
-            const SizedBox(width: 12),
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Text(
-                  value,
-                  style: TextStyle(
-                    fontSize: 24,
-                    fontWeight: FontWeight.bold,
-                    color: color,
-                  ),
-                ),
-                Text(
-                  label,
-                  style: const TextStyle(
-                    fontSize: 13,
-                    color: AppColors.textSecondary,
-                  ),
-                ),
-              ],
-            ),
-          ],
-        ),
+              Text(
+                label,
+                style: AppTheme.bodyMd,
+              ),
+            ],
+          ),
+        ],
       ),
     );
   }

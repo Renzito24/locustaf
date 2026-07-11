@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/constants/app_colors.dart';
+import '../../../../core/theme/app_theme.dart';
 import '../../../workplaces/data/models/workplace_model.dart';
 import '../../../workplaces/presentation/providers/workplace_notifier.dart';
 import '../providers/reports_provider.dart';
@@ -32,56 +33,19 @@ class ReportsScreen extends ConsumerWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
-            'Reportes',
-            style: TextStyle(
-              fontSize: 24,
-              fontWeight: FontWeight.bold,
-              color: AppColors.textPrimary,
-            ),
-          ),
+          Text('Reportes', style: AppTheme.headingLg),
           const SizedBox(height: 4),
-          const Text(
+          Text(
             'Métricas generales del sistema.',
-            style: TextStyle(
-              color: AppColors.textSecondary,
-              fontSize: 14,
-            ),
+            style: AppTheme.bodyLg,
           ),
           const SizedBox(height: 24),
           if (hasError)
             Expanded(
-              child: Center(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(Icons.error_outline, size: 64, color: Colors.grey.shade400),
-                    const SizedBox(height: 16),
-                    const Text(
-                      'Error al cargar datos',
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                        color: AppColors.textPrimary,
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    const Text(
-                      'No se pudieron obtener los datos del sistema.',
-                      style: TextStyle(color: AppColors.textSecondary),
-                    ),
-                  ],
-                ),
-              ),
+              child: AppTheme.errorState('No se pudieron obtener los datos del sistema.'),
             )
           else if (isLoading)
-            const Expanded(
-              child: Center(
-                child: CircularProgressIndicator(
-                  valueColor: AlwaysStoppedAnimation<Color>(AppColors.primary),
-                ),
-              ),
-            )
+            Expanded(child: AppTheme.loadingState())
           else
             Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -90,14 +54,7 @@ class ReportsScreen extends ConsumerWidget {
                 const SizedBox(height: 24),
                 _buildFilters(context, ref, filter, workplacesListAsync),
                 const SizedBox(height: 16),
-                const Text(
-                  'Reporte de asistencia',
-                  style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.w600,
-                    color: AppColors.textPrimary,
-                  ),
-                ),
+                Text('Reporte de asistencia', style: AppTheme.headingMd),
                 const SizedBox(height: 12),
                 Expanded(child: _buildReportTable(reportRows)),
               ],
@@ -123,7 +80,7 @@ class ReportsScreen extends ConsumerWidget {
               icon: Icons.people,
               label: 'Empleados activos',
               value: total.toString(),
-              color: AppColors.primary,
+              color: AppColors.gold,
             ),
             _MetricCard(
               icon: Icons.check_circle,
@@ -155,101 +112,76 @@ class ReportsScreen extends ConsumerWidget {
     AttendanceReportFilter filter,
     AsyncValue<List<WorkplaceModel>> workplacesAsync,
   ) {
-    return Card(
-      elevation: 0,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
-        side: BorderSide(color: Colors.grey.shade200),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Row(
-          children: [
-            SizedBox(
-              width: 180,
-              child: TextField(
-                decoration: const InputDecoration(
-                  labelText: 'Fecha',
-                  hintText: 'YYYY-MM-DD',
-                  border: OutlineInputBorder(),
-                  isDense: true,
-                ),
-                controller: TextEditingController(text: filter.date ?? ''),
+    return Container(
+      decoration: AppTheme.cardDecoration(),
+      padding: const EdgeInsets.all(16),
+      child: Row(
+        children: [
+          SizedBox(
+            width: 180,
+            child: TextField(
+              decoration: AppTheme.inputDecoration(
+                label: 'Fecha',
+                icon: Icons.calendar_today,
+                hint: 'YYYY-MM-DD',
+              ),
+              style: const TextStyle(color: AppColors.textWhite),
+              controller: TextEditingController(text: filter.date ?? ''),
+              onChanged: (value) {
+                ref.read(attendanceReportFilterProvider.notifier).setDate(
+                  value.trim().isEmpty ? null : value.trim(),
+                );
+              },
+            ),
+          ),
+          const SizedBox(width: 16),
+          SizedBox(
+            width: 200,
+            child: workplacesAsync.when(
+              data: (workplaces) => DropdownButtonFormField<String?>(
+                initialValue: filter.workplaceId,
+                decoration: AppTheme.inputDecoration(label: 'Lugar de trabajo', icon: Icons.business),
+                dropdownColor: AppColors.cardDark,
+                style: const TextStyle(color: AppColors.textWhite),
+                items: [
+                  const DropdownMenuItem<String?>(
+                    value: null,
+                    child: Text('Todos'),
+                  ),
+                  ...workplaces.map(
+                    (w) => DropdownMenuItem<String?>(
+                      value: w.id,
+                      child: Text(w.nombre, overflow: TextOverflow.ellipsis),
+                    ),
+                  ),
+                ],
                 onChanged: (value) {
-                  ref.read(attendanceReportFilterProvider.notifier).setDate(
-                    value.trim().isEmpty ? null : value.trim(),
-                  );
+                  ref.read(attendanceReportFilterProvider.notifier).setWorkplaceId(value);
                 },
               ),
+              loading: () => const SizedBox.shrink(),
+              error: (_, _) => const SizedBox.shrink(),
             ),
-            const SizedBox(width: 16),
-            SizedBox(
-              width: 200,
-              child: workplacesAsync.when(
-                data: (workplaces) => DropdownButtonFormField<String?>(
-                  initialValue: filter.workplaceId,
-                  decoration: const InputDecoration(
-                    labelText: 'Lugar de trabajo',
-                    border: OutlineInputBorder(),
-                    isDense: true,
-                  ),
-                  items: [
-                    const DropdownMenuItem<String?>(
-                      value: null,
-                      child: Text('Todos'),
-                    ),
-                    ...workplaces.map(
-                      (w) => DropdownMenuItem<String?>(
-                        value: w.id,
-                        child: Text(w.nombre, overflow: TextOverflow.ellipsis),
-                      ),
-                    ),
-                  ],
-                  onChanged: (value) {
-                    ref.read(attendanceReportFilterProvider.notifier).setWorkplaceId(value);
-                  },
-                ),
-                loading: () => const SizedBox.shrink(),
-                error: (_, _) => const SizedBox.shrink(),
-              ),
-            ),
-            const SizedBox(width: 16),
-            TextButton.icon(
-              onPressed: () {
-                ref.read(attendanceReportFilterProvider.notifier).clear();
-              },
-              icon: const Icon(Icons.clear),
-              label: const Text('Limpiar'),
-            ),
-          ],
-        ),
+          ),
+          const SizedBox(width: 16),
+          TextButton.icon(
+            onPressed: () {
+              ref.read(attendanceReportFilterProvider.notifier).clear();
+            },
+            icon: const Icon(Icons.clear, color: AppColors.textMuted),
+            label: const Text('Limpiar', style: TextStyle(color: AppColors.textMuted)),
+          ),
+        ],
       ),
     );
   }
 
   Widget _buildReportTable(List<AttendanceReportRow> rows) {
     if (rows.isEmpty) {
-      return Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(Icons.table_chart_outlined, size: 64, color: Colors.grey.shade400),
-            const SizedBox(height: 16),
-            const Text(
-              'Sin registros de asistencia',
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-                color: AppColors.textPrimary,
-              ),
-            ),
-            const SizedBox(height: 8),
-            const Text(
-              'No hay asistencias completadas para los filtros seleccionados.',
-              style: TextStyle(color: AppColors.textSecondary),
-            ),
-          ],
-        ),
+      return AppTheme.emptyState(
+        icon: Icons.table_chart_outlined,
+        title: 'Sin registros de asistencia',
+        subtitle: 'No hay asistencias completadas para los filtros seleccionados.',
       );
     }
 
@@ -257,21 +189,21 @@ class ReportsScreen extends ConsumerWidget {
       scrollDirection: Axis.horizontal,
       child: DataTable(
         columnSpacing: 24,
-        headingRowColor: WidgetStateProperty.all(AppColors.primary.withValues(alpha: 0.05)),
+        headingRowColor: WidgetStateProperty.all(AppColors.gold.withValues(alpha: 0.1)),
         columns: const [
-          DataColumn(label: Text('Empleado', style: TextStyle(fontWeight: FontWeight.bold))),
-          DataColumn(label: Text('Lugar de trabajo', style: TextStyle(fontWeight: FontWeight.bold))),
-          DataColumn(label: Text('Entrada', style: TextStyle(fontWeight: FontWeight.bold))),
-          DataColumn(label: Text('Salida', style: TextStyle(fontWeight: FontWeight.bold))),
-          DataColumn(label: Text('Duración', style: TextStyle(fontWeight: FontWeight.bold))),
+          DataColumn(label: Text('Empleado', style: TextStyle(fontWeight: FontWeight.bold, color: AppColors.gold))),
+          DataColumn(label: Text('Lugar de trabajo', style: TextStyle(fontWeight: FontWeight.bold, color: AppColors.gold))),
+          DataColumn(label: Text('Entrada', style: TextStyle(fontWeight: FontWeight.bold, color: AppColors.gold))),
+          DataColumn(label: Text('Salida', style: TextStyle(fontWeight: FontWeight.bold, color: AppColors.gold))),
+          DataColumn(label: Text('Duración', style: TextStyle(fontWeight: FontWeight.bold, color: AppColors.gold))),
         ],
         rows: rows.map((row) {
           return DataRow(cells: [
-            DataCell(Text(row.employeeName)),
-            DataCell(Text(row.workplaceName ?? '-')),
-            DataCell(Text(_formatTime(row.checkInTime))),
-            DataCell(Text(row.checkOutTime != null ? _formatTime(row.checkOutTime!) : '-')),
-            DataCell(Text(row.durationMinutes != null ? '${row.durationMinutes} min' : '-')),
+            DataCell(Text(row.employeeName, style: const TextStyle(color: AppColors.textWhite))),
+            DataCell(Text(row.workplaceName ?? '-', style: const TextStyle(color: AppColors.textMuted))),
+            DataCell(Text(_formatTime(row.checkInTime), style: const TextStyle(color: AppColors.textMuted))),
+            DataCell(Text(row.checkOutTime != null ? _formatTime(row.checkOutTime!) : '-', style: const TextStyle(color: AppColors.textMuted))),
+            DataCell(Text(row.durationMinutes != null ? '${row.durationMinutes} min' : '-', style: const TextStyle(color: AppColors.textMuted))),
           ]);
         }).toList(),
       ),
@@ -298,50 +230,44 @@ class _MetricCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Card(
-      elevation: 0,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
-        side: BorderSide(color: Colors.grey.shade200),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Row(
-              children: [
-                Container(
-                  width: 40,
-                  height: 40,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: color.withValues(alpha: 0.1),
-                  ),
-                  child: Icon(icon, color: color, size: 20),
+    return Container(
+      decoration: AppTheme.cardDecoration(),
+      padding: const EdgeInsets.all(20),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Row(
+            children: [
+              Container(
+                width: 40,
+                height: 40,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: color.withValues(alpha: 0.15),
                 ),
-              ],
-            ),
-            const SizedBox(height: 12),
-            Text(
-              value,
-              style: TextStyle(
-                fontSize: 28,
-                fontWeight: FontWeight.bold,
-                color: color,
+                child: Icon(icon, color: color, size: 20),
               ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Text(
+            value,
+            style: TextStyle(
+              fontSize: 28,
+              fontWeight: FontWeight.bold,
+              color: color,
             ),
-            const SizedBox(height: 4),
-            Text(
-              label,
-              style: const TextStyle(
-                color: AppColors.textSecondary,
-                fontSize: 13,
-              ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            label,
+            style: const TextStyle(
+              color: AppColors.textMuted,
+              fontSize: 13,
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }

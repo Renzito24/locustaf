@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../../core/constants/app_colors.dart';
+import '../../../../core/theme/app_theme.dart';
 import '../../data/models/incidence_model.dart';
 
 class IncidenceCard extends StatelessWidget {
@@ -19,14 +20,10 @@ class IncidenceCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Card(
-      elevation: 0,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
-        side: BorderSide(color: Colors.grey.shade200),
-      ),
+    return Container(
+      decoration: AppTheme.cardDecoration(),
       child: InkWell(
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(AppTheme.radiusXl),
         onTap: onTap,
         child: Padding(
           padding: const EdgeInsets.all(16),
@@ -41,7 +38,7 @@ class IncidenceCard extends StatelessWidget {
                       style: const TextStyle(
                         fontWeight: FontWeight.w600,
                         fontSize: 15,
-                        color: AppColors.textPrimary,
+                        color: AppColors.textWhite,
                       ),
                     ),
                   ),
@@ -62,7 +59,7 @@ class IncidenceCard extends StatelessWidget {
                 const SizedBox(height: 6),
                 Text(
                   incidence.observaciones,
-                  style: const TextStyle(fontSize: 13, color: AppColors.textSecondary),
+                  style: const TextStyle(fontSize: 13, color: AppColors.textMuted),
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
                 ),
@@ -96,27 +93,14 @@ class _StateBadge extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    Color bgColor;
-    Color textColor;
     switch (state) {
       case IncidenceState.programada:
-        bgColor = AppColors.primary.withValues(alpha: 0.1);
-        textColor = AppColors.primary;
+        return AppTheme.badge(label: state.label, bgColor: AppColors.gold.withValues(alpha: 0.15), textColor: AppColors.gold);
       case IncidenceState.enCurso:
-        bgColor = AppColors.success.withValues(alpha: 0.1);
-        textColor = AppColors.success;
+        return AppTheme.badge(label: state.label, bgColor: AppColors.success.withValues(alpha: 0.15), textColor: AppColors.success);
       case IncidenceState.finalizada:
-        bgColor = AppColors.textSecondary.withValues(alpha: 0.1);
-        textColor = AppColors.textSecondary;
+        return AppTheme.badge(label: state.label, bgColor: AppColors.textMuted.withValues(alpha: 0.15), textColor: AppColors.textMuted);
     }
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-      decoration: BoxDecoration(color: bgColor, borderRadius: BorderRadius.circular(12)),
-      child: Text(
-        state.label,
-        style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: textColor),
-      ),
-    );
   }
 }
 
@@ -131,9 +115,9 @@ class _InfoChip extends StatelessWidget {
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
-        Icon(icon, size: 14, color: AppColors.textSecondary),
+        Icon(icon, size: 14, color: AppColors.textMuted),
         const SizedBox(width: 4),
-        Text(text, style: const TextStyle(fontSize: 13, color: AppColors.textSecondary)),
+        Text(text, style: const TextStyle(fontSize: 13, color: AppColors.textMuted)),
       ],
     );
   }

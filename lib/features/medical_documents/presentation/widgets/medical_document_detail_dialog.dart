@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import '../../../../core/constants/app_colors.dart';
+import '../../../../core/theme/app_theme.dart';
 import '../../data/models/medical_document_model.dart';
 
 class MedicalDocumentDetailDialog extends StatelessWidget {
@@ -38,7 +39,11 @@ class MedicalDocumentDetailDialog extends StatelessWidget {
     final expiry = _formatDate(document.fechaFin);
 
     return Dialog(
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      backgroundColor: AppColors.cardDark,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(AppTheme.radiusXl),
+        side: BorderSide(color: AppColors.gold.withValues(alpha: 0.3)),
+      ),
       child: ConstrainedBox(
         constraints: const BoxConstraints(maxWidth: 500),
         child: Padding(
@@ -54,28 +59,21 @@ class MedicalDocumentDetailDialog extends StatelessWidget {
                     height: 40,
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
-                      color: AppColors.primary.withValues(alpha: 0.1),
+                      color: AppColors.gold.withValues(alpha: 0.15),
                     ),
-                    child: const Icon(Icons.description, color: AppColors.primary, size: 20),
+                    child: const Icon(Icons.description, color: AppColors.gold, size: 20),
                   ),
                   const SizedBox(width: 12),
-                  const Text(
-                    'Detalle del documento',
-                    style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                      color: AppColors.textPrimary,
-                    ),
-                  ),
+                  Text('Detalle del documento', style: AppTheme.headingMd),
                   const Spacer(),
                   IconButton(
                     onPressed: () => Navigator.of(context).pop(),
-                    icon: const Icon(Icons.close),
+                    icon: const Icon(Icons.close, color: AppColors.textMuted),
                     visualDensity: VisualDensity.compact,
                   ),
                 ],
               ),
-              const Divider(height: 24),
+              Divider(height: 24, color: AppColors.gold.withValues(alpha: 0.15)),
               _DetailRow(label: 'Empleado', value: employeeName),
               _DetailRow(label: 'Email', value: employeeEmail),
               _DetailRow(label: 'Tipo', value: document.tipo.label),
@@ -139,7 +137,7 @@ class _FileRow extends StatelessWidget {
             width: 130,
             child: Text(
               'Archivo',
-              style: TextStyle(color: AppColors.textSecondary, fontSize: 14),
+              style: TextStyle(color: AppColors.textMuted, fontSize: 14),
             ),
           ),
           Expanded(
@@ -147,13 +145,13 @@ class _FileRow extends StatelessWidget {
               onTap: () => Clipboard.setData(ClipboardData(text: url)),
               child: Row(
                 children: [
-                  const Icon(Icons.attach_file, size: 16, color: AppColors.primary),
+                  const Icon(Icons.attach_file, size: 16, color: AppColors.gold),
                   const SizedBox(width: 4),
                   Flexible(
                     child: Text(
                       fileName,
                       style: const TextStyle(
-                        color: AppColors.primary,
+                        color: AppColors.gold,
                         fontSize: 14,
                         fontWeight: FontWeight.w500,
                         decoration: TextDecoration.underline,
@@ -162,7 +160,7 @@ class _FileRow extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(width: 4),
-                  const Icon(Icons.copy, size: 14, color: AppColors.textSecondary),
+                  const Icon(Icons.copy, size: 14, color: AppColors.textMuted),
                 ],
               ),
             ),
@@ -195,17 +193,14 @@ class _DetailRow extends StatelessWidget {
             width: 130,
             child: Text(
               label,
-              style: const TextStyle(
-                color: AppColors.textSecondary,
-                fontSize: 14,
-              ),
+              style: const TextStyle(color: AppColors.textMuted, fontSize: 14),
             ),
           ),
           Expanded(
             child: Text(
               value,
               style: TextStyle(
-                color: valueColor ?? AppColors.textPrimary,
+                color: valueColor ?? AppColors.textWhite,
                 fontSize: 14,
                 fontWeight: FontWeight.w500,
               ),

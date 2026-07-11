@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/router/app_routes.dart';
+import '../../../../core/theme/app_theme.dart';
 import '../../../authentication/data/models/user_model.dart';
 import '../../../authentication/presentation/providers/auth_provider.dart';
 import '../../../employees/presentation/providers/users_provider.dart';
@@ -31,19 +32,12 @@ class IncidencesScreen extends ConsumerWidget {
         data: (_) {
           ref.read(incidenceDeleteProvider.notifier).reset();
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Incidencia eliminada correctamente'),
-              backgroundColor: AppColors.success,
-            ),
+            AppTheme.successSnackBar('Incidencia eliminada correctamente'),
           );
         },
         error: (error, _) {
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('Error al eliminar: $error'),
-              backgroundColor: AppColors.error,
-              duration: const Duration(seconds: 5),
-            ),
+            AppTheme.errorSnackBar('Error al eliminar: $error'),
           );
         },
       );
@@ -54,18 +48,11 @@ class IncidencesScreen extends ConsumerWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
-            'Incidencias',
-            style: TextStyle(
-              fontSize: 24,
-              fontWeight: FontWeight.bold,
-              color: AppColors.textPrimary,
-            ),
-          ),
+          Text('Incidencias', style: AppTheme.headingLg),
           const SizedBox(height: 4),
-          const Text(
+          Text(
             'Gestioná las situaciones excepcionales que afectan la asistencia.',
-            style: TextStyle(color: AppColors.textSecondary, fontSize: 14),
+            style: AppTheme.bodyLg,
           ),
           const SizedBox(height: 24),
           _buildIndicatorCards(total, programadas, enCurso, finalizadas),
@@ -80,8 +67,9 @@ class IncidencesScreen extends ConsumerWidget {
                 icon: const Icon(Icons.add, size: 18),
                 label: const Text('Nueva incidencia'),
                 style: FilledButton.styleFrom(
-                  backgroundColor: AppColors.primary,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                  backgroundColor: AppColors.gold,
+                  foregroundColor: Colors.white,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppTheme.radiusSm)),
                 ),
               ),
             ),
@@ -106,10 +94,10 @@ class IncidencesScreen extends ConsumerWidget {
           crossAxisSpacing: 16,
           childAspectRatio: 2.2,
           children: [
-            _IndicatorCard(icon: Icons.list_alt, label: 'Total incidencias', value: total.toString(), color: AppColors.primary),
-            _IndicatorCard(icon: Icons.schedule, label: 'Programadas', value: programadas.toString(), color: AppColors.primary),
+            _IndicatorCard(icon: Icons.list_alt, label: 'Total incidencias', value: total.toString(), color: AppColors.gold),
+            _IndicatorCard(icon: Icons.schedule, label: 'Programadas', value: programadas.toString(), color: AppColors.gold),
             _IndicatorCard(icon: Icons.play_circle, label: 'En curso', value: enCurso.toString(), color: AppColors.success),
-            _IndicatorCard(icon: Icons.check_circle, label: 'Finalizadas', value: finalizadas.toString(), color: AppColors.textSecondary),
+            _IndicatorCard(icon: Icons.check_circle, label: 'Finalizadas', value: finalizadas.toString(), color: AppColors.textMuted),
           ],
         );
       },
@@ -128,17 +116,10 @@ class IncidencesScreen extends ConsumerWidget {
         final userMap = {for (final u in users) u.id: u};
 
         if (incidences.isEmpty) {
-          return Center(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(Icons.warning_amber_outlined, size: 64, color: Colors.grey.shade400),
-                const SizedBox(height: 16),
-                const Text('Sin incidencias', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: AppColors.textPrimary)),
-                const SizedBox(height: 8),
-                const Text('No hay incidencias para los filtros seleccionados.', style: TextStyle(color: AppColors.textSecondary)),
-              ],
-            ),
+          return AppTheme.emptyState(
+            icon: Icons.warning_amber_outlined,
+            title: 'Sin incidencias',
+            subtitle: 'No hay incidencias para los filtros seleccionados.',
           );
         }
 
@@ -171,14 +152,14 @@ class IncidencesScreen extends ConsumerWidget {
               scrollDirection: Axis.horizontal,
               child: DataTable(
                 columnSpacing: 20,
-                headingRowColor: WidgetStateProperty.all(AppColors.primary.withValues(alpha: 0.05)),
+                headingRowColor: WidgetStateProperty.all(AppColors.gold.withValues(alpha: 0.1)),
                 columns: [
-                  const DataColumn(label: Text('Empleado', style: TextStyle(fontWeight: FontWeight.bold))),
-                  const DataColumn(label: Text('Tipo', style: TextStyle(fontWeight: FontWeight.bold))),
-                  const DataColumn(label: Text('Inicio', style: TextStyle(fontWeight: FontWeight.bold))),
-                  const DataColumn(label: Text('Fin', style: TextStyle(fontWeight: FontWeight.bold))),
-                  const DataColumn(label: Text('Estado', style: TextStyle(fontWeight: FontWeight.bold))),
-                  if (isAdmin) const DataColumn(label: Text('Acciones', style: TextStyle(fontWeight: FontWeight.bold))),
+                  const DataColumn(label: Text('Empleado', style: TextStyle(fontWeight: FontWeight.bold, color: AppColors.gold))),
+                  const DataColumn(label: Text('Tipo', style: TextStyle(fontWeight: FontWeight.bold, color: AppColors.gold))),
+                  const DataColumn(label: Text('Inicio', style: TextStyle(fontWeight: FontWeight.bold, color: AppColors.gold))),
+                  const DataColumn(label: Text('Fin', style: TextStyle(fontWeight: FontWeight.bold, color: AppColors.gold))),
+                  const DataColumn(label: Text('Estado', style: TextStyle(fontWeight: FontWeight.bold, color: AppColors.gold))),
+                  if (isAdmin) const DataColumn(label: Text('Acciones', style: TextStyle(fontWeight: FontWeight.bold, color: AppColors.gold))),
                 ],
                 rows: incidences.map((inc) {
                   final user = userMap[inc.userId];
@@ -191,16 +172,16 @@ class IncidencesScreen extends ConsumerWidget {
                       employeeEmail: user?.email ?? '',
                     ),
                     cells: [
-                      DataCell(Text(name)),
-                      DataCell(Text(inc.type.label)),
-                      DataCell(Text(_formatDate(inc.fechaInicio))),
-                      DataCell(Text(_formatDate(inc.fechaFin))),
+                      DataCell(Text(name, style: const TextStyle(color: AppColors.textWhite))),
+                      DataCell(Text(inc.type.label, style: const TextStyle(color: AppColors.textMuted))),
+                      DataCell(Text(_formatDate(inc.fechaInicio), style: const TextStyle(color: AppColors.textMuted))),
+                      DataCell(Text(_formatDate(inc.fechaFin), style: const TextStyle(color: AppColors.textMuted))),
                       DataCell(_buildEstadoChip(inc.state)),
                       if (isAdmin)
                         DataCell(Row(
                           children: [
                             IconButton(
-                              icon: const Icon(Icons.edit, size: 18),
+                              icon: const Icon(Icons.edit, size: 18, color: AppColors.gold),
                               onPressed: () => context.push(RoutePaths.editIncidence, extra: inc),
                               tooltip: 'Editar',
                               visualDensity: VisualDensity.compact,
@@ -221,33 +202,8 @@ class IncidencesScreen extends ConsumerWidget {
           },
         );
       },
-      loading: () => const Center(
-        child: CircularProgressIndicator(
-          valueColor: AlwaysStoppedAnimation<Color>(AppColors.primary),
-        ),
-      ),
-      error: (_, _) => Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(Icons.error_outline, size: 64, color: Colors.grey.shade400),
-            const SizedBox(height: 16),
-            const Text(
-              'Error al cargar empleados',
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-                color: AppColors.textPrimary,
-              ),
-            ),
-            const SizedBox(height: 8),
-            const Text(
-              'No se pudieron obtener los datos de los empleados.',
-              style: TextStyle(color: AppColors.textSecondary),
-            ),
-          ],
-        ),
-      ),
+      loading: () => AppTheme.loadingState(),
+      error: (_, _) => AppTheme.errorState('No se pudieron obtener los datos de los empleados.'),
     );
   }
 
@@ -256,40 +212,44 @@ class IncidencesScreen extends ConsumerWidget {
   }
 
   Widget _buildEstadoChip(IncidenceState state) {
-    Color bgColor;
-    Color textColor;
     switch (state) {
       case IncidenceState.programada:
-        bgColor = AppColors.primary.withValues(alpha: 0.1);
-        textColor = AppColors.primary;
+        return AppTheme.badge(label: state.label, bgColor: AppColors.gold.withValues(alpha: 0.15), textColor: AppColors.gold);
       case IncidenceState.enCurso:
-        bgColor = AppColors.success.withValues(alpha: 0.1);
-        textColor = AppColors.success;
+        return AppTheme.badge(label: state.label, bgColor: AppColors.success.withValues(alpha: 0.15), textColor: AppColors.success);
       case IncidenceState.finalizada:
-        bgColor = AppColors.textSecondary.withValues(alpha: 0.1);
-        textColor = AppColors.textSecondary;
+        return AppTheme.badge(label: state.label, bgColor: AppColors.textMuted.withValues(alpha: 0.15), textColor: AppColors.textMuted);
     }
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-      decoration: BoxDecoration(color: bgColor, borderRadius: BorderRadius.circular(10)),
-      child: Text(state.label, style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: textColor)),
-    );
   }
 
   void _confirmDelete(BuildContext context, WidgetRef ref, IncidenceModel inc) {
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Eliminar incidencia'),
-        content: Text('¿Eliminar la incidencia de tipo "${inc.type.label}"?'),
+        backgroundColor: AppColors.cardDark,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(AppTheme.radiusLg),
+          side: BorderSide(color: AppColors.gold.withValues(alpha: 0.3)),
+        ),
+        title: Text('Eliminar incidencia', style: AppTheme.headingMd),
+        content: Text(
+          '¿Eliminar la incidencia de tipo "${inc.type.label}"?',
+          style: AppTheme.bodyLg,
+        ),
         actions: [
-          TextButton(onPressed: () => Navigator.of(ctx).pop(), child: const Text('Cancelar')),
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(),
+            child: const Text('Cancelar', style: TextStyle(color: AppColors.textMuted)),
+          ),
           FilledButton(
             onPressed: () {
               Navigator.of(ctx).pop();
               ref.read(incidenceDeleteProvider.notifier).softDelete(inc.id);
             },
-            style: FilledButton.styleFrom(backgroundColor: AppColors.error),
+            style: FilledButton.styleFrom(
+              backgroundColor: AppColors.error,
+              foregroundColor: Colors.white,
+            ),
             child: const Text('Eliminar'),
           ),
         ],
@@ -308,29 +268,30 @@ class _IndicatorCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Card(
-      elevation: 0,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12), side: BorderSide(color: Colors.grey.shade200)),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Row(
-          children: [
-            Container(
-              width: 40, height: 40,
-              decoration: BoxDecoration(shape: BoxShape.circle, color: color.withValues(alpha: 0.1)),
-              child: Icon(icon, color: color, size: 20),
+    return Container(
+      decoration: AppTheme.cardDecoration(),
+      padding: const EdgeInsets.all(16),
+      child: Row(
+        children: [
+          Container(
+            width: 40,
+            height: 40,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: color.withValues(alpha: 0.15),
             ),
-            const SizedBox(width: 12),
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Text(value, style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: color)),
-                Text(label, style: const TextStyle(fontSize: 13, color: AppColors.textSecondary)),
-              ],
-            ),
-          ],
-        ),
+            child: Icon(icon, color: color, size: 20),
+          ),
+          const SizedBox(width: 12),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Text(value, style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: color)),
+              Text(label, style: const TextStyle(fontSize: 13, color: AppColors.textMuted)),
+            ],
+          ),
+        ],
       ),
     );
   }

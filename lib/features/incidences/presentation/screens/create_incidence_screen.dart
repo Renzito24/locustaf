@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../../core/constants/app_colors.dart';
+import '../../../../core/theme/app_theme.dart';
 import '../../data/models/incidence_model.dart';
 import '../providers/incidences_provider.dart';
 import '../widgets/incidence_form.dart';
@@ -15,9 +16,18 @@ class CreateIncidenceScreen extends ConsumerWidget {
     final createState = ref.watch(incidenceCreateProvider);
 
     return Scaffold(
+      backgroundColor: AppColors.bgDarkTop,
       appBar: AppBar(
-        title: const Text('Nueva incidencia'),
-        leading: IconButton(icon: const Icon(Icons.arrow_back), onPressed: () => context.pop()),
+        backgroundColor: AppColors.bgDarkTop,
+        title: Text('Nueva incidencia', style: AppTheme.headingMd),
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back, color: AppColors.textWhite),
+          onPressed: () => context.pop(),
+        ),
+        bottom: PreferredSize(
+          preferredSize: const Size.fromHeight(1),
+          child: Container(color: AppColors.gold.withValues(alpha: 0.15)),
+        ),
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(24),
@@ -26,8 +36,10 @@ class CreateIncidenceScreen extends ConsumerWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text('Completá los datos de la nueva incidencia.',
-                  style: TextStyle(color: AppColors.textSecondary, fontSize: 14)),
+              Text(
+                'Completá los datos de la nueva incidencia.',
+                style: AppTheme.bodyLg,
+              ),
               const SizedBox(height: 24),
               IncidenceForm(
                 isLoading: createState.isLoading,

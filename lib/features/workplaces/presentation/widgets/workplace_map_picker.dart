@@ -6,6 +6,7 @@ import 'package:latlong2/latlong.dart';
 import 'package:geolocator/geolocator.dart';
 
 import '../../../../core/constants/app_colors.dart';
+import '../../../../core/theme/app_theme.dart';
 import '../../data/services/geocoding_service.dart';
 
 class WorkplaceMapPicker extends StatefulWidget {
@@ -110,7 +111,7 @@ class _WorkplaceMapPickerState extends State<WorkplaceMapPicker> {
       if (!serviceEnabled) {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Habilita la ubicación del dispositivo')),
+            AppTheme.errorSnackBar('Habilita la ubicación del dispositivo'),
           );
         }
         return;
@@ -122,7 +123,7 @@ class _WorkplaceMapPickerState extends State<WorkplaceMapPicker> {
         if (permission == LocationPermission.denied) {
           if (mounted) {
             ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('Permiso de ubicación denegado')),
+              AppTheme.errorSnackBar('Permiso de ubicación denegado'),
             );
           }
           return;
@@ -132,7 +133,7 @@ class _WorkplaceMapPickerState extends State<WorkplaceMapPicker> {
       if (permission == LocationPermission.deniedForever) {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Permiso de ubicación denegado permanentemente')),
+            AppTheme.errorSnackBar('Permiso de ubicación denegado permanentemente'),
           );
         }
         return;
@@ -159,7 +160,7 @@ class _WorkplaceMapPickerState extends State<WorkplaceMapPicker> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error al obtener ubicación: $e')),
+          AppTheme.errorSnackBar('Error al obtener ubicación: $e'),
         );
       }
     } finally {
@@ -172,17 +173,17 @@ class _WorkplaceMapPickerState extends State<WorkplaceMapPicker> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // Search field
         TextField(
           controller: _searchController,
-          decoration: InputDecoration(
-            labelText: 'Buscar dirección',
-            hintText: 'Escribe una dirección para buscar...',
-            border: const OutlineInputBorder(),
-            prefixIcon: const Icon(Icons.search),
+          style: const TextStyle(color: AppColors.textWhite),
+          decoration: AppTheme.inputDecoration(
+            label: 'Buscar dirección',
+            icon: Icons.search,
+            hint: 'Escribe una dirección para buscar...',
+          ).copyWith(
             suffixIcon: _searchController.text.isNotEmpty
                 ? IconButton(
-                    icon: const Icon(Icons.clear),
+                    icon: const Icon(Icons.clear, color: AppColors.textMuted),
                     onPressed: () {
                       _searchController.clear();
                       setState(() => _suggestions = []);
@@ -192,20 +193,21 @@ class _WorkplaceMapPickerState extends State<WorkplaceMapPicker> {
           ),
           onChanged: (value) {
             if (value.length >= 3) {
-                  _searchLocation(value);
+              _searchLocation(value);
             } else {
               setState(() => _suggestions = []);
             }
           },
         ),
-        // Suggestions dropdown
         if (_suggestions.isNotEmpty)
           Container(
             constraints: const BoxConstraints(maxHeight: 200),
             decoration: BoxDecoration(
-              color: Colors.white,
-              border: Border.all(color: Colors.grey.shade300),
-              borderRadius: const BorderRadius.vertical(bottom: Radius.circular(8)),
+              color: AppColors.cardDark,
+              border: Border.all(
+                color: AppColors.gold.withValues(alpha: 0.25),
+              ),
+              borderRadius: const BorderRadius.vertical(bottom: Radius.circular(AppTheme.radiusLg)),
             ),
             child: ListView.builder(
               shrinkWrap: true,
@@ -214,12 +216,12 @@ class _WorkplaceMapPickerState extends State<WorkplaceMapPicker> {
                 final suggestion = _suggestions[index];
                 return ListTile(
                   dense: true,
-                  leading: const Icon(Icons.location_on, size: 18),
+                  leading: const Icon(Icons.location_on, size: 18, color: AppColors.gold),
                   title: Text(
                     suggestion.displayName,
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(fontSize: 13),
+                    style: AppTheme.bodyMd,
                   ),
                   onTap: () => _selectSuggestion(suggestion),
                 );
@@ -227,12 +229,14 @@ class _WorkplaceMapPickerState extends State<WorkplaceMapPicker> {
             ),
           ),
         const SizedBox(height: 12),
-        // Map
         Container(
           height: 300,
           decoration: BoxDecoration(
-            border: Border.all(color: Colors.grey.shade300),
-            borderRadius: BorderRadius.circular(12),
+            border: Border.all(
+              color: AppColors.gold.withValues(alpha: 0.25),
+              width: 1,
+            ),
+            borderRadius: BorderRadius.circular(AppTheme.radiusLg),
           ),
           clipBehavior: Clip.antiAlias,
           child: Stack(
@@ -272,30 +276,46 @@ class _WorkplaceMapPickerState extends State<WorkplaceMapPicker> {
               Positioned(
                 right: 12,
                 bottom: 12,
-                child: FloatingActionButton.small(
-                  heroTag: 'myLocation',
-                  onPressed: _isLoadingLocation ? null : _useMyLocation,
-                  backgroundColor: Colors.white,
-                  child: _isLoadingLocation
-                      ? const SizedBox(
-                          width: 18,
-                          height: 18,
-                          child: CircularProgressIndicator(strokeWidth: 2),
-                        )
-                      : const Icon(Icons.my_location, color: AppColors.primary),
+                child: DecoratedBox(
+                  decoration: BoxDecoration(
+                    color: AppColors.cardDark,
+                    borderRadius: BorderRadius.circular(AppTheme.radiusSm),
+                    border: Border.all(
+                      color: AppColors.gold.withValues(alpha: 0.3),
+                    ),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withValues(alpha: 0.4),
+                        blurRadius: 8,
+                      ),
+                    ],
+                  ),
+                  child: IconButton(
+                    onPressed: _isLoadingLocation ? null : _useMyLocation,
+                    icon: _isLoadingLocation
+                        ? const SizedBox(
+                            width: 18,
+                            height: 18,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              color: AppColors.gold,
+                            ),
+                          )
+                        : const Icon(Icons.my_location, color: AppColors.gold, size: 20),
+                    tooltip: 'Mi ubicación',
+                  ),
                 ),
               ),
             ],
           ),
         ),
         const SizedBox(height: 8),
-        // Coordinates display
         if (_marker != null)
           Text(
             'Lat: ${_marker!.latitude.toStringAsFixed(6)}, Lng: ${_marker!.longitude.toStringAsFixed(6)}',
             style: const TextStyle(
               fontSize: 12,
-              color: AppColors.textSecondary,
+              color: AppColors.textMuted,
               fontFamily: 'monospace',
             ),
           ),

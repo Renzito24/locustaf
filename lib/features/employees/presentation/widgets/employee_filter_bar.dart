@@ -40,7 +40,8 @@ class EmployeeFilterBar extends ConsumerWidget {
           ref: ref,
           label: 'Inactivos',
           filter: EmployeeStatusFilter.inactive,
-          isSelected: selectedFilter == EmployeeStatusFilter.inactive,
+          isSelected:
+              selectedFilter == EmployeeStatusFilter.inactive,
         ),
         const SizedBox(width: 8),
         _buildRoleChip(
@@ -82,26 +83,31 @@ class EmployeeFilterBar extends ConsumerWidget {
             );
       },
       showCheckmark: false,
-      selectedColor: AppColors.primary,
-      backgroundColor: AppColors.surface,
+      selectedColor: AppColors.gold,
+      backgroundColor: AppColors.cardDark,
       labelStyle: TextStyle(
-        color: isSelected ? Colors.white : AppColors.textSecondary,
+        color: isSelected ? AppColors.textPrimary : AppColors.textMuted,
         fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
         fontSize: 13,
       ),
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      padding:
+          const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(20),
       ),
       side: BorderSide(
-        color: isSelected ? AppColors.primary : Colors.grey.shade300,
+        color: isSelected
+            ? AppColors.gold
+            : AppColors.gold.withValues(alpha: 0.25),
         width: 1,
       ),
     );
   }
 
-  Widget _buildWorkplaceDropdown(WidgetRef ref, AsyncValue<List<WorkplaceModel>> workplacesAsync) {
-    final selectedWorkplace = ref.watch(employeeWorkplaceFilterProvider);
+  Widget _buildWorkplaceDropdown(WidgetRef ref,
+      AsyncValue<List<WorkplaceModel>> workplacesAsync) {
+    final selectedWorkplace =
+        ref.watch(employeeWorkplaceFilterProvider);
 
     return workplacesAsync.when(
       data: (workplaces) {
@@ -113,26 +119,52 @@ class EmployeeFilterBar extends ConsumerWidget {
             isDense: true,
             decoration: InputDecoration(
               labelText: 'Lugar de trabajo',
+              labelStyle: const TextStyle(
+                  color: AppColors.textMuted, fontSize: 13),
+              filled: true,
+              fillColor: Colors.black.withValues(alpha: 0.25),
+              contentPadding: const EdgeInsets.symmetric(
+                  horizontal: 12, vertical: 8),
+              isDense: true,
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(20),
+                borderSide: BorderSide(
+                    color:
+                        AppColors.gold.withValues(alpha: 0.25)),
               ),
-              contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-              isDense: true,
+              enabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(20),
+                borderSide: BorderSide(
+                    color:
+                        AppColors.gold.withValues(alpha: 0.25)),
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(20),
+                borderSide: const BorderSide(
+                    color: AppColors.gold, width: 1.4),
+              ),
             ),
             items: [
               const DropdownMenuItem<String?>(
                 value: null,
-                child: Text('Todos'),
+                child: Text('Todos',
+                    style:
+                        TextStyle(color: AppColors.textWhite)),
               ),
               ...workplaces.map(
                 (w) => DropdownMenuItem<String?>(
                   value: w.id,
-                  child: Text(w.nombre, overflow: TextOverflow.ellipsis),
+                  child: Text(w.nombre,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                          color: AppColors.textWhite)),
                 ),
               ),
             ],
             onChanged: (value) {
-              ref.read(employeeWorkplaceFilterProvider.notifier).setFilter(value);
+              ref
+                  .read(employeeWorkplaceFilterProvider.notifier)
+                  .setFilter(value);
             },
           ),
         );
@@ -154,23 +186,28 @@ class EmployeeFilterBar extends ConsumerWidget {
       selected: isSelected,
       onSelected: (selected) {
         if (selected) {
-          ref.read(employeeFilterProvider.notifier).setFilter(filter);
+          ref
+              .read(employeeFilterProvider.notifier)
+              .setFilter(filter);
         }
       },
       showCheckmark: false,
-      selectedColor: AppColors.primary,
-      backgroundColor: AppColors.surface,
+      selectedColor: AppColors.gold,
+      backgroundColor: AppColors.cardDark,
       labelStyle: TextStyle(
-        color: isSelected ? Colors.white : AppColors.textSecondary,
+        color: isSelected ? AppColors.textPrimary : AppColors.textMuted,
         fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
         fontSize: 13,
       ),
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      padding:
+          const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(20),
       ),
       side: BorderSide(
-        color: isSelected ? AppColors.primary : Colors.grey.shade300,
+        color: isSelected
+            ? AppColors.gold
+            : AppColors.gold.withValues(alpha: 0.25),
         width: 1,
       ),
     );

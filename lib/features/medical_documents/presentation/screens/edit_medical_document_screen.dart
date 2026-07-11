@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../../core/constants/app_colors.dart';
+import '../../../../core/theme/app_theme.dart';
 import '../../data/models/medical_document_model.dart';
 import '../providers/medical_documents_provider.dart';
 import '../widgets/medical_document_form.dart';
@@ -17,11 +18,17 @@ class EditMedicalDocumentScreen extends ConsumerWidget {
     final updateState = ref.watch(medicalDocumentUpdateProvider);
 
     return Scaffold(
+      backgroundColor: AppColors.bgDarkTop,
       appBar: AppBar(
-        title: const Text('Editar documento médico'),
+        backgroundColor: AppColors.bgDarkTop,
+        title: Text('Editar documento médico', style: AppTheme.headingMd),
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back),
+          icon: const Icon(Icons.arrow_back, color: AppColors.textWhite),
           onPressed: () => context.pop(),
+        ),
+        bottom: PreferredSize(
+          preferredSize: const Size.fromHeight(1),
+          child: Container(color: AppColors.gold.withValues(alpha: 0.15)),
         ),
       ),
       body: SingleChildScrollView(
@@ -31,9 +38,9 @@ class EditMedicalDocumentScreen extends ConsumerWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text(
+              Text(
                 'Modificá los datos del documento médico.',
-                style: TextStyle(color: AppColors.textSecondary, fontSize: 14),
+                style: AppTheme.bodyLg,
               ),
               const SizedBox(height: 24),
               MedicalDocumentForm(

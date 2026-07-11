@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../../core/constants/app_colors.dart';
+import '../../../../core/theme/app_theme.dart';
 import '../../../authentication/data/models/user_model.dart';
 import '../../../employees/presentation/providers/users_provider.dart';
 import '../../../medical_documents/data/models/medical_document_model.dart';
@@ -14,46 +16,39 @@ class MedicalDocumentFilterBar extends ConsumerWidget {
     final filter = ref.watch(medicalDocumentsFilterProvider);
     final usersAsync = ref.watch(usersStreamProvider);
 
-    return Card(
-      elevation: 0,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
-        side: BorderSide(color: Colors.grey.shade200),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Wrap(
-          spacing: 12,
-          runSpacing: 12,
-          crossAxisAlignment: WrapCrossAlignment.center,
-          children: [
-            SizedBox(
-              width: 220,
-              child: TextField(
-                decoration: const InputDecoration(
-                  labelText: 'Buscar nombre/apellido/tipo',
-                  hintText: 'Escribe para buscar...',
-                  border: OutlineInputBorder(),
-                  isDense: true,
-                  prefixIcon: Icon(Icons.search, size: 20),
-                ),
-                controller: TextEditingController(text: filter.searchQuery.isNotEmpty ? filter.searchQuery : '')
-                  ..selection = TextSelection.collapsed(offset: filter.searchQuery.length),
-                onChanged: (value) {
-                  ref.read(medicalDocumentsFilterProvider.notifier).setSearchQuery(value);
-                },
+    return Container(
+      decoration: AppTheme.cardDecoration(),
+      padding: const EdgeInsets.all(16),
+      child: Wrap(
+        spacing: 12,
+        runSpacing: 12,
+        crossAxisAlignment: WrapCrossAlignment.center,
+        children: [
+          SizedBox(
+            width: 220,
+            child: TextField(
+              decoration: AppTheme.inputDecoration(
+                label: 'Buscar nombre/apellido/tipo',
+                icon: Icons.search,
+                hint: 'Escribe para buscar...',
               ),
+              style: const TextStyle(color: AppColors.textWhite),
+              controller: TextEditingController(text: filter.searchQuery.isNotEmpty ? filter.searchQuery : '')
+                ..selection = TextSelection.collapsed(offset: filter.searchQuery.length),
+              onChanged: (value) {
+                ref.read(medicalDocumentsFilterProvider.notifier).setSearchQuery(value);
+              },
             ),
-            _buildEmployeeDropdown(ref, usersAsync, filter.employeeId),
-            _buildTipoDropdown(ref, filter.tipo),
-            _buildVigenciaDropdown(ref, filter.vigencia),
-            TextButton.icon(
-              onPressed: () => ref.read(medicalDocumentsFilterProvider.notifier).clear(),
-              icon: const Icon(Icons.clear),
-              label: const Text('Limpiar'),
-            ),
-          ],
-        ),
+          ),
+          _buildEmployeeDropdown(ref, usersAsync, filter.employeeId),
+          _buildTipoDropdown(ref, filter.tipo),
+          _buildVigenciaDropdown(ref, filter.vigencia),
+          TextButton.icon(
+            onPressed: () => ref.read(medicalDocumentsFilterProvider.notifier).clear(),
+            icon: const Icon(Icons.clear, color: AppColors.textMuted),
+            label: const Text('Limpiar', style: TextStyle(color: AppColors.textMuted)),
+          ),
+        ],
       ),
     );
   }
@@ -71,11 +66,9 @@ class MedicalDocumentFilterBar extends ConsumerWidget {
           width: 200,
           child: DropdownButtonFormField<String?>(
             initialValue: selectedId,
-            decoration: const InputDecoration(
-              labelText: 'Empleado',
-              border: OutlineInputBorder(),
-              isDense: true,
-            ),
+            decoration: AppTheme.inputDecoration(label: 'Empleado', icon: Icons.person),
+            dropdownColor: AppColors.cardDark,
+            style: const TextStyle(color: AppColors.textWhite),
             items: [
               const DropdownMenuItem<String?>(
                 value: null,
@@ -104,11 +97,9 @@ class MedicalDocumentFilterBar extends ConsumerWidget {
       width: 180,
       child: DropdownButtonFormField<MedicalDocumentTipo?>(
         initialValue: selectedTipo,
-        decoration: const InputDecoration(
-          labelText: 'Tipo',
-          border: OutlineInputBorder(),
-          isDense: true,
-        ),
+        decoration: AppTheme.inputDecoration(label: 'Tipo', icon: Icons.category),
+        dropdownColor: AppColors.cardDark,
+        style: const TextStyle(color: AppColors.textWhite),
         items: [
           const DropdownMenuItem<MedicalDocumentTipo?>(
             value: null,
@@ -133,11 +124,9 @@ class MedicalDocumentFilterBar extends ConsumerWidget {
       width: 180,
       child: DropdownButtonFormField<VigenciaEstado?>(
         initialValue: selectedVigencia,
-        decoration: const InputDecoration(
-          labelText: 'Estado',
-          border: OutlineInputBorder(),
-          isDense: true,
-        ),
+        decoration: AppTheme.inputDecoration(label: 'Estado', icon: Icons.flag),
+        dropdownColor: AppColors.cardDark,
+        style: const TextStyle(color: AppColors.textWhite),
         items: [
           const DropdownMenuItem<VigenciaEstado?>(
             value: null,

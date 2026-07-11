@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../reports/presentation/providers/reports_provider.dart';
 import '../../../../core/constants/app_colors.dart';
+import '../../../../core/theme/app_theme.dart';
 
 class HomeScreen extends ConsumerWidget {
   const HomeScreen({super.key});
@@ -30,37 +31,29 @@ class HomeScreen extends ConsumerWidget {
     final hasError = usersAsync.hasError || workplacesAsync.hasError || attendancesAsync.hasError;
 
     return Padding(
-      padding: const EdgeInsets.all(24.0),
+      padding: EdgeInsets.all(AppTheme.isMobile(context) ? 16 : 24),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            'Dashboard',
-            style: const TextStyle(
-              fontSize: 24,
-              fontWeight: FontWeight.bold,
-              color: AppColors.textPrimary,
+          ShaderMask(
+            shaderCallback: (bounds) => AppTheme.goldGradient.createShader(bounds),
+            child: const Text(
+              'Dashboard',
+              style: TextStyle(
+                fontSize: 24,
+                fontWeight: FontWeight.bold,
+                color: Colors.white,
+                letterSpacing: 0.5,
+              ),
             ),
           ),
           const SizedBox(height: 4),
-          Text(
-            dateStr,
-            style: const TextStyle(
-              color: AppColors.textSecondary,
-              fontSize: 14,
-            ),
-          ),
+          Text(dateStr, style: AppTheme.bodyLg),
           const SizedBox(height: 4),
-          const Text(
-            'Resumen general del estado del sistema.',
-            style: TextStyle(
-              color: AppColors.textSecondary,
-              fontSize: 14,
-            ),
-          ),
+          const Text('Resumen general del estado del sistema.', style: AppTheme.bodyLg),
           const SizedBox(height: 24),
           Expanded(
-            child: _buildBody(isLoading, hasError, totalEmployees, presentToday, absentToday, activeWorkplaces),
+            child: _buildBody(isLoading, hasError, totalEmployees, presentToday, absentToday, activeWorkplaces, context),
           ),
         ],
       ),
@@ -74,97 +67,54 @@ class HomeScreen extends ConsumerWidget {
     int present,
     int absent,
     int workplaces,
+    BuildContext context,
   ) {
-    if (hasError) {
-      return Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(Icons.error_outline, size: 64, color: Colors.grey.shade400),
-            const SizedBox(height: 16),
-            const Text(
-              'Error al cargar datos',
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-                color: AppColors.textPrimary,
-              ),
-            ),
-            const SizedBox(height: 8),
-            const Text(
-              'No se pudieron obtener los datos del sistema.',
-              style: TextStyle(color: AppColors.textSecondary),
-            ),
-          ],
-        ),
-      );
-    }
-
-    if (isLoading) {
-      return const Center(child: CircularProgressIndicator());
-    }
-
-    return _buildDashboard(total, present, absent, workplaces);
+    if (hasError) return AppTheme.errorState('No se pudieron obtener los datos del sistema.');
+    if (isLoading) return AppTheme.loadingState(message: 'Cargando datos...');
+    return _buildDashboard(total, present, absent, workplaces, context);
   }
 
-  Widget _buildDashboard(int total, int present, int absent, int workplaces) {
+  Widget _buildDashboard(int total, int present, int absent, int workplaces, BuildContext context) {
+    final isMobile = AppTheme.isMobile(context);
+
     return SingleChildScrollView(
-      child: LayoutBuilder(
-        builder: (context, constraints) {
-          final crossAxisCount = constraints.maxWidth > 900 ? 4 : (constraints.maxWidth > 600 ? 2 : 1);
-          const spacing = 16.0;
-          final totalItems = 4;
-          final numRows = (totalItems / crossAxisCount).ceil();
-          final itemWidth = (constraints.maxWidth - spacing * (crossAxisCount - 1)) / crossAxisCount;
-
-          final double aspectRatio;
-          if (constraints.maxHeight.isFinite) {
-            final gridHeightAtDefault = (itemWidth / 1.6) * numRows + spacing * (numRows - 1);
-            if (gridHeightAtDefault > constraints.maxHeight) {
-              final maxItemHeight = (constraints.maxHeight - spacing * (numRows - 1)) / numRows;
-              aspectRatio = maxItemHeight > 0 ? itemWidth / maxItemHeight : 1.6;
-            } else {
-              aspectRatio = 1.6;
-            }
-          } else {
-            aspectRatio = 1.6;
-          }
-
-          return GridView.count(
-            crossAxisCount: crossAxisCount,
+      child: Column(
+        children: [
+          GridView.count(
+            crossAxisCount: isMobile ? 2 : 4,
             shrinkWrap: true,
             physics: const NeverScrollableScrollPhysics(),
-            mainAxisSpacing: spacing,
-            crossAxisSpacing: spacing,
-            childAspectRatio: aspectRatio,
+            mainAxisSpacing: 16,
+            crossAxisSpacing: 16,
+            childAspectRatio: isMobile ? 1.4 : 1.6,
             children: [
               _KpiCard(
-                icon: Icons.people,
+                icon: Icons.people_outline,
                 label: 'Empleados activos',
                 value: total.toString(),
-                color: AppColors.primary,
+                color: AppColors.gold,
               ),
               _KpiCard(
-                icon: Icons.check_circle,
+                icon: Icons.check_circle_outline,
                 label: 'Presentes hoy',
                 value: present.toString(),
                 color: AppColors.success,
               ),
               _KpiCard(
-                icon: Icons.cancel,
+                icon: Icons.cancel_outlined,
                 label: 'Ausentes hoy',
                 value: absent.toString(),
                 color: absent > 0 ? AppColors.error : AppColors.success,
               ),
               _KpiCard(
-                icon: Icons.business,
+                icon: Icons.business_outlined,
                 label: 'Sucursales activas',
                 value: workplaces.toString(),
-                color: AppColors.warning,
+                color: AppColors.goldLight,
               ),
             ],
-          );
-        },
+          ),
+        ],
       ),
     );
   }
@@ -185,46 +135,36 @@ class _KpiCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Card(
-      elevation: 0,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
-        side: BorderSide(color: Colors.grey.shade200),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Container(
-              width: 40,
-              height: 40,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: color.withValues(alpha: 0.1),
-              ),
-              child: Icon(icon, color: color, size: 20),
-            ),
-            const SizedBox(height: 12),
-            Text(
-              value,
-              style: TextStyle(
-                fontSize: 28,
-                fontWeight: FontWeight.bold,
-                color: color,
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: AppTheme.cardDecoration(),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Container(
+            width: 44,
+            height: 44,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              gradient: LinearGradient(
+                colors: [color.withValues(alpha: 0.3), color.withValues(alpha: 0.1)],
               ),
             ),
-            const SizedBox(height: 4),
-            Text(
-              label,
-              style: const TextStyle(
-                color: AppColors.textSecondary,
-                fontSize: 13,
-              ),
+            child: Icon(icon, color: color, size: 22),
+          ),
+          const SizedBox(height: 14),
+          Text(
+            value,
+            style: TextStyle(
+              fontSize: 28,
+              fontWeight: FontWeight.bold,
+              color: color,
             ),
-          ],
-        ),
+          ),
+          const SizedBox(height: 4),
+          Text(label, style: AppTheme.bodyMd),
+        ],
       ),
     );
   }

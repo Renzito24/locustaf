@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../../core/constants/app_colors.dart';
+import '../../../../core/theme/app_theme.dart';
 import '../../../authentication/data/models/user_model.dart';
 
 class EmployeeCard extends StatefulWidget {
@@ -45,45 +46,23 @@ class _EmployeeCardState extends State<EmployeeCard> {
       onExit: (_) => setState(() => _isHovered = false),
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 200),
-        decoration: BoxDecoration(
-          color: AppColors.surface,
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(
-            color: _isHovered ? AppColors.primary.withValues(alpha: 0.5) : Colors.grey.shade200,
-            width: 1,
-          ),
-          boxShadow: [
-            BoxShadow(
-              color: _isHovered ? Colors.black.withValues(alpha: 0.08) : Colors.black.withValues(alpha: 0.03),
-              blurRadius: _isHovered ? 12 : 6,
-              offset: const Offset(0, 2),
-            ),
-          ],
-        ),
+        decoration: AppTheme.cardDecoration(isHovered: _isHovered),
         child: Padding(
           padding: const EdgeInsets.all(16),
           child: Row(
             children: [
-              // Avatar with Initials and subtle gradient
               Container(
                 width: 48,
                 height: 48,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  gradient: LinearGradient(
-                    colors: [
-                      AppColors.primary.withValues(alpha: 0.8),
-                      AppColors.info.withValues(alpha: 0.8),
-                    ],
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                  ),
+                  gradient: AppTheme.goldGradient,
                 ),
                 child: Center(
                   child: Text(
                     _initials,
                     style: const TextStyle(
-                      color: Colors.white,
+                      color: AppColors.textPrimary,
                       fontSize: 16,
                       fontWeight: FontWeight.bold,
                       letterSpacing: 1,
@@ -93,7 +72,6 @@ class _EmployeeCardState extends State<EmployeeCard> {
               ),
               const SizedBox(width: 16),
 
-              // Main Details
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -101,7 +79,7 @@ class _EmployeeCardState extends State<EmployeeCard> {
                     Text(
                       employee.nombreCompleto,
                       style: const TextStyle(
-                        color: AppColors.textPrimary,
+                        color: AppColors.textWhite,
                         fontSize: 16,
                         fontWeight: FontWeight.bold,
                       ),
@@ -112,9 +90,12 @@ class _EmployeeCardState extends State<EmployeeCard> {
                       runSpacing: 4,
                       children: [
                         _buildDetailItem(Icons.email_outlined, employee.email),
-                        _buildDetailItem(Icons.badge_outlined, 'DNI: ${employee.dni}'),
-                        if (employee.telefono != null && employee.telefono!.isNotEmpty)
-                          _buildDetailItem(Icons.phone_outlined, employee.telefono!),
+                        _buildDetailItem(
+                            Icons.badge_outlined, 'DNI: ${employee.dni}'),
+                        if (employee.telefono != null &&
+                            employee.telefono!.isNotEmpty)
+                          _buildDetailItem(
+                              Icons.phone_outlined, employee.telefono!),
                       ],
                     ),
                   ],
@@ -123,52 +104,33 @@ class _EmployeeCardState extends State<EmployeeCard> {
 
               const SizedBox(width: 16),
 
-              // Status Badge
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                decoration: BoxDecoration(
-                  color: employee.isActive
-                      ? AppColors.success.withValues(alpha: 0.1)
-                      : AppColors.error.withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Text(
-                  employee.isActive ? 'Activo' : 'Inactivo',
-                  style: TextStyle(
-                    color: employee.isActive ? AppColors.success : AppColors.error,
-                    fontSize: 12,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
+              AppTheme.badge(
+                label: employee.isActive ? 'Activo' : 'Inactivo',
+                bgColor: employee.isActive
+                    ? AppColors.badgeActiveBg
+                    : AppColors.badgeInactiveBg,
+                textColor: employee.isActive
+                    ? AppColors.badgeActiveText
+                    : AppColors.badgeInactiveText,
               ),
 
               const SizedBox(width: 8),
 
-              // Role Badge
-              if (employee.rol == UserRole.supervisor)
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: AppColors.warning.withValues(alpha: 0.1),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Text(
-                    employee.rol.label,
-                    style: const TextStyle(
-                      color: AppColors.warning,
-                      fontSize: 12,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
+              if (employee.rol == UserRole.supervisor) ...[
+                AppTheme.badge(
+                  label: employee.rol.label,
+                  bgColor: AppColors.warning.withValues(alpha: 0.2),
+                  textColor: AppColors.warning,
                 ),
-              if (employee.rol == UserRole.supervisor) const SizedBox(width: 8),
+                const SizedBox(width: 8),
+              ],
 
-              // Actions Menu
               PopupMenuButton<String>(
                 icon: const Icon(
                   Icons.more_vert,
-                  color: AppColors.textSecondary,
+                  color: AppColors.textMuted,
                 ),
+                color: AppColors.cardDark,
                 onSelected: (value) {
                   switch (value) {
                     case 'edit':
@@ -194,11 +156,14 @@ class _EmployeeCardState extends State<EmployeeCard> {
                     items.add(
                       PopupMenuItem<String>(
                         value: 'edit',
-                        child: const Row(
-                          children: [
-                            Icon(Icons.edit_outlined, size: 18),
+                        child: Row(
+                          children: const [
+                            Icon(Icons.edit_outlined, size: 18,
+                                color: AppColors.textMuted),
                             SizedBox(width: 8),
-                            Text('Editar'),
+                            Text('Editar',
+                                style:
+                                    TextStyle(color: AppColors.textWhite)),
                           ],
                         ),
                       ),
@@ -208,26 +173,33 @@ class _EmployeeCardState extends State<EmployeeCard> {
                     items.add(
                       PopupMenuItem<String>(
                         value: 'history',
-                        child: const Row(
-                          children: [
-                            Icon(Icons.history_outlined, size: 18),
+                        child: Row(
+                          children: const [
+                            Icon(Icons.history_outlined, size: 18,
+                                color: AppColors.textMuted),
                             SizedBox(width: 8),
-                            Text('Historial'),
+                            Text('Historial',
+                                style:
+                                    TextStyle(color: AppColors.textWhite)),
                           ],
                         ),
                       ),
                     );
                   }
                   if (widget.onPasswordReset != null) {
-                    items.add(const PopupMenuDivider());
+                    items.add(PopupMenuDivider(
+                        color: AppColors.gold.withValues(alpha: 0.2)));
                     items.add(
                       PopupMenuItem<String>(
                         value: 'passwordReset',
-                        child: const Row(
-                          children: [
-                            Icon(Icons.lock_reset_outlined, size: 18),
+                        child: Row(
+                          children: const [
+                            Icon(Icons.lock_reset_outlined, size: 18,
+                                color: AppColors.textMuted),
                             SizedBox(width: 8),
-                            Text('Restablecer contraseña'),
+                            Text('Restablecer contraseña',
+                                style:
+                                    TextStyle(color: AppColors.textWhite)),
                           ],
                         ),
                       ),
@@ -235,21 +207,29 @@ class _EmployeeCardState extends State<EmployeeCard> {
                   }
                   if (widget.onToggleActive != null) {
                     items.addAll([
-                      if (items.isNotEmpty) const PopupMenuDivider(),
+                      if (items.isNotEmpty)
+                        PopupMenuDivider(
+                            color: AppColors.gold.withValues(alpha: 0.2)),
                       PopupMenuItem<String>(
                         value: 'toggleActive',
                         child: Row(
                           children: [
                             Icon(
-                              employee.isActive ? Icons.block_flipped : Icons.check_circle_outline,
+                              employee.isActive
+                                  ? Icons.block_flipped
+                                  : Icons.check_circle_outline,
                               size: 18,
-                              color: employee.isActive ? AppColors.error : AppColors.success,
+                              color: employee.isActive
+                                  ? AppColors.error
+                                  : AppColors.success,
                             ),
                             const SizedBox(width: 8),
                             Text(
                               employee.isActive ? 'Desactivar' : 'Activar',
                               style: TextStyle(
-                                color: employee.isActive ? AppColors.error : AppColors.success,
+                                color: employee.isActive
+                                    ? AppColors.error
+                                    : AppColors.success,
                               ),
                             ),
                           ],
@@ -259,11 +239,13 @@ class _EmployeeCardState extends State<EmployeeCard> {
                   }
                   if (widget.onDelete != null) {
                     items.addAll([
-                      if (items.isNotEmpty) const PopupMenuDivider(),
+                      if (items.isNotEmpty)
+                        PopupMenuDivider(
+                            color: AppColors.gold.withValues(alpha: 0.2)),
                       PopupMenuItem<String>(
                         value: 'delete',
-                        child: const Row(
-                          children: [
+                        child: Row(
+                          children: const [
                             Icon(
                               Icons.delete_outline,
                               size: 18,
@@ -272,9 +254,7 @@ class _EmployeeCardState extends State<EmployeeCard> {
                             SizedBox(width: 8),
                             Text(
                               'Eliminar',
-                              style: TextStyle(
-                                color: AppColors.error,
-                              ),
+                              style: TextStyle(color: AppColors.error),
                             ),
                           ],
                         ),
@@ -295,18 +275,28 @@ class _EmployeeCardState extends State<EmployeeCard> {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Eliminar usuario'),
+        backgroundColor: AppColors.cardDark,
+        title: const Text('Eliminar usuario',
+            style: TextStyle(color: AppColors.textWhite)),
         content: const Text(
           '¿Seguro que deseas eliminar este usuario?',
+          style: TextStyle(color: AppColors.textMuted),
+        ),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(AppTheme.radiusXl),
+          side: BorderSide(
+              color: AppColors.gold.withValues(alpha: 0.18)),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(ctx).pop(false),
-            child: const Text('Cancelar'),
+            child: const Text('Cancelar',
+                style: TextStyle(color: AppColors.textMuted)),
           ),
           TextButton(
             onPressed: () => Navigator.of(ctx).pop(true),
-            style: TextButton.styleFrom(foregroundColor: AppColors.error),
+            style:
+                TextButton.styleFrom(foregroundColor: AppColors.error),
             child: const Text('Eliminar'),
           ),
         ],
@@ -322,18 +312,28 @@ class _EmployeeCardState extends State<EmployeeCard> {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Restablecer contraseña'),
+        backgroundColor: AppColors.cardDark,
+        title: const Text('Restablecer contraseña',
+            style: TextStyle(color: AppColors.textWhite)),
         content: Text(
           'Se enviará un correo de restablecimiento a ${widget.employee.email}. ¿Desea continuar?',
+          style: const TextStyle(color: AppColors.textMuted),
+        ),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(AppTheme.radiusXl),
+          side: BorderSide(
+              color: AppColors.gold.withValues(alpha: 0.18)),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(ctx).pop(false),
-            child: const Text('Cancelar'),
+            child: const Text('Cancelar',
+                style: TextStyle(color: AppColors.textMuted)),
           ),
           TextButton(
             onPressed: () => Navigator.of(ctx).pop(true),
-            style: TextButton.styleFrom(foregroundColor: AppColors.primary),
+            style:
+                TextButton.styleFrom(foregroundColor: AppColors.gold),
             child: const Text('Enviar'),
           ),
         ],
@@ -352,13 +352,13 @@ class _EmployeeCardState extends State<EmployeeCard> {
         Icon(
           icon,
           size: 14,
-          color: AppColors.textSecondary,
+          color: AppColors.textMuted.withValues(alpha: 0.7),
         ),
         const SizedBox(width: 6),
         Text(
           text,
-          style: const TextStyle(
-            color: AppColors.textSecondary,
+          style: TextStyle(
+            color: AppColors.textMuted.withValues(alpha: 0.85),
             fontSize: 13,
           ),
         ),

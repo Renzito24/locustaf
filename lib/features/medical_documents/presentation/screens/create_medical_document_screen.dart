@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../../core/constants/app_colors.dart';
+import '../../../../core/theme/app_theme.dart';
 import '../../data/models/medical_document_model.dart';
 import '../providers/medical_documents_provider.dart';
 import '../widgets/medical_document_form.dart';
@@ -15,11 +16,17 @@ class CreateMedicalDocumentScreen extends ConsumerWidget {
     final createState = ref.watch(medicalDocumentCreateProvider);
 
     return Scaffold(
+      backgroundColor: AppColors.bgDarkTop,
       appBar: AppBar(
-        title: const Text('Nuevo documento médico'),
+        backgroundColor: AppColors.bgDarkTop,
+        title: Text('Nuevo documento médico', style: AppTheme.headingMd),
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back),
+          icon: const Icon(Icons.arrow_back, color: AppColors.textWhite),
           onPressed: () => context.pop(),
+        ),
+        bottom: PreferredSize(
+          preferredSize: const Size.fromHeight(1),
+          child: Container(color: AppColors.gold.withValues(alpha: 0.15)),
         ),
       ),
       body: SingleChildScrollView(
@@ -29,9 +36,9 @@ class CreateMedicalDocumentScreen extends ConsumerWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text(
+              Text(
                 'Completá los datos del nuevo documento médico.',
-                style: TextStyle(color: AppColors.textSecondary, fontSize: 14),
+                style: AppTheme.bodyLg,
               ),
               const SizedBox(height: 24),
               MedicalDocumentForm(

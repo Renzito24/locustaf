@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/router/app_routes.dart';
+import '../../../../core/theme/app_theme.dart';
 import '../../../authentication/data/models/user_model.dart';
 import '../../../authentication/presentation/providers/auth_provider.dart';
 import '../../../employees/presentation/providers/users_provider.dart';
@@ -31,19 +32,12 @@ class MedicalDocumentsScreen extends ConsumerWidget {
         data: (_) {
           ref.read(medicalDocumentDeleteProvider.notifier).reset();
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Documento eliminado correctamente'),
-              backgroundColor: AppColors.success,
-            ),
+            AppTheme.successSnackBar('Documento eliminado correctamente'),
           );
         },
         error: (error, _) {
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('Error al eliminar: $error'),
-              backgroundColor: AppColors.error,
-              duration: const Duration(seconds: 5),
-            ),
+            AppTheme.errorSnackBar('Error al eliminar: $error'),
           );
         },
       );
@@ -54,18 +48,11 @@ class MedicalDocumentsScreen extends ConsumerWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
-            'Documentación Médica',
-            style: TextStyle(
-              fontSize: 24,
-              fontWeight: FontWeight.bold,
-              color: AppColors.textPrimary,
-            ),
-          ),
+          Text('Documentación Médica', style: AppTheme.headingLg),
           const SizedBox(height: 4),
-          const Text(
+          Text(
             'Administra los certificados y documentación médica de los empleados.',
-            style: TextStyle(color: AppColors.textSecondary, fontSize: 14),
+            style: AppTheme.bodyLg,
           ),
           const SizedBox(height: 24),
           _buildIndicatorCards(total, vigentes, proximos, vencidos),
@@ -80,8 +67,9 @@ class MedicalDocumentsScreen extends ConsumerWidget {
                 icon: const Icon(Icons.add, size: 18),
                 label: const Text('Nuevo documento'),
                 style: FilledButton.styleFrom(
-                  backgroundColor: AppColors.primary,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                  backgroundColor: AppColors.gold,
+                  foregroundColor: Colors.white,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppTheme.radiusSm)),
                 ),
               ),
             ),
@@ -110,7 +98,7 @@ class MedicalDocumentsScreen extends ConsumerWidget {
               icon: Icons.description,
               label: 'Total documentos',
               value: total.toString(),
-              color: AppColors.primary,
+              color: AppColors.gold,
             ),
             _IndicatorCard(
               icon: Icons.check_circle,
@@ -148,27 +136,10 @@ class MedicalDocumentsScreen extends ConsumerWidget {
         final userMap = {for (final u in users) u.id: u};
 
         if (docs.isEmpty) {
-          return Center(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(Icons.description_outlined, size: 64, color: Colors.grey.shade400),
-                const SizedBox(height: 16),
-                const Text(
-                  'Sin documentos médicos',
-                  style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                    color: AppColors.textPrimary,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                const Text(
-                  'No hay documentos para los filtros seleccionados.',
-                  style: TextStyle(color: AppColors.textSecondary),
-                ),
-              ],
-            ),
+          return AppTheme.emptyState(
+            icon: Icons.description_outlined,
+            title: 'Sin documentos médicos',
+            subtitle: 'No hay documentos para los filtros seleccionados.',
           );
         }
 
@@ -203,14 +174,14 @@ class MedicalDocumentsScreen extends ConsumerWidget {
               scrollDirection: Axis.horizontal,
               child: DataTable(
                 columnSpacing: 20,
-                headingRowColor: WidgetStateProperty.all(AppColors.primary.withValues(alpha: 0.05)),
+                headingRowColor: WidgetStateProperty.all(AppColors.gold.withValues(alpha: 0.1)),
                 columns: [
-                  const DataColumn(label: Text('Empleado', style: TextStyle(fontWeight: FontWeight.bold))),
-                  const DataColumn(label: Text('Tipo', style: TextStyle(fontWeight: FontWeight.bold))),
-                  const DataColumn(label: Text('Emisión', style: TextStyle(fontWeight: FontWeight.bold))),
-                  const DataColumn(label: Text('Vencimiento', style: TextStyle(fontWeight: FontWeight.bold))),
-                  const DataColumn(label: Text('Estado', style: TextStyle(fontWeight: FontWeight.bold))),
-                  if (isAdmin) const DataColumn(label: Text('Acciones', style: TextStyle(fontWeight: FontWeight.bold))),
+                  const DataColumn(label: Text('Empleado', style: TextStyle(fontWeight: FontWeight.bold, color: AppColors.gold))),
+                  const DataColumn(label: Text('Tipo', style: TextStyle(fontWeight: FontWeight.bold, color: AppColors.gold))),
+                  const DataColumn(label: Text('Emisión', style: TextStyle(fontWeight: FontWeight.bold, color: AppColors.gold))),
+                  const DataColumn(label: Text('Vencimiento', style: TextStyle(fontWeight: FontWeight.bold, color: AppColors.gold))),
+                  const DataColumn(label: Text('Estado', style: TextStyle(fontWeight: FontWeight.bold, color: AppColors.gold))),
+                  if (isAdmin) const DataColumn(label: Text('Acciones', style: TextStyle(fontWeight: FontWeight.bold, color: AppColors.gold))),
                 ],
                 rows: docs.map((doc) {
                   final user = userMap[doc.userId];
@@ -223,16 +194,16 @@ class MedicalDocumentsScreen extends ConsumerWidget {
                       employeeEmail: user?.email ?? '',
                     ),
                     cells: [
-                      DataCell(Text(name)),
-                      DataCell(Text(doc.tipo.label)),
-                      DataCell(Text(_formatDate(doc.fechaInicio))),
-                      DataCell(Text(_formatDate(doc.fechaFin))),
+                      DataCell(Text(name, style: const TextStyle(color: AppColors.textWhite))),
+                      DataCell(Text(doc.tipo.label, style: const TextStyle(color: AppColors.textMuted))),
+                      DataCell(Text(_formatDate(doc.fechaInicio), style: const TextStyle(color: AppColors.textMuted))),
+                      DataCell(Text(_formatDate(doc.fechaFin), style: const TextStyle(color: AppColors.textMuted))),
                       DataCell(_buildEstadoChip(doc.vigencia)),
                       if (isAdmin)
                         DataCell(Row(
                           children: [
                             IconButton(
-                              icon: const Icon(Icons.edit, size: 18),
+                              icon: const Icon(Icons.edit, size: 18, color: AppColors.gold),
                               onPressed: () => context.push(
                                 RoutePaths.editMedicalDocument,
                                 extra: doc,
@@ -256,33 +227,8 @@ class MedicalDocumentsScreen extends ConsumerWidget {
           },
         );
       },
-      loading: () => const Center(
-        child: CircularProgressIndicator(
-          valueColor: AlwaysStoppedAnimation<Color>(AppColors.primary),
-        ),
-      ),
-      error: (_, _) => Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(Icons.error_outline, size: 64, color: Colors.grey.shade400),
-            const SizedBox(height: 16),
-            const Text(
-              'Error al cargar empleados',
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-                color: AppColors.textPrimary,
-              ),
-            ),
-            const SizedBox(height: 8),
-            const Text(
-              'No se pudieron obtener los datos de los empleados.',
-              style: TextStyle(color: AppColors.textSecondary),
-            ),
-          ],
-        ),
-      ),
+      loading: () => AppTheme.loadingState(),
+      error: (_, _) => AppTheme.errorState('No se pudieron obtener los datos de los empleados.'),
     );
   }
 
@@ -291,46 +237,47 @@ class MedicalDocumentsScreen extends ConsumerWidget {
   }
 
   Widget _buildEstadoChip(VigenciaEstado vigencia) {
-    Color bgColor;
-    Color textColor;
     switch (vigencia) {
       case VigenciaEstado.vigente:
-        bgColor = AppColors.success.withValues(alpha: 0.1);
-        textColor = AppColors.success;
+        return AppTheme.badge(label: vigencia.label, bgColor: AppColors.success.withValues(alpha: 0.15), textColor: AppColors.success);
       case VigenciaEstado.proximoAVencer:
-        bgColor = AppColors.warning.withValues(alpha: 0.1);
-        textColor = AppColors.warning;
+        return AppTheme.badge(label: vigencia.label, bgColor: AppColors.warning.withValues(alpha: 0.15), textColor: AppColors.warning);
       case VigenciaEstado.vencido:
-        bgColor = AppColors.error.withValues(alpha: 0.1);
-        textColor = AppColors.error;
+        return AppTheme.badge(label: vigencia.label, bgColor: AppColors.error.withValues(alpha: 0.15), textColor: AppColors.error);
     }
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-      decoration: BoxDecoration(color: bgColor, borderRadius: BorderRadius.circular(10)),
-      child: Text(
-        vigencia.label,
-        style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: textColor),
-      ),
-    );
   }
 
   void _confirmDelete(BuildContext context, WidgetRef ref, MedicalDocumentModel doc) {
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Eliminar documento'),
-        content: Text('¿Eliminar el documento de tipo "${doc.tipo.label}"?'),
+        backgroundColor: AppColors.cardDark,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(AppTheme.radiusLg),
+          side: BorderSide(color: AppColors.gold.withValues(alpha: 0.3)),
+        ),
+        title: Text('Eliminar documento', style: AppTheme.headingMd),
+        content: Text(
+          '¿Eliminar el documento de tipo "${doc.tipo.label}"?',
+          style: AppTheme.bodyLg,
+        ),
         actions: [
-          TextButton(onPressed: () => Navigator.of(ctx).pop(), child: const Text('Cancelar')),
-            FilledButton(
-              onPressed: () {
-                Navigator.of(ctx).pop();
-                ref.read(medicalDocumentDeleteProvider.notifier).softDelete(
-                  doc.id,
-                  archivoUrl: doc.archivoUrl,
-                );
-              },
-            style: FilledButton.styleFrom(backgroundColor: AppColors.error),
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(),
+            child: const Text('Cancelar', style: TextStyle(color: AppColors.textMuted)),
+          ),
+          FilledButton(
+            onPressed: () {
+              Navigator.of(ctx).pop();
+              ref.read(medicalDocumentDeleteProvider.notifier).softDelete(
+                doc.id,
+                archivoUrl: doc.archivoUrl,
+              );
+            },
+            style: FilledButton.styleFrom(
+              backgroundColor: AppColors.error,
+              foregroundColor: Colors.white,
+            ),
             child: const Text('Eliminar'),
           ),
         ],
@@ -354,46 +301,37 @@ class _IndicatorCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Card(
-      elevation: 0,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
-        side: BorderSide(color: Colors.grey.shade200),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Row(
-          children: [
-            Container(
-              width: 40,
-              height: 40,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: color.withValues(alpha: 0.1),
+    return Container(
+      decoration: AppTheme.cardDecoration(),
+      padding: const EdgeInsets.all(16),
+      child: Row(
+        children: [
+          Container(
+            width: 40,
+            height: 40,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: color.withValues(alpha: 0.15),
+            ),
+            child: Icon(icon, color: color, size: 20),
+          ),
+          const SizedBox(width: 12),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Text(
+                value,
+                style: TextStyle(
+                  fontSize: 24,
+                  fontWeight: FontWeight.bold,
+                  color: color,
+                ),
               ),
-              child: Icon(icon, color: color, size: 20),
-            ),
-            const SizedBox(width: 12),
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Text(
-                  value,
-                  style: TextStyle(
-                    fontSize: 24,
-                    fontWeight: FontWeight.bold,
-                    color: color,
-                  ),
-                ),
-                Text(
-                  label,
-                  style: const TextStyle(fontSize: 13, color: AppColors.textSecondary),
-                ),
-              ],
-            ),
-          ],
-        ),
+              Text(label, style: const TextStyle(fontSize: 13, color: AppColors.textMuted)),
+            ],
+          ),
+        ],
       ),
     );
   }

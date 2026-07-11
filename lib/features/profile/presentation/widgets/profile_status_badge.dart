@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
 
+import '../../../../core/constants/app_colors.dart';
+import '../../../../core/theme/app_theme.dart';
+
 class ProfileStatusBadge extends StatelessWidget {
   final bool isActive;
 
@@ -8,50 +11,16 @@ class ProfileStatusBadge extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (isActive) {
-      return Container(
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-        decoration: BoxDecoration(
-          color: const Color(0xFFD1FAE5),
-          borderRadius: BorderRadius.circular(20),
-        ),
-        child: const Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(Icons.check_circle, size: 14, color: Color(0xFF065F46)),
-            SizedBox(width: 4),
-            Text(
-              'Activo',
-              style: TextStyle(
-                color: Color(0xFF065F46),
-                fontSize: 12,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-          ],
-        ),
+      return AppTheme.badge(
+        label: 'Activo',
+        bgColor: AppColors.success.withValues(alpha: 0.15),
+        textColor: AppColors.success,
       );
     }
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-      decoration: BoxDecoration(
-        color: const Color(0xFFFEE2E2),
-        borderRadius: BorderRadius.circular(20),
-      ),
-      child: const Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(Icons.cancel, size: 14, color: Color(0xFF991B1B)),
-          SizedBox(width: 4),
-          Text(
-            'Inactivo',
-            style: TextStyle(
-              color: Color(0xFF991B1B),
-              fontSize: 12,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-        ],
-      ),
+    return AppTheme.badge(
+      label: 'Inactivo',
+      bgColor: AppColors.error.withValues(alpha: 0.15),
+      textColor: AppColors.error,
     );
   }
 }

@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../../core/constants/app_colors.dart';
+import '../../../../core/theme/app_theme.dart';
 import '../../../authentication/data/models/user_model.dart';
 import '../../../employees/presentation/providers/users_provider.dart';
 import '../../data/models/incidence_model.dart';
@@ -14,48 +16,41 @@ class IncidenceFilterBar extends ConsumerWidget {
     final filter = ref.watch(incidencesFilterProvider);
     final usersAsync = ref.watch(usersStreamProvider);
 
-    return Card(
-      elevation: 0,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
-        side: BorderSide(color: Colors.grey.shade200),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Wrap(
-          spacing: 12,
-          runSpacing: 12,
-          crossAxisAlignment: WrapCrossAlignment.center,
-          children: [
-            SizedBox(
-              width: 220,
-              child: TextField(
-                decoration: const InputDecoration(
-                  labelText: 'Buscar nombre/apellido/tipo',
-                  hintText: 'Escribe para buscar...',
-                  border: OutlineInputBorder(),
-                  isDense: true,
-                  prefixIcon: Icon(Icons.search, size: 20),
-                ),
-                controller: TextEditingController(
-                  text: filter.searchQuery.isNotEmpty ? filter.searchQuery : '',
-                )
-                  ..selection = TextSelection.collapsed(offset: filter.searchQuery.length),
-                onChanged: (value) {
-                  ref.read(incidencesFilterProvider.notifier).setSearchQuery(value);
-                },
+    return Container(
+      decoration: AppTheme.cardDecoration(),
+      padding: const EdgeInsets.all(16),
+      child: Wrap(
+        spacing: 12,
+        runSpacing: 12,
+        crossAxisAlignment: WrapCrossAlignment.center,
+        children: [
+          SizedBox(
+            width: 220,
+            child: TextField(
+              decoration: AppTheme.inputDecoration(
+                label: 'Buscar nombre/apellido/tipo',
+                icon: Icons.search,
+                hint: 'Escribe para buscar...',
               ),
+              style: const TextStyle(color: AppColors.textWhite),
+              controller: TextEditingController(
+                text: filter.searchQuery.isNotEmpty ? filter.searchQuery : '',
+              )
+                ..selection = TextSelection.collapsed(offset: filter.searchQuery.length),
+              onChanged: (value) {
+                ref.read(incidencesFilterProvider.notifier).setSearchQuery(value);
+              },
             ),
-            _buildEmployeeDropdown(ref, usersAsync, filter.employeeId),
-            _buildTypeDropdown(ref, filter.type),
-            _buildStateDropdown(ref, filter.state),
-            TextButton.icon(
-              onPressed: () => ref.read(incidencesFilterProvider.notifier).clear(),
-              icon: const Icon(Icons.clear),
-              label: const Text('Limpiar'),
-            ),
-          ],
-        ),
+          ),
+          _buildEmployeeDropdown(ref, usersAsync, filter.employeeId),
+          _buildTypeDropdown(ref, filter.type),
+          _buildStateDropdown(ref, filter.state),
+          TextButton.icon(
+            onPressed: () => ref.read(incidencesFilterProvider.notifier).clear(),
+            icon: const Icon(Icons.clear, color: AppColors.textMuted),
+            label: const Text('Limpiar', style: TextStyle(color: AppColors.textMuted)),
+          ),
+        ],
       ),
     );
   }
@@ -73,11 +68,9 @@ class IncidenceFilterBar extends ConsumerWidget {
           width: 200,
           child: DropdownButtonFormField<String?>(
             initialValue: selectedId,
-            decoration: const InputDecoration(
-              labelText: 'Empleado',
-              border: OutlineInputBorder(),
-              isDense: true,
-            ),
+            decoration: AppTheme.inputDecoration(label: 'Empleado', icon: Icons.person),
+            dropdownColor: AppColors.cardDark,
+            style: const TextStyle(color: AppColors.textWhite),
             items: [
               const DropdownMenuItem<String?>(value: null, child: Text('Todos')),
               ...employees.map(
@@ -103,11 +96,9 @@ class IncidenceFilterBar extends ConsumerWidget {
       width: 200,
       child: DropdownButtonFormField<IncidenceType?>(
         initialValue: selectedType,
-        decoration: const InputDecoration(
-          labelText: 'Tipo',
-          border: OutlineInputBorder(),
-          isDense: true,
-        ),
+        decoration: AppTheme.inputDecoration(label: 'Tipo', icon: Icons.category),
+        dropdownColor: AppColors.cardDark,
+        style: const TextStyle(color: AppColors.textWhite),
         items: [
           const DropdownMenuItem<IncidenceType?>(value: null, child: Text('Todos')),
           ...IncidenceType.values.map(
@@ -129,11 +120,9 @@ class IncidenceFilterBar extends ConsumerWidget {
       width: 180,
       child: DropdownButtonFormField<IncidenceState?>(
         initialValue: selectedState,
-        decoration: const InputDecoration(
-          labelText: 'Estado',
-          border: OutlineInputBorder(),
-          isDense: true,
-        ),
+        decoration: AppTheme.inputDecoration(label: 'Estado', icon: Icons.flag),
+        dropdownColor: AppColors.cardDark,
+        style: const TextStyle(color: AppColors.textWhite),
         items: [
           const DropdownMenuItem<IncidenceState?>(value: null, child: Text('Todos')),
           ...IncidenceState.values.map(

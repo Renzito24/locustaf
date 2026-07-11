@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../../core/constants/app_colors.dart';
+import '../../../../core/theme/app_theme.dart';
 import '../../data/models/medical_document_model.dart';
 
 class MedicalDocumentCard extends StatelessWidget {
@@ -19,14 +20,10 @@ class MedicalDocumentCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Card(
-      elevation: 0,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
-        side: BorderSide(color: Colors.grey.shade200),
-      ),
+    return Container(
+      decoration: AppTheme.cardDecoration(),
       child: InkWell(
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(AppTheme.radiusXl),
         onTap: onTap,
         child: Padding(
           padding: const EdgeInsets.all(16),
@@ -41,7 +38,7 @@ class MedicalDocumentCard extends StatelessWidget {
                       style: const TextStyle(
                         fontWeight: FontWeight.w600,
                         fontSize: 15,
-                        color: AppColors.textPrimary,
+                        color: AppColors.textWhite,
                       ),
                     ),
                   ),
@@ -64,12 +61,12 @@ class MedicalDocumentCard extends StatelessWidget {
                   padding: const EdgeInsets.only(top: 6),
                   child: Row(
                     children: [
-                      const Icon(Icons.attach_file, size: 14, color: AppColors.primary),
+                      const Icon(Icons.attach_file, size: 14, color: AppColors.gold),
                       const SizedBox(width: 4),
                       Expanded(
                         child: Text(
                           document.archivoNombre ?? 'Archivo adjunto',
-                          style: const TextStyle(fontSize: 12, color: AppColors.primary),
+                          style: const TextStyle(fontSize: 12, color: AppColors.gold),
                           overflow: TextOverflow.ellipsis,
                         ),
                       ),
@@ -79,7 +76,7 @@ class MedicalDocumentCard extends StatelessWidget {
               if (document.motivo.isNotEmpty)
                 Text(
                   document.motivo,
-                  style: const TextStyle(fontSize: 13, color: AppColors.textSecondary),
+                  style: const TextStyle(fontSize: 13, color: AppColors.textMuted),
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
                 ),
@@ -112,34 +109,14 @@ class _VigenciaBadge extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    Color bgColor;
-    Color textColor;
     switch (vigencia) {
       case VigenciaEstado.vigente:
-        bgColor = AppColors.success.withValues(alpha: 0.1);
-        textColor = AppColors.success;
+        return AppTheme.badge(label: vigencia.label, bgColor: AppColors.success.withValues(alpha: 0.15), textColor: AppColors.success);
       case VigenciaEstado.proximoAVencer:
-        bgColor = AppColors.warning.withValues(alpha: 0.1);
-        textColor = AppColors.warning;
+        return AppTheme.badge(label: vigencia.label, bgColor: AppColors.warning.withValues(alpha: 0.15), textColor: AppColors.warning);
       case VigenciaEstado.vencido:
-        bgColor = AppColors.error.withValues(alpha: 0.1);
-        textColor = AppColors.error;
+        return AppTheme.badge(label: vigencia.label, bgColor: AppColors.error.withValues(alpha: 0.15), textColor: AppColors.error);
     }
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-      decoration: BoxDecoration(
-        color: bgColor,
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Text(
-        vigencia.label,
-        style: TextStyle(
-          fontSize: 12,
-          fontWeight: FontWeight.w600,
-          color: textColor,
-        ),
-      ),
-    );
   }
 }
 
@@ -154,11 +131,11 @@ class _InfoChip extends StatelessWidget {
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
-        Icon(icon, size: 14, color: AppColors.textSecondary),
+        Icon(icon, size: 14, color: AppColors.textMuted),
         const SizedBox(width: 4),
         Text(
           text,
-          style: const TextStyle(fontSize: 13, color: AppColors.textSecondary),
+          style: const TextStyle(fontSize: 13, color: AppColors.textMuted),
         ),
       ],
     );

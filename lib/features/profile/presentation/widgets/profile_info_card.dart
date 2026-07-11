@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../../core/constants/app_colors.dart';
+import '../../../../core/theme/app_theme.dart';
 
 class ProfileInfoCard extends StatelessWidget {
   final String title;
@@ -16,45 +17,39 @@ class ProfileInfoCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Card(
-      elevation: 0,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
-        side: BorderSide(color: Colors.grey.shade200),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Icon(titleIcon, size: 18, color: AppColors.primary),
-                const SizedBox(width: 8),
-                Text(
-                  title,
-                  style: const TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w600,
-                    color: AppColors.textPrimary,
-                  ),
+    return Container(
+      decoration: AppTheme.cardDecoration(),
+      padding: const EdgeInsets.all(20),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(titleIcon, size: 18, color: AppColors.gold),
+              const SizedBox(width: 8),
+              Text(
+                title,
+                style: const TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                  color: AppColors.textWhite,
                 ),
-              ],
-            ),
-            const SizedBox(height: 16),
-            ...rows.fold<List<Widget>>([], (list, row) {
-              if (list.isNotEmpty) {
-                list.add(const Divider(height: 20));
-              }
-              if (row.child != null) {
-                list.add(row.child!);
-              } else {
-                list.add(_infoRow(row.icon, row.label, row.value!));
-              }
-              return list;
-            }),
-          ],
-        ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          ...rows.fold<List<Widget>>([], (list, row) {
+            if (list.isNotEmpty) {
+              list.add(Divider(height: 20, color: AppColors.gold.withValues(alpha: 0.1)));
+            }
+            if (row.child != null) {
+              list.add(row.child!);
+            } else {
+              list.add(_infoRow(row.icon, row.label, row.value!));
+            }
+            return list;
+          }),
+        ],
       ),
     );
   }
@@ -63,7 +58,7 @@ class ProfileInfoCard extends StatelessWidget {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Icon(icon, size: 20, color: AppColors.textSecondary),
+        Icon(icon, size: 20, color: AppColors.textMuted),
         const SizedBox(width: 12),
         Expanded(
           child: Column(
@@ -73,7 +68,7 @@ class ProfileInfoCard extends StatelessWidget {
                 label,
                 style: const TextStyle(
                   fontSize: 12,
-                  color: AppColors.textSecondary,
+                  color: AppColors.textMuted,
                 ),
               ),
               const SizedBox(height: 2),
@@ -81,7 +76,7 @@ class ProfileInfoCard extends StatelessWidget {
                 value,
                 style: const TextStyle(
                   fontSize: 15,
-                  color: AppColors.textPrimary,
+                  color: AppColors.textWhite,
                   fontWeight: FontWeight.w500,
                 ),
               ),
