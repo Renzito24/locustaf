@@ -23,6 +23,7 @@ import '../../features/medical_documents/presentation/screens/create_medical_doc
 import '../../features/medical_documents/presentation/screens/edit_medical_document_screen.dart';
 import '../../features/medical_documents/presentation/screens/medical_documents_screen.dart';
 import '../../features/reports/presentation/screens/reports_screen.dart';
+import '../../features/reports/presentation/screens/employee_reports_screen.dart';
 import 'app_routes.dart';
 
 class AppRouter {
@@ -48,22 +49,25 @@ class AppRouter {
         return goingToLogin ? null : '/login?blocked=true';
       }
 
+      final role = _auth.role;
+
       if (loggedIn && (goingToLogin || goingToSplash)) {
-        return '/dashboard';
+        return role == UserRole.employee ? '/attendance' : '/dashboard';
       }
 
-      final role = _auth.role;
       final path = state.matchedLocation;
 
-      if (role != null) {
-        if (role == UserRole.employee && path != '/' && !path.startsWith('/login') && !path.startsWith('/dashboard') && !path.startsWith('/profile') && !path.startsWith('/attendance')) {
-          return '/dashboard';
+      if (role == UserRole.employee) {
+        final allowed = ['/attendance', '/reports', '/profile'];
+        if (!allowed.any((r) => path.startsWith(r)) && path != '/' && !path.startsWith('/login')) {
+          return '/attendance';
         }
-        if (role == UserRole.supervisor) {
-          final restricted = ['/attendance', '/medical_documents', '/reports', '/employees/create', '/employees/edit', '/workplaces/create', '/workplaces/edit', '/incidences/create', '/incidences/edit'];
-          if (restricted.any((r) => path.startsWith(r))) {
-            return '/dashboard';
-          }
+      }
+
+      if (role == UserRole.supervisor) {
+        final restricted = ['/attendance', '/medical_documents', '/reports', '/employees/create', '/employees/edit', '/workplaces/create', '/workplaces/edit', '/incidences/create', '/incidences/edit'];
+        if (restricted.any((r) => path.startsWith(r))) {
+          return '/dashboard';
         }
       }
 
@@ -134,7 +138,13 @@ class AppRouter {
           ),
           GoRoute(
             path: RoutePaths.reports,
-            builder: (context, state) => const ReportsScreen(),
+            builder: (context, state) {
+              final role = _auth.role;
+              if (role == UserRole.employee) {
+                return const EmployeeReportsScreen();
+              }
+              return const ReportsScreen();
+            },
           ),
           GoRoute(
             path: RoutePaths.profile,
