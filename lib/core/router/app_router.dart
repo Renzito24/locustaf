@@ -24,6 +24,8 @@ import '../../features/medical_documents/presentation/screens/edit_medical_docum
 import '../../features/medical_documents/presentation/screens/medical_documents_screen.dart';
 import '../../features/reports/presentation/screens/reports_screen.dart';
 import '../../features/reports/presentation/screens/employee_reports_screen.dart';
+import '../../features/companies/presentation/screens/companies_screen.dart';
+import '../../features/companies/presentation/screens/onboarding_screen.dart';
 import 'app_routes.dart';
 
 class AppRouter {
@@ -47,6 +49,13 @@ class AppRouter {
       // (desactivada o eliminada), forzar cierre de sesión.
       if (loggedIn && _auth.isUserBlocked) {
         return goingToLogin ? null : '/login?blocked=true';
+      }
+
+      // Si el usuario está autenticado pero no tiene empresa, debe completar
+      // el onboarding (crear su empresa).
+      if (loggedIn && _auth.needsOnboarding) {
+        final goingToOnboarding = state.matchedLocation == '/onboarding';
+        return goingToOnboarding ? null : '/onboarding';
       }
 
       final role = _auth.role;
@@ -83,12 +92,20 @@ class AppRouter {
         path: '/login',
         builder: (context, state) => const LoginScreen(),
       ),
+      GoRoute(
+        path: '/onboarding',
+        builder: (context, state) => const OnboardingScreen(),
+      ),
       ShellRoute(
         builder: (context, state, child) => DashboardLayout(child: child),
         routes: [
           GoRoute(
             path: RoutePaths.dashboard,
             builder: (context, state) => const HomeScreen(),
+          ),
+          GoRoute(
+            path: RoutePaths.companies,
+            builder: (context, state) => const CompaniesScreen(),
           ),
           GoRoute(
             path: RoutePaths.employees,

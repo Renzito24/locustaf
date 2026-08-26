@@ -14,6 +14,7 @@ class Sidebar extends ConsumerWidget {
 
   static const List<_MenuItem> _items = [
     _MenuItem(icon: Icons.home_outlined, label: 'Inicio', route: RoutePaths.dashboard, visibleFor: {UserRole.admin, UserRole.supervisor}),
+    _MenuItem(icon: Icons.business_outlined, label: 'Empresas', route: RoutePaths.companies, visibleFor: {UserRole.superadmin}),
     _MenuItem(icon: Icons.people_outline, label: 'Empleados', route: RoutePaths.employees, visibleFor: {UserRole.admin, UserRole.supervisor}),
     _MenuItem(icon: Icons.business_outlined, label: 'Lugares', route: RoutePaths.workplaces, visibleFor: {UserRole.admin, UserRole.supervisor}),
     _MenuItem(icon: Icons.fingerprint, label: 'Asistencia', route: RoutePaths.attendance, visibleFor: {UserRole.admin, UserRole.employee}),

@@ -95,6 +95,7 @@ class IncidenceModel extends Equatable {
   final DateTime fechaFin;
   final String observaciones;
   final String? documentoRelacionado;
+  final String? companyId;
   final bool isActive;
   final DateTime createdAt;
   final DateTime? updatedAt;
@@ -107,6 +108,7 @@ class IncidenceModel extends Equatable {
     required this.fechaFin,
     this.observaciones = '',
     this.documentoRelacionado,
+    this.companyId,
     this.isActive = true,
     required this.createdAt,
     this.updatedAt,
@@ -130,6 +132,7 @@ class IncidenceModel extends Equatable {
     DateTime? fechaFin,
     String? observaciones,
     String? documentoRelacionado,
+    String? companyId,
     bool? isActive,
     DateTime? createdAt,
     DateTime? updatedAt,
@@ -142,6 +145,7 @@ class IncidenceModel extends Equatable {
       fechaFin: fechaFin ?? this.fechaFin,
       observaciones: observaciones ?? this.observaciones,
       documentoRelacionado: documentoRelacionado ?? this.documentoRelacionado,
+      companyId: companyId ?? this.companyId,
       isActive: isActive ?? this.isActive,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
@@ -157,6 +161,7 @@ class IncidenceModel extends Equatable {
       fechaFin: DateTime.parse(json['fechaFin'] as String),
       observaciones: json['observaciones'] as String? ?? '',
       documentoRelacionado: json['documentoRelacionado'] as String?,
+      companyId: json['companyId'] as String?,
       isActive: json['isActive'] as bool? ?? true,
       createdAt: DateTime.parse(json['createdAt'] as String),
       updatedAt: json['updatedAt'] != null
@@ -174,6 +179,7 @@ class IncidenceModel extends Equatable {
       'fechaFin': fechaFin.toIso8601String(),
       'observaciones': observaciones,
       'documentoRelacionado': documentoRelacionado,
+      'companyId': companyId,
       'isActive': isActive,
       'createdAt': createdAt.toIso8601String(),
       'updatedAt': updatedAt?.toIso8601String(),
@@ -189,6 +195,7 @@ class IncidenceModel extends Equatable {
         fechaFin,
         observaciones,
         documentoRelacionado,
+        companyId,
         isActive,
         createdAt,
         updatedAt,

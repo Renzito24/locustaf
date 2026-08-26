@@ -1,3 +1,4 @@
+// ignore_for_file: avoid_print
 import 'dart:convert';
 import 'dart:io';
 
@@ -20,6 +21,7 @@ Future<void> main(List<String> args) async {
   }
 
   final seedData = jsonDecode(seedFile.readAsStringSync()) as Map<String, dynamic>;
+  final companies = seedData['companies'] as List<dynamic>? ?? [];
   final workplaces = seedData['workplaces'] as List<dynamic>;
   final users = seedData['users'] as List<dynamic>;
 
@@ -35,6 +37,20 @@ Future<void> main(List<String> args) async {
   print('Admin authenticated: $adminEmail (uid: ${adminAuth['uid']})');
   final adminIdToken = adminAuth['idToken'] as String;
 
+  // Step 1.5: Create company (multicompany model)
+  String? companyId;
+  print('\n--- Creating company ---');
+  for (final c in companies) {
+    final data = (c as Map<String, dynamic>);
+    final now = DateTime.now().toIso8601String();
+    data['createdAt'] = now;
+    data['updatedAt'] = now;
+    companyId = await _createFirestoreDocument('companies', data, adminIdToken);
+    if (companyId != null) {
+      print('  Created company: ${data['nombreComercial']} (id: $companyId)');
+    }
+  }
+
   // Step 2: Create workplaces
   String? workplaceId;
   print('\n--- Creating workplaces ---');
@@ -43,6 +59,9 @@ Future<void> main(List<String> args) async {
     final now = DateTime.now().toIso8601String();
     data['createdAt'] = now;
     data['updatedAt'] = now;
+    if (data['companyId'] == '__COMPANY_ID__') {
+      data['companyId'] = companyId;
+    }
     workplaceId = await _createFirestoreDocument('workplaces', data, adminIdToken);
     if (workplaceId != null) {
       print('  Created workplace: ${data['nombre']} (id: $workplaceId)');
@@ -68,6 +87,9 @@ Future<void> main(List<String> args) async {
     if (data['lugarDeTrabajoId'] == '__WORKPLACE_ID__') {
       data['lugarDeTrabajoId'] = workplaceId;
     }
+    if (data['companyId'] == '__COMPANY_ID__') {
+      data['companyId'] = companyId;
+    }
     final now = DateTime.now().toIso8601String();
     data['createdAt'] = now;
     data['updatedAt'] = now;
@@ -89,6 +111,9 @@ Future<void> main(List<String> args) async {
       final data = (doc as Map<String, dynamic>);
       if (data['userId'] == '__EMPLOYEE_ID__') {
         data['userId'] = employeeId;
+      }
+      if (data['companyId'] == '__COMPANY_ID__') {
+        data['companyId'] = companyId;
       }
       final now = DateTime.now().toIso8601String();
       data['createdAt'] = now;

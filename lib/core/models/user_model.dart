@@ -1,10 +1,12 @@
 import 'package:equatable/equatable.dart';
 
-enum UserRole { admin, supervisor, employee }
+enum UserRole { superadmin, admin, supervisor, employee }
 
 extension UserRoleExtension on UserRole {
   String get label {
     switch (this) {
+      case UserRole.superadmin:
+        return 'Super Administrador';
       case UserRole.admin:
         return 'Administrador';
       case UserRole.supervisor:
@@ -16,6 +18,8 @@ extension UserRoleExtension on UserRole {
 
   static UserRole fromString(String value) {
     switch (value) {
+      case 'superadmin':
+        return UserRole.superadmin;
       case 'admin':
         return UserRole.admin;
       case 'supervisor':
@@ -39,6 +43,7 @@ class UserModel extends Equatable {
   final bool isActive;
   final bool isDeleted;
   final String? lugarDeTrabajoId;
+  final String? companyId;
   final DateTime createdAt;
   final DateTime? updatedAt;
 
@@ -53,6 +58,7 @@ class UserModel extends Equatable {
     this.isActive = true,
     this.isDeleted = false,
     this.lugarDeTrabajoId,
+    this.companyId,
     required this.createdAt,
     this.updatedAt,
   });
@@ -70,6 +76,7 @@ class UserModel extends Equatable {
     bool? isActive,
     bool? isDeleted,
     String? lugarDeTrabajoId,
+    String? companyId,
     DateTime? createdAt,
     DateTime? updatedAt,
   }) {
@@ -84,6 +91,7 @@ class UserModel extends Equatable {
       isActive: isActive ?? this.isActive,
       isDeleted: isDeleted ?? this.isDeleted,
       lugarDeTrabajoId: lugarDeTrabajoId ?? this.lugarDeTrabajoId,
+      companyId: companyId ?? this.companyId,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
     );
@@ -101,6 +109,7 @@ class UserModel extends Equatable {
       isActive: json['isActive'] as bool? ?? true,
       isDeleted: json['isDeleted'] as bool? ?? false,
       lugarDeTrabajoId: json['lugarDeTrabajoId'] as String?,
+      companyId: json['companyId'] as String?,
       createdAt: DateTime.parse(json['createdAt'] as String),
       updatedAt: json['updatedAt'] != null
           ? DateTime.parse(json['updatedAt'] as String)
@@ -120,6 +129,7 @@ class UserModel extends Equatable {
       'isActive': isActive,
       'isDeleted': isDeleted,
       'lugarDeTrabajoId': lugarDeTrabajoId,
+      'companyId': companyId,
       'createdAt': createdAt.toIso8601String(),
       'updatedAt': updatedAt?.toIso8601String(),
     };
@@ -137,6 +147,7 @@ class UserModel extends Equatable {
         isActive,
         isDeleted,
         lugarDeTrabajoId,
+        companyId,
         createdAt,
         updatedAt,
       ];

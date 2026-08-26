@@ -22,6 +22,7 @@ class AuthStateListenable extends ChangeNotifier {
   UserRole? _role;
   bool? _isActive;
   bool? _isDeleted;
+  String? _companyId;
 
   User? get user => FirebaseAuth.instance.currentUser;
 
@@ -37,12 +38,17 @@ class AuthStateListenable extends ChangeNotifier {
   bool get isUserDeleted => _isDeleted == true;
   bool get isUserBlocked => _isActive == false || _isDeleted == true;
 
+  /// El usuario está autenticado pero aún no tiene empresa asignada
+  /// (debe completar el onboarding).
+  bool get needsOnboarding => isLoggedIn && _companyId == null;
+
   void _onAuthChanged(User? user) {
     _userDocSub?.cancel();
     _userDocSub = null;
     _role = null;
     _isActive = null;
     _isDeleted = null;
+    _companyId = null;
     if (user != null) {
       _startListeningUserDoc(user.uid);
     }
@@ -59,6 +65,7 @@ class AuthStateListenable extends ChangeNotifier {
       _role = userModel?.rol;
       _isActive = userModel?.isActive;
       _isDeleted = userModel?.isDeleted;
+      _companyId = userModel?.companyId;
       notifyListeners();
     });
   }

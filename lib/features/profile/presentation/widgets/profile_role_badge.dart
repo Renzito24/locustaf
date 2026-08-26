@@ -11,6 +11,7 @@ class ProfileRoleBadge extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final (Color bg, Color fg, String label) = switch (role) {
+      UserRole.superadmin => (const Color(0xFF7C3AED).withValues(alpha: 0.2), const Color(0xFF7C3AED), 'Super Admin'),
       UserRole.admin => (const Color(0xFFD4AF37).withValues(alpha: 0.2), const Color(0xFFD4AF37), 'Administrador'),
       UserRole.supervisor => (const Color(0xFF0EA5E9).withValues(alpha: 0.2), const Color(0xFF0EA5E9), 'Supervisor'),
       UserRole.employee => (const Color(0xFF059669).withValues(alpha: 0.2), const Color(0xFF059669), 'Empleado'),

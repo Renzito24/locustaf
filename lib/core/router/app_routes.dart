@@ -2,6 +2,7 @@ class RoutePaths {
   RoutePaths._();
 
   static const String dashboard = '/dashboard';
+  static const String companies = '/companies';
   static const String employees = '/employees';
   static const String workplaces = '/workplaces';
   static const String attendance = '/attendance';

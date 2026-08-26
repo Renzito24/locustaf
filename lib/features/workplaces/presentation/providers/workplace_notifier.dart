@@ -3,11 +3,13 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../data/models/workplace_model.dart';
 import '../../data/repositories/workplace_repository_impl.dart';
 import '../../domain/repositories/workplace_repository.dart';
+import '../../../../core/providers/data_providers.dart';
 import '../../../../core/providers/firebase_providers.dart';
 
 final workplaceRepositoryProvider = Provider<WorkplaceRepository>((ref) {
   final svc = ref.read(firestoreServiceProvider);
-  return WorkplaceRepositoryImpl(svc);
+  final companyId = ref.watch(currentCompanyIdProvider);
+  return WorkplaceRepositoryImpl(svc, companyId: companyId);
 });
 
 final workplacesStreamProvider = StreamProvider<List<WorkplaceModel>>((ref) {

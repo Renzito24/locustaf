@@ -1,4 +1,15 @@
 {
+  "companies": [
+    {
+      "nombreComercial": "LOCUSTAF Demo",
+      "razonSocial": "LOCUSTAF S.A.",
+      "cuit": "30-00000000-0",
+      "direccion": "Av. Corrientes 1234, CABA",
+      "telefono": "+54 11 5555-0000",
+      "email": "demo@locustaf.com",
+      "estado": "activa"
+    }
+  ],
   "users": [
     {
       "nombre": "Admin",
@@ -10,7 +21,8 @@
       "rol": "admin",
       "isActive": true,
       "isDeleted": false,
-      "lugarDeTrabajoId": null
+      "lugarDeTrabajoId": null,
+      "companyId": "__COMPANY_ID__"
     },
     {
       "nombre": "Supervisor",
@@ -22,7 +34,8 @@
       "rol": "supervisor",
       "isActive": true,
       "isDeleted": false,
-      "lugarDeTrabajoId": "__WORKPLACE_ID__"
+      "lugarDeTrabajoId": "__WORKPLACE_ID__",
+      "companyId": "__COMPANY_ID__"
     },
     {
       "nombre": "Empleado",
@@ -34,7 +47,8 @@
       "rol": "employee",
       "isActive": true,
       "isDeleted": false,
-      "lugarDeTrabajoId": "__WORKPLACE_ID__"
+      "lugarDeTrabajoId": "__WORKPLACE_ID__",
+      "companyId": "__COMPANY_ID__"
     }
   ],
   "medical_documents": [
@@ -49,7 +63,8 @@
       "mimeType": null,
       "estado": "pendiente",
       "observacionRechazo": null,
-      "isActive": true
+      "isActive": true,
+      "companyId": "__COMPANY_ID__"
     },
     {
       "userId": "__EMPLOYEE_ID__",
@@ -62,7 +77,8 @@
       "mimeType": null,
       "estado": "aprobado",
       "observacionRechazo": null,
-      "isActive": true
+      "isActive": true,
+      "companyId": "__COMPANY_ID__"
     },
     {
       "userId": "__EMPLOYEE_ID__",
@@ -75,7 +91,8 @@
       "mimeType": null,
       "estado": "rechazado",
       "observacionRechazo": "Documentación insuficiente",
-      "isActive": true
+      "isActive": true,
+      "companyId": "__COMPANY_ID__"
     }
   ],
   "workplaces": [
@@ -90,7 +107,8 @@
       "horaInicio": "08:00",
       "horaFin": "16:00",
       "toleranciaMinutos": 15,
-      "isActive": true
+      "isActive": true,
+      "companyId": "__COMPANY_ID__"
     }
   ]
 }

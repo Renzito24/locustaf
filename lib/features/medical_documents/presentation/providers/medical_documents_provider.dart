@@ -1,6 +1,7 @@
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../../core/providers/data_providers.dart';
 import '../../../../core/providers/firebase_providers.dart';
 import '../../../../core/services/storage_service.dart';
 import '../../../employees/presentation/providers/users_provider.dart';
@@ -10,7 +11,8 @@ import '../../domain/repositories/medical_document_repository.dart';
 
 final medicalDocumentRepositoryProvider = Provider<MedicalDocumentRepository>((ref) {
   final firestoreService = ref.read(firestoreServiceProvider);
-  return MedicalDocumentRepositoryImpl(firestoreService);
+  final companyId = ref.watch(currentCompanyIdProvider);
+  return MedicalDocumentRepositoryImpl(firestoreService, companyId: companyId);
 });
 
 final medicalDocumentsStreamProvider = StreamProvider<List<MedicalDocumentModel>>((ref) {
@@ -165,6 +167,7 @@ class MedicalDocumentCreateNotifier extends Notifier<MedicalDocumentActionState>
 
     final repo = ref.read(medicalDocumentRepositoryProvider);
     final storageService = ref.read(storageServiceProvider);
+    final companyId = ref.read(currentCompanyIdProvider);
     String? uploadedUrl;
     String? mimeType;
     String? fileName;
@@ -172,7 +175,7 @@ class MedicalDocumentCreateNotifier extends Notifier<MedicalDocumentActionState>
     try {
       if (file != null) {
         final docId = ref.read(firestoreServiceProvider).generateId('medical_documents');
-        final storagePath = 'medical_documents/${document.userId}/${docId}_${file.name}';
+        final storagePath = 'companies/$companyId/medical_documents/${document.userId}/${docId}_${file.name}';
 
         uploadedUrl = await storageService.uploadFile(
           path: storagePath,
@@ -233,6 +236,7 @@ class MedicalDocumentUpdateNotifier extends Notifier<MedicalDocumentActionState>
 
     final repo = ref.read(medicalDocumentRepositoryProvider);
     final storageService = ref.read(storageServiceProvider);
+    final companyId = ref.read(currentCompanyIdProvider);
     String? uploadedUrl;
     String? newFileName;
     String? newMimeType;
@@ -242,7 +246,7 @@ class MedicalDocumentUpdateNotifier extends Notifier<MedicalDocumentActionState>
         final docId = document.id.isEmpty
             ? ref.read(firestoreServiceProvider).generateId('medical_documents')
             : document.id;
-        final storagePath = 'medical_documents/${document.userId}/${docId}_${file.name}';
+        final storagePath = 'companies/$companyId/medical_documents/${document.userId}/${docId}_${file.name}';
 
         // 1. Subir nuevo archivo primero
         uploadedUrl = await storageService.uploadFile(

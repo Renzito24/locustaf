@@ -7,15 +7,19 @@ import '../models/attendance_model.dart';
 
 class AttendanceRepositoryImpl implements AttendanceRepository {
   final FirestoreService _firestoreService;
+  final String? _companyId;
 
-  AttendanceRepositoryImpl(this._firestoreService);
+  AttendanceRepositoryImpl(this._firestoreService, {String? companyId})
+      : _companyId = companyId;
 
   @override
   Stream<List<AttendanceModel>> getAttendancesByUser(String userId) {
-    return _firestoreService.queryStream<AttendanceModel>(
+    return _firestoreService.queryStreamWithFilters<AttendanceModel>(
       path: 'attendances',
-      field: 'userId',
-      value: userId,
+      filters: {
+        'userId': userId,
+        if (_companyId != null) 'companyId': _companyId,
+      },
       fromJson: AttendanceModel.fromJson,
       orderField: 'checkInTime',
       descending: true,
@@ -24,8 +28,10 @@ class AttendanceRepositoryImpl implements AttendanceRepository {
 
   @override
   Stream<List<AttendanceModel>> getAllAttendances() {
-    return _firestoreService.collectionStream<AttendanceModel>(
+    if (_companyId == null) return Stream.value(<AttendanceModel>[]);
+    return _firestoreService.queryStreamWithFilters<AttendanceModel>(
       path: 'attendances',
+      filters: {'companyId': _companyId},
       fromJson: AttendanceModel.fromJson,
     );
   }
@@ -64,6 +70,7 @@ class AttendanceRepositoryImpl implements AttendanceRepository {
           _firestoreService.collection('attendances').doc();
       final data = attendance.toJson();
       data['id'] = attendanceRef.id;
+      if (_companyId != null) data['companyId'] = _companyId;
 
       transaction.set(attendanceRef, data);
       transaction.set(lockRef, {

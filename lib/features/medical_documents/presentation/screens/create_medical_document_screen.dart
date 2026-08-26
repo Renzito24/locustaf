@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../../core/constants/app_colors.dart';
+import '../../../../core/providers/data_providers.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../data/models/medical_document_model.dart';
 import '../providers/medical_documents_provider.dart';
@@ -55,6 +56,7 @@ class CreateMedicalDocumentScreen extends ConsumerWidget {
                     fechaFin: data.fechaFin,
                     motivo: data.motivo,
                     archivoUrl: data.archivoUrl,
+                    companyId: ref.read(currentCompanyIdProvider),
                     createdAt: now,
                   );
                   final notifier = ref.read(medicalDocumentCreateProvider.notifier);

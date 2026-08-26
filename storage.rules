@@ -10,17 +10,49 @@ service firebase.storage {
       return request.auth != null;
     }
 
+    function getUserData() {
+      return firestore.get(
+        /databases/(default)/documents/users/$(request.auth.uid)
+      ).data;
+    }
+
+    function getRole() {
+      return getUserData().rol;
+    }
+
+    function getCompanyId() {
+      return getUserData().companyId;
+    }
+
+    function isSuperadmin() {
+      return isAuthenticated() && getRole() == 'superadmin';
+    }
+
+    function isAdmin() {
+      return isAuthenticated() && getRole() == 'admin';
+    }
+
     // ====================================================================
     // MEDICAL DOCUMENTS
-    // Path: medical_documents/{userId}/{fileName}
-    // Admin  : full access (upload on behalf of employees)
-    // Empl   : read own files only (reserved for future use)
+    // Path: companies/{companyId}/medical_documents/{userId}/{fileName}
+    // Superadmin : full access
+    // Admin      : full access de su empresa
+    // Empl       : read own files only (reserved for future use)
     // ====================================================================
-    match /medical_documents/{userId}/{fileName} {
-      allow read: if isAuthenticated();
-      allow create: if isAuthenticated();
-      allow update: if isAuthenticated();
-      allow delete: if isAuthenticated();
+    match /companies/{companyId}/medical_documents/{userId}/{fileName} {
+      allow read: if isAuthenticated()
+        && (isSuperadmin()
+            || (isAdmin() && companyId == getCompanyId())
+            || (request.auth.uid == userId && companyId == getCompanyId()));
+      allow create: if isAuthenticated()
+        && (isSuperadmin()
+            || (isAdmin() && companyId == getCompanyId()));
+      allow update: if isAuthenticated()
+        && (isSuperadmin()
+            || (isAdmin() && companyId == getCompanyId()));
+      allow delete: if isAuthenticated()
+        && (isSuperadmin()
+            || (isAdmin() && companyId == getCompanyId()));
     }
 
     // ====================================================================

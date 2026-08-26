@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../../core/constants/app_colors.dart';
+import '../../../../core/providers/data_providers.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../data/models/workplace_model.dart';
 import '../providers/workplace_notifier.dart';
@@ -149,6 +150,7 @@ class _WorkplaceFormState extends ConsumerState<_WorkplaceForm> {
         horaInicio: horaInicio,
         horaFin: horaFin,
         toleranciaMinutos: tolerancia,
+        companyId: ref.read(currentCompanyIdProvider),
         isActive: _isActive,
         createdAt: DateTime.now(),
       );

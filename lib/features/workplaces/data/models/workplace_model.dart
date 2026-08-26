@@ -12,6 +12,7 @@ class WorkplaceModel extends Equatable {
   final String? horaInicio;
   final String? horaFin;
   final int toleranciaMinutos;
+  final String? companyId;
   final bool isActive;
   final DateTime createdAt;
   final DateTime? updatedAt;
@@ -28,6 +29,7 @@ class WorkplaceModel extends Equatable {
     this.horaInicio,
     this.horaFin,
     this.toleranciaMinutos = 15,
+    this.companyId,
     this.isActive = true,
     required this.createdAt,
     this.updatedAt,
@@ -45,6 +47,7 @@ class WorkplaceModel extends Equatable {
     String? horaInicio,
     String? horaFin,
     int? toleranciaMinutos,
+    String? companyId,
     bool? isActive,
     DateTime? createdAt,
     DateTime? updatedAt,
@@ -61,6 +64,7 @@ class WorkplaceModel extends Equatable {
       horaInicio: horaInicio ?? this.horaInicio,
       horaFin: horaFin ?? this.horaFin,
       toleranciaMinutos: toleranciaMinutos ?? this.toleranciaMinutos,
+      companyId: companyId ?? this.companyId,
       isActive: isActive ?? this.isActive,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
@@ -80,6 +84,7 @@ class WorkplaceModel extends Equatable {
       horaInicio: json['horaInicio'] as String?,
       horaFin: json['horaFin'] as String?,
       toleranciaMinutos: (json['toleranciaMinutos'] as num?)?.toInt() ?? 15,
+      companyId: json['companyId'] as String?,
       isActive: json['isActive'] as bool? ?? true,
       createdAt: DateTime.parse(json['createdAt'] as String),
       updatedAt: json['updatedAt'] != null
@@ -101,6 +106,7 @@ class WorkplaceModel extends Equatable {
       'horaInicio': horaInicio,
       'horaFin': horaFin,
       'toleranciaMinutos': toleranciaMinutos,
+      'companyId': companyId,
       'isActive': isActive,
       'createdAt': createdAt.toIso8601String(),
       'updatedAt': updatedAt?.toIso8601String(),
@@ -120,6 +126,7 @@ class WorkplaceModel extends Equatable {
         horaInicio,
         horaFin,
         toleranciaMinutos,
+        companyId,
         isActive,
         createdAt,
         updatedAt,

@@ -7,13 +7,17 @@ import '../../domain/repositories/users_repository.dart';
 
 class UsersRepositoryImpl implements UsersRepository {
   final FirestoreService _firestoreService;
+  final String? _companyId;
 
-  UsersRepositoryImpl(this._firestoreService);
+  UsersRepositoryImpl(this._firestoreService, {String? companyId})
+      : _companyId = companyId;
 
   @override
   Stream<List<UserModel>> getUsers() {
-    return _firestoreService.collectionStream<UserModel>(
+    if (_companyId == null) return Stream.value(<UserModel>[]);
+    return _firestoreService.queryStreamWithFilters<UserModel>(
       path: 'users',
+      filters: {'companyId': _companyId},
       fromJson: UserModel.fromJson,
     );
   }
@@ -35,7 +39,11 @@ class UsersRepositoryImpl implements UsersRepository {
       firebaseUser = result.user;
       final uid = firebaseUser!.uid;
 
-      final newUser = user.copyWith(id: uid, createdAt: DateTime.now());
+      final newUser = user.copyWith(
+        id: uid,
+        createdAt: DateTime.now(),
+        companyId: _companyId,
+      );
       await _firestoreService.setDocument(
         path: 'users',
         documentId: uid,

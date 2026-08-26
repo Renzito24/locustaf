@@ -141,6 +141,37 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
     }
   }
 
+  Future<void> loginWithGoogle() async {
+    setState(() {
+      errorMessage = null;
+      isLoading = true;
+    });
+
+    try {
+      final authRepo = ref.read(authRepositoryProvider);
+      final credential = await authRepo.loginWithGoogle();
+      if (credential == null) {
+        // Usuario canceló el flujo de Google.
+        if (mounted) setState(() => isLoading = false);
+        return;
+      }
+      if (!mounted) return;
+      context.go('/dashboard');
+    } on Exception catch (e) {
+      if (mounted) {
+        setState(() {
+          errorMessage = _mensajeError(e);
+        });
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          isLoading = false;
+        });
+      }
+    }
+  }
+
   @override
   void dispose() {
     emailController.dispose();
@@ -344,6 +375,31 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
                                                 ),
                                               ),
                                       ),
+                                    ),
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(height: 16),
+                              SizedBox(
+                                width: double.infinity,
+                                height: 52,
+                                child: OutlinedButton.icon(
+                                  onPressed: isLoading ? null : loginWithGoogle,
+                                  icon: const Icon(Icons.g_mobiledata, color: AppColors.textWhite, size: 26),
+                                  label: const Text(
+                                    'Ingresar con Google',
+                                    style: TextStyle(
+                                      fontSize: 15,
+                                      fontWeight: FontWeight.w600,
+                                      color: AppColors.textWhite,
+                                    ),
+                                  ),
+                                  style: OutlinedButton.styleFrom(
+                                    side: BorderSide(
+                                      color: AppColors.gold.withValues(alpha: 0.5),
+                                    ),
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(AppTheme.radiusLg),
                                     ),
                                   ),
                                 ),

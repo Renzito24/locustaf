@@ -14,6 +14,11 @@ class AuthRepositoryImpl implements AuthRepository {
   }
 
   @override
+  Future<UserCredential?> loginWithGoogle() {
+    return _authService.loginWithGoogle();
+  }
+
+  @override
   Future<void> logout() {
     return _authService.logout();
   }

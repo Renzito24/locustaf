@@ -38,6 +38,7 @@ class AttendanceModel extends Equatable {
   final double? checkOutLongitud;
   final bool? isLate;
   final String? workplaceId;
+  final String? companyId;
 
   const AttendanceModel({
     required this.id,
@@ -53,6 +54,7 @@ class AttendanceModel extends Equatable {
     this.checkOutLongitud,
     this.isLate,
     this.workplaceId,
+    this.companyId,
   });
 
   AttendanceModel copyWith({
@@ -69,6 +71,7 @@ class AttendanceModel extends Equatable {
     double? checkOutLongitud,
     bool? isLate,
     String? workplaceId,
+    String? companyId,
     bool clearCheckOut = false,
   }) {
     return AttendanceModel(
@@ -85,6 +88,7 @@ class AttendanceModel extends Equatable {
       checkOutLongitud: checkOutLongitud ?? this.checkOutLongitud,
       isLate: isLate ?? this.isLate,
       workplaceId: workplaceId ?? this.workplaceId,
+      companyId: companyId ?? this.companyId,
     );
   }
 
@@ -105,6 +109,7 @@ class AttendanceModel extends Equatable {
       checkOutLongitud: (json['checkOutLongitud'] as num?)?.toDouble(),
       isLate: json['isLate'] as bool?,
       workplaceId: json['workplaceId'] as String?,
+      companyId: json['companyId'] as String?,
     );
   }
 
@@ -123,6 +128,7 @@ class AttendanceModel extends Equatable {
       'checkOutLongitud': checkOutLongitud,
       'isLate': isLate,
       'workplaceId': workplaceId,
+      'companyId': companyId,
     };
   }
 
@@ -141,5 +147,6 @@ class AttendanceModel extends Equatable {
         checkOutLongitud,
         isLate,
         workplaceId,
+        companyId,
       ];
 }

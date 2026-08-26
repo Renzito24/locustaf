@@ -10,10 +10,22 @@ service cloud.firestore {
       return request.auth != null;
     }
 
-    function getRole() {
+    function getUserData() {
       return get(
         /databases/$(database)/documents/users/$(request.auth.uid)
-      ).data.rol;
+      ).data;
+    }
+
+    function getRole() {
+      return getUserData().rol;
+    }
+
+    function getCompanyId() {
+      return getUserData().companyId;
+    }
+
+    function isSuperadmin() {
+      return isAuthenticated() && getRole() == 'superadmin';
     }
 
     function isAdmin() {
@@ -32,82 +44,146 @@ service cloud.firestore {
       return request.auth.uid == userId;
     }
 
+    // El documento pertenece a la empresa del usuario autenticado.
+    function inCompany(companyId) {
+      return isAuthenticated() && companyId == getCompanyId();
+    }
+
+    // En updates, los campos sensibles no pueden cambiar.
+    function noSensitiveFieldChanges() {
+      return request.resource.data.companyId == resource.data.companyId
+        && request.resource.data.userId == resource.data.userId;
+    }
+
+    // Para la colección users, además el rol no puede cambiar salvo admin/superadmin.
+    function noUserSensitiveChanges() {
+      return noSensitiveFieldChanges()
+        && (isSuperadmin() || isAdmin()
+            || request.resource.data.rol == resource.data.rol);
+    }
+
     // ====================================================================
     // USERS
-    // Admin  : read any, create, update, soft-delete
-    // Superv : read any
-    // Empl   : read own only
+    // Superadmin : full access (todas las empresas)
+    // Admin      : read/update de su empresa, create en su empresa
+    // Superv     : read de su empresa
+    // Empl       : read own only
     // ====================================================================
     match /users/{uid} {
       allow read: if isAuthenticated()
-        && (isAdmin() || isSupervisor() || (isEmployee() && isOwner(uid)));
-      allow create: if isAdmin();
-      allow update: if isAdmin();
-      allow delete: if isAdmin();
+        && (isSuperadmin() || inCompany(resource.data.companyId)
+            || (isEmployee() && isOwner(uid)));
+      allow create: if isAuthenticated()
+        && (isSuperadmin()
+            || (isAdmin() && request.resource.data.companyId == getCompanyId()));
+      allow update: if isAuthenticated()
+        && (isSuperadmin()
+            || (isAdmin() && inCompany(resource.data.companyId)))
+        && noUserSensitiveChanges();
+      allow delete: if isSuperadmin();
+    }
+
+    // ====================================================================
+    // COMPANIES
+    // Superadmin : full access
+    // Admin      : read/update de su propia empresa
+    // ====================================================================
+    match /companies/{companyId} {
+      allow read: if isAuthenticated()
+        && (isSuperadmin() || inCompany(companyId));
+      allow create: if isSuperadmin();
+      allow update: if isSuperadmin()
+        || (isAdmin() && inCompany(companyId));
+      allow delete: if isSuperadmin();
     }
 
     // ====================================================================
     // ATTENDANCES
-    // Admin  : read any, write any
-    // Superv : read any (reports), manage own check-in/out
-    // Empl   : read own, manage own check-in/out
+    // Superadmin : full access
+    // Admin/Superv: read de su empresa
+    // Empl       : read own, manage own check-in/out
     // ====================================================================
     match /attendances/{docId} {
       allow read: if isAuthenticated()
-        && (isAdmin() || isSupervisor() || isOwner(resource.data.userId));
+        && (isSuperadmin() || inCompany(resource.data.companyId)
+            || (isEmployee() && isOwner(resource.data.userId)));
       allow create: if isAuthenticated()
-        && (isAdmin() || isSupervisor() || isEmployee())
-        && (isAdmin() || request.resource.data.userId == request.auth.uid);
+        && (isSuperadmin()
+            || (isEmployee() && request.resource.data.userId == request.auth.uid
+                && request.resource.data.companyId == getCompanyId()));
       allow update: if isAuthenticated()
-        && (isAdmin() || isSupervisor() || isEmployee())
-        && (isAdmin() || resource.data.userId == request.auth.uid);
-      allow delete: if isAdmin();
+        && (isSuperadmin()
+            || (isEmployee() && resource.data.userId == request.auth.uid
+                && inCompany(resource.data.companyId)))
+        && noSensitiveFieldChanges();
+      allow delete: if isSuperadmin();
     }
 
     // ====================================================================
     // WORKPLACES
-    // Admin  : full access
-    // Superv : read only (reports)
-    // Empl   : no access
+    // Superadmin : full access
+    // Admin      : full access de su empresa
+    // Superv     : read de su empresa
+    // Empl       : no access
     // ====================================================================
     match /workplaces/{docId} {
       allow read: if isAuthenticated()
-        && (isAdmin() || isSupervisor());
-      allow create: if isAdmin();
-      allow update: if isAdmin();
-      allow delete: if isAdmin();
+        && (isSuperadmin() || inCompany(resource.data.companyId));
+      allow create: if isAuthenticated()
+        && (isSuperadmin()
+            || (isAdmin() && request.resource.data.companyId == getCompanyId()));
+      allow update: if isAuthenticated()
+        && (isSuperadmin()
+            || (isAdmin() && inCompany(resource.data.companyId)))
+        && noSensitiveFieldChanges();
+      allow delete: if isSuperadmin()
+        || (isAdmin() && inCompany(resource.data.companyId));
     }
 
     // ====================================================================
     // MEDICAL DOCUMENTS
-    // Admin  : full access
-    // Superv : no access
-    // Empl   : no access (read own reserved for future use)
+    // Superadmin : full access
+    // Admin      : full access de su empresa
+    // Superv/Empl: no access
     // ====================================================================
     match /medical_documents/{docId} {
-      allow read: if isAdmin();
-      allow create: if isAdmin();
-      allow update: if isAdmin();
-      allow delete: if isAdmin();
+      allow read: if isAuthenticated()
+        && (isSuperadmin()
+            || (isAdmin() && inCompany(resource.data.companyId)));
+      allow create: if isAuthenticated()
+        && (isSuperadmin()
+            || (isAdmin() && request.resource.data.companyId == getCompanyId()));
+      allow update: if isAuthenticated()
+        && (isSuperadmin()
+            || (isAdmin() && inCompany(resource.data.companyId)))
+        && noSensitiveFieldChanges();
+      allow delete: if isSuperadmin()
+        || (isAdmin() && inCompany(resource.data.companyId));
     }
 
     // ====================================================================
     // INCIDENCES
-    // Admin  : full access
-    // Superv : read only
-    // Empl   : no access (read own reserved for future use)
+    // Superadmin : full access
+    // Admin      : full access de su empresa
+    // Superv     : read de su empresa
+    // Empl       : no access
     // ====================================================================
     match /incidences/{docId} {
-      allow read: if isAdmin() || isSupervisor();
-      allow create: if isAdmin();
-      allow update: if isAdmin();
-      allow delete: if isAdmin();
+      allow read: if isAuthenticated()
+        && (isSuperadmin() || inCompany(resource.data.companyId));
+      allow create: if isAuthenticated()
+        && (isSuperadmin()
+            || (isAdmin() && request.resource.data.companyId == getCompanyId()));
+      allow update: if isAuthenticated()
+        && (isSuperadmin()
+            || (isAdmin() && inCompany(resource.data.companyId)))
+        && noSensitiveFieldChanges();
+      allow delete: if isSuperadmin()
+        || (isAdmin() && inCompany(resource.data.companyId));
     }
 
     // ====================================================================
     // ATTENDANCE LOCKS (internal concurrency control)
-    // Used by check-in/check-out transactions.
-    // Authenticated users can read/write their own lock only.
     // ====================================================================
     match /_attendance_locks/{lockId} {
       allow read: if isAuthenticated();

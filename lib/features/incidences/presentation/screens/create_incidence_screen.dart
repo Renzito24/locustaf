@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../../core/constants/app_colors.dart';
+import '../../../../core/providers/data_providers.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../data/models/incidence_model.dart';
 import '../providers/incidences_provider.dart';
@@ -53,6 +54,7 @@ class CreateIncidenceScreen extends ConsumerWidget {
                     fechaFin: data.fechaFin,
                     observaciones: data.observaciones,
                     documentoRelacionado: data.documentoRelacionado,
+                    companyId: ref.read(currentCompanyIdProvider),
                     createdAt: DateTime.now(),
                   );
                   await ref.read(incidenceCreateProvider.notifier).createIncidence(incidence);

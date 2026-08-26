@@ -1,13 +1,15 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/models/user_model.dart';
+import '../../../../core/providers/data_providers.dart';
 import '../../../../core/providers/firebase_providers.dart';
 import '../../data/repositories/users_repository_impl.dart';
 import '../../domain/repositories/users_repository.dart';
 
 final usersRepositoryProvider = Provider<UsersRepository>((ref) {
   final firestoreService = ref.read(firestoreServiceProvider);
-  return UsersRepositoryImpl(firestoreService);
+  final companyId = ref.watch(currentCompanyIdProvider);
+  return UsersRepositoryImpl(firestoreService, companyId: companyId);
 });
 
 final usersStreamProvider = StreamProvider<List<UserModel>>((ref) {
@@ -177,6 +179,7 @@ class CreateEmployeeNotifier extends AsyncNotifier<void> {
         telefono: data.telefono,
         rol: data.rol,
         lugarDeTrabajoId: data.lugarDeTrabajoId,
+        companyId: ref.read(currentCompanyIdProvider),
         createdAt: DateTime.now(),
       );
       await repo.createUser(user, data.password);

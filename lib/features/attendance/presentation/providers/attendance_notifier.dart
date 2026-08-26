@@ -12,7 +12,8 @@ import '../../../workplaces/data/models/workplace_model.dart';
 
 final attendanceRepositoryProvider = Provider<AttendanceRepository>((ref) {
   final svc = ref.read(firestoreServiceProvider);
-  return AttendanceRepositoryImpl(svc);
+  final companyId = ref.watch(currentCompanyIdProvider);
+  return AttendanceRepositoryImpl(svc, companyId: companyId);
 });
 
 final attendancesByUserProvider = StreamProvider.family<List<AttendanceModel>, String>((ref, userId) {
@@ -149,6 +150,7 @@ class AttendanceNotifier extends Notifier<AttendanceActionState> {
         checkInLongitud: location.longitude,
         isLate: isLate,
         workplaceId: workplaceId,
+        companyId: ref.read(currentCompanyIdProvider),
       );
 
       await repo.checkIn(attendance);

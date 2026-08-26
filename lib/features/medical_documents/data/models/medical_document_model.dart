@@ -91,6 +91,7 @@ class MedicalDocumentModel extends Equatable {
   final String? mimeType;
   final MedicalDocumentEstado estado;
   final String? observacionRechazo;
+  final String? companyId;
   final bool isActive;
   final DateTime createdAt;
   final DateTime? updatedAt;
@@ -107,6 +108,7 @@ class MedicalDocumentModel extends Equatable {
     this.mimeType,
     this.estado = MedicalDocumentEstado.pendiente,
     this.observacionRechazo,
+    this.companyId,
     this.isActive = true,
     required this.createdAt,
     this.updatedAt,
@@ -136,6 +138,7 @@ class MedicalDocumentModel extends Equatable {
     String? mimeType,
     MedicalDocumentEstado? estado,
     String? observacionRechazo,
+    String? companyId,
     bool? isActive,
     DateTime? createdAt,
     DateTime? updatedAt,
@@ -152,6 +155,7 @@ class MedicalDocumentModel extends Equatable {
       mimeType: mimeType ?? this.mimeType,
       estado: estado ?? this.estado,
       observacionRechazo: observacionRechazo ?? this.observacionRechazo,
+      companyId: companyId ?? this.companyId,
       isActive: isActive ?? this.isActive,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
@@ -174,6 +178,7 @@ class MedicalDocumentModel extends Equatable {
               json['estado'] as String)
           : MedicalDocumentEstado.pendiente,
       observacionRechazo: json['observacionRechazo'] as String?,
+      companyId: json['companyId'] as String?,
       isActive: json['isActive'] as bool? ?? true,
       createdAt: DateTime.parse(json['createdAt'] as String),
       updatedAt: json['updatedAt'] != null
@@ -195,6 +200,7 @@ class MedicalDocumentModel extends Equatable {
       'mimeType': mimeType,
       'estado': estado.name,
       'observacionRechazo': observacionRechazo,
+      'companyId': companyId,
       'isActive': isActive,
       'createdAt': createdAt.toIso8601String(),
       'updatedAt': updatedAt?.toIso8601String(),
@@ -214,6 +220,7 @@ class MedicalDocumentModel extends Equatable {
         mimeType,
         estado,
         observacionRechazo,
+        companyId,
         isActive,
         createdAt,
         updatedAt,
