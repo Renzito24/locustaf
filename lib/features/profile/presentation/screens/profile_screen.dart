@@ -4,7 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../authentication/presentation/providers/auth_provider.dart';
-import '../../../authentication/data/models/user_model.dart';
+import '../../../../core/models/user_model.dart';
 import '../../../workplaces/presentation/providers/workplace_notifier.dart';
 import '../../../workplaces/data/models/workplace_model.dart';
 import '../widgets/profile_header.dart';

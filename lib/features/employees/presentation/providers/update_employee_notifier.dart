@@ -1,6 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../authentication/data/models/user_model.dart';
+import '../../../../core/models/user_model.dart';
 import 'users_provider.dart';
 
 class UpdateEmployeeNotifier extends AsyncNotifier<void> {

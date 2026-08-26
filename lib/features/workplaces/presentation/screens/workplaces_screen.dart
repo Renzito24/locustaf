@@ -4,7 +4,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/theme/app_theme.dart';
-import '../../../authentication/data/models/user_model.dart';
+import '../../../../core/models/user_model.dart';
 import '../../../authentication/presentation/providers/auth_provider.dart';
 import '../../data/models/workplace_model.dart';
 import '../providers/workplace_notifier.dart';

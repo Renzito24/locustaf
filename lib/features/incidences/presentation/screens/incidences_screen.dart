@@ -5,7 +5,7 @@ import 'package:go_router/go_router.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/router/app_routes.dart';
 import '../../../../core/theme/app_theme.dart';
-import '../../../authentication/data/models/user_model.dart';
+import '../../../../core/models/user_model.dart';
 import '../../../authentication/presentation/providers/auth_provider.dart';
 import '../../../employees/presentation/providers/users_provider.dart';
 import '../../data/models/incidence_model.dart';

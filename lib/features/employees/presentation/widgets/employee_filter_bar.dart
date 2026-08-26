@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/constants/app_colors.dart';
-import '../../../authentication/data/models/user_model.dart';
+import '../../../../core/models/user_model.dart';
 import '../../../workplaces/data/models/workplace_model.dart';
 import '../../../workplaces/presentation/providers/workplace_notifier.dart';
 import '../providers/users_provider.dart';

@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import '../../../authentication/data/models/user_model.dart';
+import '../../../../core/models/user_model.dart';
 import '../../../../core/theme/app_theme.dart';
 
 class ProfileRoleBadge extends StatelessWidget {

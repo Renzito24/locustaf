@@ -1,7 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../features/attendance/data/models/attendance_model.dart';
-import '../../features/authentication/data/models/user_model.dart';
+import '../../core/models/user_model.dart';
 import '../../features/workplaces/data/models/workplace_model.dart';
 import 'firebase_providers.dart';
 

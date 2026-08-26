@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import '../../../authentication/data/models/user_model.dart';
+import '../../../../core/models/user_model.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/theme/app_theme.dart';
 import 'profile_role_badge.dart';

@@ -1,5 +1,5 @@
 import '../../../../core/services/firestore_service.dart';
-import '../../../authentication/data/models/user_model.dart';
+import '../../../../core/models/user_model.dart';
 import '../../../workplaces/data/models/workplace_model.dart';
 import '../../domain/exceptions/attendance_exception.dart';
 import '../../domain/repositories/attendance_repository.dart';

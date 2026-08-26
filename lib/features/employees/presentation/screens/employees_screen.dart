@@ -5,7 +5,7 @@ import 'package:go_router/go_router.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/router/app_routes.dart';
-import '../../../authentication/data/models/user_model.dart';
+import '../../../../core/models/user_model.dart';
 import '../providers/delete_employee_notifier.dart';
 import '../providers/reset_password_notifier.dart';
 import '../providers/update_employee_notifier.dart';

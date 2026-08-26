@@ -3,7 +3,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
 
-import '../data/models/user_model.dart';
+import '../../../core/models/user_model.dart';
 import '../../../../core/services/firestore_service.dart';
 
 class AuthStateListenable extends ChangeNotifier {

@@ -66,8 +66,20 @@ class ReportsScreen extends ConsumerWidget {
                       onPressed: reportRows.isEmpty
                           ? null
                           : () => _exportCsv(context, reportRows),
-                      icon: const Icon(Icons.download, size: 18),
-                      label: const Text('Exportar CSV'),
+                      icon: const Icon(Icons.table_chart, size: 18),
+                      label: const Text('CSV'),
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: AppColors.gold,
+                        side: const BorderSide(color: AppColors.gold),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    OutlinedButton.icon(
+                      onPressed: reportRows.isEmpty
+                          ? null
+                          : () => _exportPdf(context, reportRows),
+                      icon: const Icon(Icons.picture_as_pdf, size: 18),
+                      label: const Text('PDF'),
                       style: OutlinedButton.styleFrom(
                         foregroundColor: AppColors.gold,
                         side: const BorderSide(color: AppColors.gold),
@@ -289,6 +301,28 @@ class ReportsScreen extends ConsumerWidget {
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           AppTheme.errorSnackBar('Error al exportar: $e'),
+        );
+      }
+    }
+  }
+
+  Future<void> _exportPdf(BuildContext context, List<AttendanceReportRow> rows) async {
+    final now = DateTime.now();
+    final dateStr = '${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}';
+    try {
+      await ReportExporter.exportAttendancePdf(
+        rows,
+        fileName: 'reporte_asistencia_$dateStr',
+      );
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          AppTheme.successSnackBar('Reporte PDF exportado correctamente'),
+        );
+      }
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          AppTheme.errorSnackBar('Error al exportar PDF: $e'),
         );
       }
     }

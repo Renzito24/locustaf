@@ -1,5 +1,5 @@
 import '../../data/models/attendance_model.dart';
-import '../../../authentication/data/models/user_model.dart';
+import '../../../../core/models/user_model.dart';
 import '../../../workplaces/data/models/workplace_model.dart';
 
 abstract class AttendanceRepository {
