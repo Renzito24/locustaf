@@ -1,184 +1,282 @@
 # LOCUSTAF MASTER SPECIFICATION
-## Locus Staff - Sistema de Control de Asistencia Laboral
-### Versión MVP 1.0
+
+## Locus Staff — Sistema de Gestión de Personal y Control de Asistencia
+
+### Versión 2.0 — Master Specification
 
 ---
 
-## 1. VISIÓN DEL SISTEMA
+# 1. VISIÓN DEL SISTEMA
 
-LOCUSTAF (Locus Staff) es una plataforma de control de asistencia laboral diseñada para pequeños y medianos empleadores.
+LOCUSTAF (Locus Staff) es una plataforma web de gestión de personal y control de asistencia laboral orientada principalmente a pequeñas y medianas empresas (PyMEs).
 
-Permite registrar:
-- Ingresos y egresos
-- Control de horas trabajadas
-- Validación por geolocalización
-- Historial laboral
-- Justificativos médicos
-- Reportes básicos
+El sistema permitirá a una empresa administrar sus empleados y grupos de trabajo, definir jornadas laborales, controlar ingresos y egresos mediante geolocalización, gestionar ausencias, licencias y justificativos, calcular horas trabajadas y generar reportes.
 
----
+La arquitectura deberá estar preparada desde el inicio para soportar múltiples empresas independientes dentro de la misma plataforma (multiempresa / multi-tenant), garantizando el aislamiento de los datos entre ellas.
 
-## 2. PRINCIPIOS DEL SISTEMA
+La primera versión se desarrollará como aplicación web utilizando Flutter Web.
 
-El sistema debe cumplir con:
-
-- Simplicidad de uso
-- Validación de ubicación obligatoria
-- Registro confiable de asistencia
-- Separación clara de roles
-- Escalabilidad futura (multiempresa)
+Posteriormente se desarrollará una aplicación móvil Android reutilizando la misma lógica de negocio y backend.
 
 ---
 
-## 3. ARQUITECTURA TECNOLÓGICA
+# 2. OBJETIVOS
 
-### Frontend
-- Flutter Web
+## 2.1 Objetivo principal
 
-### Backend
-- Firebase Authentication
-- Cloud Firestore
-- Firebase Storage
-- Firebase Hosting
+Proporcionar a una PyME una herramienta sencilla y confiable para:
 
-### Estado de la aplicación
-- Riverpod (gestión de estado)
-
----
-
-## 4. ROLES DEL SISTEMA
-
-### 4.1 Administrador
-Puede:
-- Gestionar empleados
-- Crear lugares de trabajo
-- Ver asistencias
-- Generar reportes
-- Ver dashboard general
-- Gestionar justificativos
+- Administrar empleados.
+- Administrar grupos de trabajo.
+- Definir horarios laborales.
+- Controlar ingresos y egresos.
+- Validar la ubicación del empleado mediante GPS.
+- Calcular horas trabajadas.
+- Detectar llegadas tarde.
+- Detectar salidas anticipadas.
+- Controlar ausencias.
+- Gestionar licencias.
+- Gestionar justificativos.
+- Consultar historiales.
+- Generar reportes.
+- Exportar información a PDF y Excel.
 
 ---
 
-### 4.2 Trabajador
-Puede:
-- Iniciar sesión
-- Registrar ingreso
-- Registrar egreso
-- Ver historial personal
-- Subir justificativos médicos
-- Cambiar contraseña
+## 2.2 Objetivos futuros
+
+La arquitectura deberá permitir incorporar posteriormente:
+
+- Múltiples empresas.
+- Notificaciones.
+- Aplicación Android.
+- Código QR para asistencia.
+- Analítica avanzada.
+- Turnos avanzados.
+- Integración con otros sistemas.
+- Planes y suscripciones.
+- Funciones comerciales para modelo SaaS.
 
 ---
 
-## 5. MODELO DE NEGOCIO
+# 3. PRINCIPIOS DEL SISTEMA
 
-### Empleados
-- Creación por administrador
-- Datos obligatorios:
-  - Nombre
-  - Apellido
-  - DNI
-  - Email
-  - Teléfono
-  - Dirección
-  - Categoría laboral
-  - Lugar asignado
+LOCUSTAF deberá cumplir con los siguientes principios:
+
+- Simplicidad de uso.
+- Interfaz intuitiva.
+- Seguridad.
+- Separación de responsabilidades.
+- Separación clara de roles.
+- Validación de ubicación obligatoria para asistencia.
+- Registro confiable de asistencia.
+- No alterar registros históricos innecesariamente.
+- Estados activos/inactivos en lugar de eliminación física cuando corresponda.
+- Arquitectura escalable.
+- Diseño responsive.
+- Aislamiento de datos entre empresas.
+- Preparación para crecimiento futuro.
 
 ---
 
-### Lugares de trabajo
-Cada lugar contiene:
+# 4. ARQUITECTURA TECNOLÓGICA
+
+## 4.1 Frontend
+
+- Flutter Web.
+- Material Design.
+- Diseño responsive.
+- Riverpod para gestión de estado.
+- GoRouter para navegación y protección de rutas.
+
+## 4.2 Backend
+
+- Firebase Authentication.
+- Cloud Firestore.
+- Firebase Storage.
+- Firebase Hosting.
+
+## 4.3 Herramientas
+
+- Flutter.
+- Dart.
+- Firebase CLI.
+- FlutterFire CLI.
+- Git.
+- GitHub.
+
+## 4.4 Plataforma futura
+
+La aplicación web será la primera plataforma.
+
+Posteriormente:
+
+- Android.
+- Posiblemente otras plataformas según evolución del proyecto.
+
+---
+
+# 5. ARQUITECTURA MULTIEMPRESA
+
+LOCUSTAF deberá estar preparado desde el inicio para soportar múltiples empresas.
+
+Cada empresa tendrá sus propios:
+
+- Administradores.
+- Grupos de trabajo.
+- Empleados.
+- Jornadas.
+- Asistencias.
+- Ausencias.
+- Licencias.
+- Justificativos.
+- Reportes.
+
+Los datos de una empresa nunca deberán ser accesibles desde otra empresa.
+
+---
+
+# 6. AISLAMIENTO DE DATOS
+
+Todos los recursos relacionados con una empresa deberán estar asociados a un identificador:
+
+`companyId`
+
+Ejemplos:
+
+- Usuario → `companyId`
+- Grupo → `companyId`
+- Empleado → `companyId`
+- Asistencia → `companyId`
+- Licencia → `companyId`
+- Ausencia → `companyId`
+- Justificativo → `companyId`
+
+La aplicación deberá utilizar `companyId` para filtrar los datos.
+
+Firestore Security Rules deberá impedir que un usuario acceda a información perteneciente a otra empresa.
+
+La seguridad no deberá depender únicamente del frontend.
+
+---
+
+# 7. EMPRESA
+
+Una empresa representa a una PyME que utiliza LOCUSTAF.
+
+## Datos mínimos
+
+- ID
+- Nombre comercial
+- Razón social (opcional)
+- CUIT (opcional)
+- Dirección
+- Teléfono
+- Email
+- Estado
+- Fecha de creación
+- Fecha de actualización
+
+## Estados
+
+- ACTIVA
+- INACTIVA
+
+Una empresa inactiva no deberá permitir operaciones normales.
+
+---
+
+# 8. ADMINISTRADOR / DUEÑO
+
+El administrador representa al propietario o responsable de la empresa.
+
+## Puede:
+
+- Administrar información de la empresa.
+- Crear grupos de trabajo.
+- Modificar grupos.
+- Activar grupos.
+- Desactivar grupos.
+- Crear empleados.
+- Modificar empleados.
+- Activar empleados.
+- Desactivar empleados.
+- Asignar empleados a grupos.
+- Configurar jornadas.
+- Configurar horarios.
+- Configurar tolerancias.
+- Configurar días laborables.
+- Configurar feriados.
+- Ver asistencia.
+- Ver dashboard.
+- Ver ausencias.
+- Ver licencias.
+- Revisar justificativos.
+- Generar reportes.
+- Exportar PDF.
+- Exportar Excel.
+
+---
+
+# 9. GRUPOS DE TRABAJO
+
+Un grupo de trabajo representa una unidad laboral dentro de una empresa.
+
+Ejemplos:
+
+- Pizzería.
+- Casa.
+- Administración.
+- Depósito.
+- Delivery.
+- Sucursal Centro.
+- Sucursal Norte.
+
+Cada grupo pertenece a una única empresa.
+
+---
+
+## 9.1 Datos del grupo
+
+- ID
+- `companyId`
 - Nombre
+- Descripción
 - Dirección
 - Latitud
 - Longitud
-- Radio permitido (metros)
+- Radio permitido
+- Estado
+- Fecha de creación
+- Fecha de actualización
 
 ---
 
-## 6. REGLA DE GEOLOCALIZACIÓN
+## 9.2 Estados
 
-El sistema debe validar asistencia mediante GPS:
+- ACTIVO
+- INACTIVO
 
-1. Obtener ubicación actual del trabajador
-2. Calcular distancia al lugar asignado
-3. Validar contra radio permitido
-
-Si cumple:
-→ Registrar asistencia
-
-Si no cumple:
-→ Rechazar registro
+Un grupo inactivo no deberá permitir nuevos registros de asistencia.
 
 ---
 
-## 7. ASISTENCIA
+# 10. CONFIGURACIÓN DE UBICACIÓN
 
-Reglas:
-- Un ingreso por día
-- No duplicar registros
-- Egreso solo si existe ingreso
+Cada grupo de trabajo tendrá una ubicación asociada.
 
-Datos:
-- Fecha
-- Hora ingreso
-- Hora egreso
-- Ubicación GPS
-- Distancia calculada
+## Datos
 
----
+- Latitud
+- Longitud
+- Dirección
+- Radio permitido en metros
 
-## 8. JUSTIFICATIVOS MÉDICOS
+Ejemplo:
 
-- Formatos: PDF, JPG, PNG
-- Almacenamiento: Firebase Storage
-- Asociado a empleado y fecha
+```text
+Grupo: Pizzería
 
----
-
-## 9. DASHBOARD ADMIN
-
-Indicadores:
-- Total empleados
-- Presentes
-- Ausentes
-- Con justificativo
-- Actividad diaria
-- Lugares activos
-
----
-
-## 10. REQUISITOS FUNCIONALES
-
-RF01 Login
-RF02 Gestión empleados
-RF03 Gestión lugares
-RF04 Registro ingreso
-RF05 Registro egreso
-RF06 Validación GPS
-RF07 Historial
-RF08 Dashboard
-RF09 Justificativos
-RF10 Reportes
-RF11 Cambio de contraseña
-
----
-
-## 11. REQUISITOS NO FUNCIONALES
-
-RNF01 UI intuitiva
-RNF02 Seguridad
-RNF03 Performance
-RNF04 Responsive
-RNF05 Escalable
-
----
-
-## 12. ROADMAP FUTURO
-
-- Multiempresa
-- Notificaciones
-- QR attendance
-- Exportación PDF
-- Analítica avanzada
-- Turnos laborales
+Latitud: -34.xxxxx
+Longitud: -58.xxxxx
+Radio: 50 metros

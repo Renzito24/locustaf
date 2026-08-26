@@ -7,7 +7,13 @@ abstract class AttendanceRepository {
   Stream<List<AttendanceModel>> getAllAttendances();
   Stream<AttendanceModel?> getActiveAttendance(String userId);
   Future<void> checkIn(AttendanceModel attendance);
-  Future<void> checkOut(String attendanceId, String userId);
+  Future<void> checkOut(
+    String attendanceId,
+    String userId, {
+    double? checkOutLatitud,
+    double? checkOutLongitud,
+  });
+  Future<void> finalizeOrphaned(String attendanceId, String userId);
   Future<UserModel?> getUser(String userId);
   Future<WorkplaceModel?> getWorkplace(String workplaceId);
 }

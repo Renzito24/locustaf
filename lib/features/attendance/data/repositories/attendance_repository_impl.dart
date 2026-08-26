@@ -75,7 +75,12 @@ class AttendanceRepositoryImpl implements AttendanceRepository {
   }
 
   @override
-  Future<void> checkOut(String attendanceId, String userId) async {
+  Future<void> checkOut(
+    String attendanceId,
+    String userId, {
+    double? checkOutLatitud,
+    double? checkOutLongitud,
+  }) async {
     final attendanceRef =
         _firestoreService.collection('attendances').doc(attendanceId);
     final lockRef =
@@ -110,6 +115,44 @@ class AttendanceRepositoryImpl implements AttendanceRepository {
         'checkOutTime': now.toIso8601String(),
         'durationMinutes': durationMinutes,
         'status': 'completed',
+        'checkOutLatitud': checkOutLatitud,
+        'checkOutLongitud': checkOutLongitud,
+      });
+      transaction.delete(lockRef);
+    });
+  }
+
+  @override
+  Future<void> finalizeOrphaned(String attendanceId, String userId) async {
+    final attendanceRef =
+        _firestoreService.collection('attendances').doc(attendanceId);
+    final lockRef =
+        _firestoreService.collection('_attendance_locks').doc(userId);
+
+    await _firestoreService.runTransaction((transaction) async {
+      final attendanceDoc = await transaction.get(attendanceRef);
+      if (!attendanceDoc.exists) {
+        throw AttendanceException('Registro de asistencia no encontrado.');
+      }
+      final attendanceData =
+          attendanceDoc.data() as Map<String, dynamic>;
+      if (attendanceData['userId'] != userId) {
+        throw AttendanceException('Este registro no te pertenece.');
+      }
+      if (attendanceData['status'] == 'completed') {
+        throw AttendanceException('Esta asistencia ya fue finalizada.');
+      }
+
+      final now = DateTime.now();
+      final checkInTime =
+          DateTime.parse(attendanceData['checkInTime'] as String);
+      final durationMinutes = now.difference(checkInTime).inMinutes;
+
+      transaction.update(attendanceRef, {
+        'checkOutTime': now.toIso8601String(),
+        'durationMinutes': durationMinutes,
+        'status': 'completed',
+        'isOrphaned': true,
       });
       transaction.delete(lockRef);
     });

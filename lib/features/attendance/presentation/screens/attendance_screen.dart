@@ -42,7 +42,10 @@ class AttendanceScreen extends ConsumerWidget {
 
     final activeAttendanceAsync = ref.watch(activeAttendanceProvider(userId));
     final attendancesAsync = ref.watch(attendancesByUserProvider(userId));
+    final orphaned = ref.watch(orphanedAttendancesProvider);
     final isActionLoading = actionState.status == AttendanceActionStatus.loading;
+
+    final myOrphaned = orphaned.where((a) => a.userId == userId).toList();
 
     return Padding(
       padding: const EdgeInsets.all(24.0),
@@ -56,6 +59,10 @@ class AttendanceScreen extends ConsumerWidget {
             style: AppTheme.bodyLg,
           ),
           const SizedBox(height: 24),
+          if (myOrphaned.isNotEmpty) ...[
+            _buildOrphanedCard(context, ref, myOrphaned.first, userId, isActionLoading),
+            const SizedBox(height: 16),
+          ],
           activeAttendanceAsync.when(
             data: (active) => _buildActiveSection(context, ref, active, userId, isActionLoading),
             loading: () => AppTheme.loadingState(message: 'Cargando asistencia...'),
@@ -251,6 +258,68 @@ class AttendanceScreen extends ConsumerWidget {
                   const EdgeInsets.symmetric(vertical: 16),
                 ),
               ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildOrphanedCard(
+    BuildContext context,
+    WidgetRef ref,
+    AttendanceModel orphaned,
+    String userId,
+    bool isActionLoading,
+  ) {
+    return Container(
+      decoration: AppTheme.cardDecoration(),
+      padding: const EdgeInsets.all(20),
+      child: Row(
+        children: [
+          Container(
+            width: 40,
+            height: 40,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: AppColors.warning.withValues(alpha: 0.12),
+            ),
+            child: const Icon(Icons.warning_amber_rounded, color: AppColors.warning, size: 20),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'Jornada huérfana detectada',
+                  style: TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w600,
+                    color: AppColors.warning,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  'Iniciaste tu jornada el ${_formatDateTime(orphaned.checkInTime)} y superó el horario de fin sin registrar salida.',
+                  style: AppTheme.bodyMd,
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 12),
+          OutlinedButton.icon(
+            onPressed: isActionLoading
+                ? null
+                : () {
+                    ref.read(attendanceActionProvider.notifier)
+                        .finalizeOrphaned(orphaned.id, userId);
+                  },
+            icon: const Icon(Icons.check_circle_outline, size: 18),
+            label: const Text('Finalizar'),
+            style: OutlinedButton.styleFrom(
+              foregroundColor: AppColors.warning,
+              side: const BorderSide(color: AppColors.warning),
             ),
           ),
         ],

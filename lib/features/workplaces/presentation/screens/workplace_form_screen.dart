@@ -50,6 +50,9 @@ class _WorkplaceFormState extends ConsumerState<_WorkplaceForm> {
   late final TextEditingController _longitudController;
   late final TextEditingController _codigoController;
   late final TextEditingController _radioController;
+  late final TextEditingController _horaInicioController;
+  late final TextEditingController _horaFinController;
+  late final TextEditingController _toleranciaController;
 
   bool _isActive = true;
 
@@ -70,6 +73,11 @@ class _WorkplaceFormState extends ConsumerState<_WorkplaceForm> {
     _radioController = TextEditingController(
       text: data?.radio?.toString() ?? '',
     );
+    _horaInicioController = TextEditingController(text: data?.horaInicio ?? '');
+    _horaFinController = TextEditingController(text: data?.horaFin ?? '');
+    _toleranciaController = TextEditingController(
+      text: data?.toleranciaMinutos.toString() ?? '15',
+    );
     _isActive = data?.isActive ?? true;
   }
 
@@ -82,6 +90,9 @@ class _WorkplaceFormState extends ConsumerState<_WorkplaceForm> {
     _longitudController.dispose();
     _codigoController.dispose();
     _radioController.dispose();
+    _horaInicioController.dispose();
+    _horaFinController.dispose();
+    _toleranciaController.dispose();
     super.dispose();
   }
 
@@ -94,6 +105,13 @@ class _WorkplaceFormState extends ConsumerState<_WorkplaceForm> {
     final codigo = _codigoController.text.trim().isEmpty
         ? null
         : _codigoController.text.trim();
+    final horaInicio = _horaInicioController.text.trim().isEmpty
+        ? null
+        : _horaInicioController.text.trim();
+    final horaFin = _horaFinController.text.trim().isEmpty
+        ? null
+        : _horaFinController.text.trim();
+    final tolerancia = int.tryParse(_toleranciaController.text.trim()) ?? 15;
 
     if (widget.isEditing) {
       final updated = widget.initialData!.copyWith(
@@ -108,6 +126,9 @@ class _WorkplaceFormState extends ConsumerState<_WorkplaceForm> {
         longitud: lng,
         radio: radio,
         codigo: codigo,
+        horaInicio: horaInicio,
+        horaFin: horaFin,
+        toleranciaMinutos: tolerancia,
         isActive: _isActive,
       );
       await ref.read(workplaceUpdateProvider.notifier).updateWorkplace(updated);
@@ -125,11 +146,23 @@ class _WorkplaceFormState extends ConsumerState<_WorkplaceForm> {
         longitud: lng,
         radio: radio,
         codigo: codigo,
+        horaInicio: horaInicio,
+        horaFin: horaFin,
+        toleranciaMinutos: tolerancia,
         isActive: _isActive,
         createdAt: DateTime.now(),
       );
       await ref.read(workplaceCreateProvider.notifier).createWorkplace(workplace);
     }
+  }
+
+  bool _isValidHhmm(String value) {
+    final parts = value.split(':');
+    if (parts.length != 2) return false;
+    final h = int.tryParse(parts[0]);
+    final m = int.tryParse(parts[1]);
+    if (h == null || m == null) return false;
+    return h >= 0 && h <= 23 && m >= 0 && m <= 59;
   }
 
   @override
@@ -138,7 +171,6 @@ class _WorkplaceFormState extends ConsumerState<_WorkplaceForm> {
         ? ref.watch(workplaceUpdateProvider).isLoading
         : ref.watch(workplaceCreateProvider).isLoading;
     final isMobile = AppTheme.isMobile(context);
-
     ref.listen<AsyncValue<void>>(
       widget.isEditing ? workplaceUpdateProvider : workplaceCreateProvider,
       (prev, next) {
@@ -338,6 +370,80 @@ class _WorkplaceFormState extends ConsumerState<_WorkplaceForm> {
                         contentPadding: EdgeInsets.zero,
                       ),
                     ],
+                    const SizedBox(height: 16),
+                    Text(
+                      'Configuración de jornada',
+                      style: AppTheme.headingMd,
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      'Opcional. Si se define, se detectan llegadas tarde y jornadas huérfanas.',
+                      style: AppTheme.bodyMd,
+                    ),
+                    const SizedBox(height: 12),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: TextFormField(
+                            controller: _horaInicioController,
+                            style: const TextStyle(color: AppColors.textWhite),
+                            decoration: AppTheme.inputDecoration(
+                              label: 'Hora de inicio',
+                              icon: Icons.schedule_outlined,
+                              hint: '08:00',
+                            ),
+                            validator: (value) {
+                              if (value != null && value.trim().isNotEmpty) {
+                                if (!_isValidHhmm(value.trim())) {
+                                  return 'Formato HH:mm';
+                                }
+                              }
+                              return null;
+                            },
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: TextFormField(
+                            controller: _horaFinController,
+                            style: const TextStyle(color: AppColors.textWhite),
+                            decoration: AppTheme.inputDecoration(
+                              label: 'Hora de fin',
+                              icon: Icons.schedule_outlined,
+                              hint: '16:00',
+                            ),
+                            validator: (value) {
+                              if (value != null && value.trim().isNotEmpty) {
+                                if (!_isValidHhmm(value.trim())) {
+                                  return 'Formato HH:mm';
+                                }
+                              }
+                              return null;
+                            },
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+                    TextFormField(
+                      controller: _toleranciaController,
+                      style: const TextStyle(color: AppColors.textWhite),
+                      decoration: AppTheme.inputDecoration(
+                        label: 'Tolerancia (minutos)',
+                        icon: Icons.timer_outlined,
+                        hint: '15',
+                      ),
+                      keyboardType: TextInputType.number,
+                      validator: (value) {
+                        if (value != null && value.trim().isNotEmpty) {
+                          final v = int.tryParse(value.trim());
+                          if (v == null || v < 0) {
+                            return 'Número válido';
+                          }
+                        }
+                        return null;
+                      },
+                    ),
                     const SizedBox(height: 24),
                     SizedBox(
                       width: double.infinity,

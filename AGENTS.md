@@ -32,3 +32,26 @@
 - GoRouter 17.3.0 with `refreshListenable` for role-based guards
 - UserRole enum: admin / supervisor / employee (English strings, stored as-is in Firestore)
 - Sidebar filtering: `_MenuItem.visibleFor: Set<UserRole>` + `userRoleProvider`
+
+
+## AI Development Rules
+
+Before modifying any project file, AI agents must consult:
+
+- `.ai/rules/LOCUSTAF_AI_RULES.md`
+- `.ai/skills/locustaf-safe-development/SKILL.md`
+- `LOCUSTAF_MASTER_SPEC.md`
+
+For significant tasks, follow:
+
+- `.ai/workflows/locustaf-task-loop.md`
+
+When reviewing changes, use:
+
+- `.ai/agents/locustaf-reviewer.md`
+
+When testing changes, use:
+
+- `.ai/agents/locustaf-tester.md`
+
+The existing project commands, architecture, Firebase configuration, and development conventions defined above remain valid.

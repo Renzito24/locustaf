@@ -87,6 +87,9 @@
       "longitud": -58.3816,
       "radio": 100,
       "codigo": "SC001",
+      "horaInicio": "08:00",
+      "horaFin": "16:00",
+      "toleranciaMinutos": 15,
       "isActive": true
     }
   ]

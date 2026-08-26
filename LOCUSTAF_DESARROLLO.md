@@ -82,3 +82,58 @@ Implementar:
 ## 8. NOTAS
 
 El sistema está en fase temprana pero correctamente estructurado para escalar a MVP completo con Firebase + geolocalización.
+
+# LOCUSTAF DEVELOPMENT LOG
+
+## 1. IDENTIFICACIÓN DEL PROYECTO
+
+## 2. ESTADO ACTUAL
+### Fase 1 — Consolidación / MVP
+### Estado de transición hacia Fase 2
+
+## 3. FASE 1 — TRABAJO REALIZADO
+
+### Arquitectura
+### Autenticación
+### Empleados
+### Lugares de trabajo
+### Asistencia
+### Historial
+### Justificativos
+### Incidencias
+### Reportes
+### Dashboard
+### Perfil
+### Seguridad
+### Firebase
+### Storage
+
+## 4. ESTADO TÉCNICO ACTUAL
+
+### Completado
+### Parcial
+### Pendiente
+### Problemas conocidos
+
+## 5. DECISIONES ARQUITECTÓNICAS
+
+## 6. DECISIONES DE FASE 2
+
+## 7. FASE 2 — PLAN DE IMPLEMENTACIÓN
+
+E0
+E1
+E2
+E3
+E4
+E5
+E6
+E7
+
+## 8. FASE 3 — MULTIEMPRESA
+
+## 9. REGLAS DE DESARROLLO
+
+## 10. TESTING
+
+## 11. HISTORIAL DE CAMBIOS

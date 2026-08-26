@@ -55,7 +55,7 @@ class StorageService {
 
     try {
       await uploadTask;
-      return ref.getDownloadURL();
+      return await ref.getDownloadURL();
     } finally {
       await streamSub.cancel();
     }

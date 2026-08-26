@@ -42,6 +42,8 @@ class MedicalDocumentCard extends StatelessWidget {
                       ),
                     ),
                   ),
+                  _EstadoAprobacionBadge(estado: document.estado),
+                  const SizedBox(width: 8),
                   _VigenciaBadge(vigencia: document.vigencia),
                 ],
               ),
@@ -116,6 +118,24 @@ class _VigenciaBadge extends StatelessWidget {
         return AppTheme.badge(label: vigencia.label, bgColor: AppColors.warning.withValues(alpha: 0.15), textColor: AppColors.warning);
       case VigenciaEstado.vencido:
         return AppTheme.badge(label: vigencia.label, bgColor: AppColors.error.withValues(alpha: 0.15), textColor: AppColors.error);
+    }
+  }
+}
+
+class _EstadoAprobacionBadge extends StatelessWidget {
+  final MedicalDocumentEstado estado;
+
+  const _EstadoAprobacionBadge({required this.estado});
+
+  @override
+  Widget build(BuildContext context) {
+    switch (estado) {
+      case MedicalDocumentEstado.pendiente:
+        return AppTheme.badge(label: estado.label, bgColor: AppColors.warning.withValues(alpha: 0.15), textColor: AppColors.warning);
+      case MedicalDocumentEstado.aprobado:
+        return AppTheme.badge(label: estado.label, bgColor: AppColors.success.withValues(alpha: 0.15), textColor: AppColors.success);
+      case MedicalDocumentEstado.rechazado:
+        return AppTheme.badge(label: estado.label, bgColor: AppColors.error.withValues(alpha: 0.15), textColor: AppColors.error);
     }
   }
 }

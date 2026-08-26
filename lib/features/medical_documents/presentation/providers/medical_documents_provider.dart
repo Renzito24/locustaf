@@ -330,3 +330,44 @@ class MedicalDocumentDeleteNotifier extends AsyncNotifier<void> {
 final medicalDocumentDeleteProvider = AsyncNotifierProvider<MedicalDocumentDeleteNotifier, void>(
   MedicalDocumentDeleteNotifier.new,
 );
+
+// ─── Approval Notifier ──────────────────────────────────────────────────────
+
+class MedicalDocumentApprovalNotifier extends AsyncNotifier<void> {
+  @override
+  Future<void> build() => Future.value();
+
+  Future<void> approve(String id) async {
+    state = const AsyncLoading();
+    final repo = ref.read(medicalDocumentRepositoryProvider);
+    try {
+      await repo.updateEstado(id, estado: MedicalDocumentEstado.aprobado);
+      state = const AsyncData(null);
+    } catch (e, st) {
+      state = AsyncError(e, st);
+    }
+  }
+
+  Future<void> reject(String id, {required String observacion}) async {
+    state = const AsyncLoading();
+    final repo = ref.read(medicalDocumentRepositoryProvider);
+    try {
+      await repo.updateEstado(
+        id,
+        estado: MedicalDocumentEstado.rechazado,
+        observacionRechazo: observacion,
+      );
+      state = const AsyncData(null);
+    } catch (e, st) {
+      state = AsyncError(e, st);
+    }
+  }
+
+  void reset() {
+    state = const AsyncData(null);
+  }
+}
+
+final medicalDocumentApprovalProvider = AsyncNotifierProvider<MedicalDocumentApprovalNotifier, void>(
+  MedicalDocumentApprovalNotifier.new,
+);

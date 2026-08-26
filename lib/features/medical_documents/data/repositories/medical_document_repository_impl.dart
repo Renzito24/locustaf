@@ -33,6 +33,23 @@ class MedicalDocumentRepositoryImpl implements MedicalDocumentRepository {
   }
 
   @override
+  Future<void> updateEstado(
+    String id, {
+    required MedicalDocumentEstado estado,
+    String? observacionRechazo,
+  }) async {
+    await _firestoreService.updateDocument(
+      path: 'medical_documents',
+      documentId: id,
+      data: {
+        'estado': estado.name,
+        'observacionRechazo': observacionRechazo,
+        'updatedAt': DateTime.now().toIso8601String(),
+      },
+    );
+  }
+
+  @override
   Future<void> softDeleteDocument(String id) async {
     await _firestoreService.updateDocument(
       path: 'medical_documents',

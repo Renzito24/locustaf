@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../reports/presentation/providers/reports_provider.dart';
 import '../../../../core/constants/app_colors.dart';
+import '../../../../core/providers/data_providers.dart';
 import '../../../../core/theme/app_theme.dart';
 
 class HomeScreen extends ConsumerWidget {

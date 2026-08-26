@@ -2,11 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/constants/app_colors.dart';
+import '../../../../core/providers/data_providers.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../authentication/data/models/user_model.dart';
-import '../../../employees/presentation/providers/users_provider.dart';
 import '../../../workplaces/data/models/workplace_model.dart';
-import '../../../workplaces/presentation/providers/workplace_notifier.dart';
 import '../providers/history_provider.dart';
 
 class HistoryFilterBar extends ConsumerWidget {
@@ -15,8 +14,8 @@ class HistoryFilterBar extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final filter = ref.watch(historyFilterProvider);
-    final usersAsync = ref.watch(usersStreamProvider);
-    final workplacesAsync = ref.watch(workplacesStreamProvider);
+    final usersAsync = ref.watch(allUsersStreamProvider);
+    final workplacesAsync = ref.watch(allWorkplacesStreamProvider);
 
     return Container(
       decoration: AppTheme.cardDecoration(),

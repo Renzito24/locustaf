@@ -2,32 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../attendance/data/models/attendance_model.dart';
 import '../../../authentication/data/models/user_model.dart';
-import '../../../workplaces/data/models/workplace_model.dart';
-import '../../../../core/providers/firebase_providers.dart';
-
-final allUsersStreamProvider = StreamProvider<List<UserModel>>((ref) {
-  final svc = ref.read(firestoreServiceProvider);
-  return svc.collectionStream<UserModel>(
-    path: 'users',
-    fromJson: UserModel.fromJson,
-  );
-});
-
-final allWorkplacesStreamProvider = StreamProvider<List<WorkplaceModel>>((ref) {
-  final svc = ref.read(firestoreServiceProvider);
-  return svc.collectionStream<WorkplaceModel>(
-    path: 'workplaces',
-    fromJson: WorkplaceModel.fromJson,
-  );
-});
-
-final allAttendancesStreamProvider = StreamProvider<List<AttendanceModel>>((ref) {
-  final svc = ref.read(firestoreServiceProvider);
-  return svc.collectionStream<AttendanceModel>(
-    path: 'attendances',
-    fromJson: AttendanceModel.fromJson,
-  );
-});
+import '../../../../core/providers/data_providers.dart';
 
 final totalActiveEmployeesProvider = Provider<int>((ref) {
   final usersAsync = ref.watch(allUsersStreamProvider);
@@ -111,6 +86,40 @@ class AttendanceReportFilterNotifier extends Notifier<AttendanceReportFilter> {
 final attendanceReportFilterProvider = NotifierProvider<AttendanceReportFilterNotifier, AttendanceReportFilter>(
   AttendanceReportFilterNotifier.new,
 );
+
+const int attendanceReportPageSize = 20;
+
+class AttendanceReportPageNotifier extends Notifier<int> {
+  @override
+  int build() => 0;
+
+  void setPage(int page) {
+    state = page < 0 ? 0 : page;
+  }
+
+  void reset() {
+    state = 0;
+  }
+}
+
+final attendanceReportPageProvider = NotifierProvider<AttendanceReportPageNotifier, int>(
+  AttendanceReportPageNotifier.new,
+);
+
+final attendanceReportTotalPagesProvider = Provider<int>((ref) {
+  final total = ref.watch(filteredAttendanceReportProvider).length;
+  if (total == 0) return 1;
+  return (total / attendanceReportPageSize).ceil();
+});
+
+final paginatedAttendanceReportProvider = Provider<List<AttendanceReportRow>>((ref) {
+  final all = ref.watch(filteredAttendanceReportProvider);
+  final page = ref.watch(attendanceReportPageProvider);
+  final start = page * attendanceReportPageSize;
+  if (start >= all.length) return <AttendanceReportRow>[];
+  final end = (start + attendanceReportPageSize).clamp(0, all.length);
+  return all.sublist(start, end);
+});
 
 final filteredAttendanceReportProvider = Provider<List<AttendanceReportRow>>((ref) {
   final attendancesAsync = ref.watch(allAttendancesStreamProvider);

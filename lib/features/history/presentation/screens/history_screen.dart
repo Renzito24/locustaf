@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/constants/app_colors.dart';
+import '../../../../core/providers/data_providers.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../attendance/data/models/attendance_model.dart';
 import '../../data/models/history_record_model.dart';
@@ -19,7 +20,7 @@ class HistoryScreen extends ConsumerWidget {
     final total = ref.watch(totalRecordsProvider);
     final active = ref.watch(activeRecordsProvider);
     final completed = ref.watch(completedRecordsProvider);
-    final attendancesAsync = ref.watch(allAttendancesProvider);
+    final attendancesAsync = ref.watch(allAttendancesStreamProvider);
 
     return Padding(
       padding: const EdgeInsets.all(24.0),

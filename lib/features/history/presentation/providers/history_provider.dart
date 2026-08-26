@@ -1,15 +1,8 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../attendance/data/models/attendance_model.dart';
-import '../../../attendance/presentation/providers/attendance_notifier.dart';
-import '../../../employees/presentation/providers/users_provider.dart';
-import '../../../workplaces/presentation/providers/workplace_notifier.dart';
+import '../../../../core/providers/data_providers.dart';
 import '../../data/models/history_record_model.dart';
-
-final allAttendancesProvider = StreamProvider<List<AttendanceModel>>((ref) {
-  final repo = ref.read(attendanceRepositoryProvider);
-  return repo.getAllAttendances();
-});
 
 class HistoryFilterState {
   final String searchQuery;
@@ -85,9 +78,9 @@ final historyFilterProvider = NotifierProvider<HistoryFilterNotifier, HistoryFil
 );
 
 final filteredHistoryProvider = Provider<List<HistoryRecordModel>>((ref) {
-  final attendancesAsync = ref.watch(allAttendancesProvider);
-  final usersAsync = ref.watch(usersStreamProvider);
-  final workplacesAsync = ref.watch(workplacesStreamProvider);
+  final attendancesAsync = ref.watch(allAttendancesStreamProvider);
+  final usersAsync = ref.watch(allUsersStreamProvider);
+  final workplacesAsync = ref.watch(allWorkplacesStreamProvider);
   final filter = ref.watch(historyFilterProvider);
 
   final attendances = attendancesAsync.value ?? [];

@@ -43,6 +43,22 @@ class MedicalDocumentsScreen extends ConsumerWidget {
       );
     });
 
+    ref.listen<AsyncValue<void>>(medicalDocumentApprovalProvider, (prev, next) {
+      next.whenOrNull(
+        data: (_) {
+          ref.read(medicalDocumentApprovalProvider.notifier).reset();
+          ScaffoldMessenger.of(context).showSnackBar(
+            AppTheme.successSnackBar('Estado del documento actualizado'),
+          );
+        },
+        error: (error, _) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            AppTheme.errorSnackBar('Error al actualizar el estado: $error'),
+          );
+        },
+      );
+    });
+
     return Padding(
       padding: const EdgeInsets.all(24.0),
       child: Column(
@@ -180,7 +196,8 @@ class MedicalDocumentsScreen extends ConsumerWidget {
                   const DataColumn(label: Text('Tipo', style: TextStyle(fontWeight: FontWeight.bold, color: AppColors.gold))),
                   const DataColumn(label: Text('Emisión', style: TextStyle(fontWeight: FontWeight.bold, color: AppColors.gold))),
                   const DataColumn(label: Text('Vencimiento', style: TextStyle(fontWeight: FontWeight.bold, color: AppColors.gold))),
-                  const DataColumn(label: Text('Estado', style: TextStyle(fontWeight: FontWeight.bold, color: AppColors.gold))),
+                  const DataColumn(label: Text('Vigencia', style: TextStyle(fontWeight: FontWeight.bold, color: AppColors.gold))),
+                  const DataColumn(label: Text('Aprobación', style: TextStyle(fontWeight: FontWeight.bold, color: AppColors.gold))),
                   if (isAdmin) const DataColumn(label: Text('Acciones', style: TextStyle(fontWeight: FontWeight.bold, color: AppColors.gold))),
                 ],
                 rows: docs.map((doc) {
@@ -199,6 +216,7 @@ class MedicalDocumentsScreen extends ConsumerWidget {
                       DataCell(Text(_formatDate(doc.fechaInicio), style: const TextStyle(color: AppColors.textMuted))),
                       DataCell(Text(_formatDate(doc.fechaFin), style: const TextStyle(color: AppColors.textMuted))),
                       DataCell(_buildEstadoChip(doc.vigencia)),
+                      DataCell(_buildAprobacionChip(doc.estado)),
                       if (isAdmin)
                         DataCell(Row(
                           children: [
@@ -244,6 +262,17 @@ class MedicalDocumentsScreen extends ConsumerWidget {
         return AppTheme.badge(label: vigencia.label, bgColor: AppColors.warning.withValues(alpha: 0.15), textColor: AppColors.warning);
       case VigenciaEstado.vencido:
         return AppTheme.badge(label: vigencia.label, bgColor: AppColors.error.withValues(alpha: 0.15), textColor: AppColors.error);
+    }
+  }
+
+  Widget _buildAprobacionChip(MedicalDocumentEstado estado) {
+    switch (estado) {
+      case MedicalDocumentEstado.pendiente:
+        return AppTheme.badge(label: estado.label, bgColor: AppColors.warning.withValues(alpha: 0.15), textColor: AppColors.warning);
+      case MedicalDocumentEstado.aprobado:
+        return AppTheme.badge(label: estado.label, bgColor: AppColors.success.withValues(alpha: 0.15), textColor: AppColors.success);
+      case MedicalDocumentEstado.rechazado:
+        return AppTheme.badge(label: estado.label, bgColor: AppColors.error.withValues(alpha: 0.15), textColor: AppColors.error);
     }
   }
 

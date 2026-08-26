@@ -44,6 +44,7 @@ dependencies:
   uuid: ^4.5.3
   equatable: ^2.0.8
   file_picker: ^8.0.0
+  file_saver: ^0.2.14
   freezed_annotation: ^3.1.0
   json_annotation: ^4.12.0
 

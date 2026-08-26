@@ -34,6 +34,9 @@ class AttendanceModel extends Equatable {
   final AttendanceStatus status;
   final double? checkInLatitud;
   final double? checkInLongitud;
+  final double? checkOutLatitud;
+  final double? checkOutLongitud;
+  final bool? isLate;
   final String? workplaceId;
 
   const AttendanceModel({
@@ -46,6 +49,9 @@ class AttendanceModel extends Equatable {
     this.status = AttendanceStatus.active,
     this.checkInLatitud,
     this.checkInLongitud,
+    this.checkOutLatitud,
+    this.checkOutLongitud,
+    this.isLate,
     this.workplaceId,
   });
 
@@ -59,6 +65,9 @@ class AttendanceModel extends Equatable {
     AttendanceStatus? status,
     double? checkInLatitud,
     double? checkInLongitud,
+    double? checkOutLatitud,
+    double? checkOutLongitud,
+    bool? isLate,
     String? workplaceId,
     bool clearCheckOut = false,
   }) {
@@ -72,6 +81,9 @@ class AttendanceModel extends Equatable {
       status: status ?? this.status,
       checkInLatitud: checkInLatitud ?? this.checkInLatitud,
       checkInLongitud: checkInLongitud ?? this.checkInLongitud,
+      checkOutLatitud: checkOutLatitud ?? this.checkOutLatitud,
+      checkOutLongitud: checkOutLongitud ?? this.checkOutLongitud,
+      isLate: isLate ?? this.isLate,
       workplaceId: workplaceId ?? this.workplaceId,
     );
   }
@@ -89,6 +101,9 @@ class AttendanceModel extends Equatable {
       status: AttendanceStatusExtension.fromString(json['status'] as String),
       checkInLatitud: (json['checkInLatitud'] as num?)?.toDouble(),
       checkInLongitud: (json['checkInLongitud'] as num?)?.toDouble(),
+      checkOutLatitud: (json['checkOutLatitud'] as num?)?.toDouble(),
+      checkOutLongitud: (json['checkOutLongitud'] as num?)?.toDouble(),
+      isLate: json['isLate'] as bool?,
       workplaceId: json['workplaceId'] as String?,
     );
   }
@@ -104,6 +119,9 @@ class AttendanceModel extends Equatable {
       'status': status.name,
       'checkInLatitud': checkInLatitud,
       'checkInLongitud': checkInLongitud,
+      'checkOutLatitud': checkOutLatitud,
+      'checkOutLongitud': checkOutLongitud,
+      'isLate': isLate,
       'workplaceId': workplaceId,
     };
   }
@@ -119,6 +137,9 @@ class AttendanceModel extends Equatable {
         status,
         checkInLatitud,
         checkInLongitud,
+        checkOutLatitud,
+        checkOutLongitud,
+        isLate,
         workplaceId,
       ];
 }

@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/constants/app_colors.dart';
+import '../../../../core/providers/data_providers.dart';
+import '../../../../core/services/report_exporter.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../workplaces/data/models/workplace_model.dart';
 import '../../../workplaces/presentation/providers/workplace_notifier.dart';
@@ -20,7 +22,9 @@ class ReportsScreen extends ConsumerWidget {
     final presentToday = ref.watch(employeesPresentTodayProvider);
     final absentToday = ref.watch(employeesAbsentTodayProvider);
     final activeWorkplaces = ref.watch(activeWorkplacesCountProvider);
-    final reportRows = ref.watch(filteredAttendanceReportProvider);
+    final reportRows = ref.watch(paginatedAttendanceReportProvider);
+    final totalPages = ref.watch(attendanceReportTotalPagesProvider);
+    final currentPage = ref.watch(attendanceReportPageProvider);
     final filter = ref.watch(attendanceReportFilterProvider);
     final workplacesListAsync = ref.watch(workplacesStreamProvider);
 
@@ -54,9 +58,29 @@ class ReportsScreen extends ConsumerWidget {
                 const SizedBox(height: 24),
                 _buildFilters(context, ref, filter, workplacesListAsync),
                 const SizedBox(height: 16),
-                Text('Reporte de asistencia', style: AppTheme.headingMd),
+                Row(
+                  children: [
+                    Text('Reporte de asistencia', style: AppTheme.headingMd),
+                    const Spacer(),
+                    OutlinedButton.icon(
+                      onPressed: reportRows.isEmpty
+                          ? null
+                          : () => _exportCsv(context, reportRows),
+                      icon: const Icon(Icons.download, size: 18),
+                      label: const Text('Exportar CSV'),
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: AppColors.gold,
+                        side: const BorderSide(color: AppColors.gold),
+                      ),
+                    ),
+                  ],
+                ),
                 const SizedBox(height: 12),
                 Expanded(child: _buildReportTable(reportRows)),
+                if (totalPages > 1) ...[
+                  const SizedBox(height: 12),
+                  _buildPagination(context, ref, currentPage, totalPages),
+                ],
               ],
             ),
         ],
@@ -131,6 +155,7 @@ class ReportsScreen extends ConsumerWidget {
                 ref.read(attendanceReportFilterProvider.notifier).setDate(
                   value.trim().isEmpty ? null : value.trim(),
                 );
+                ref.read(attendanceReportPageProvider.notifier).reset();
               },
             ),
           ),
@@ -157,6 +182,7 @@ class ReportsScreen extends ConsumerWidget {
                 ],
                 onChanged: (value) {
                   ref.read(attendanceReportFilterProvider.notifier).setWorkplaceId(value);
+                  ref.read(attendanceReportPageProvider.notifier).reset();
                 },
               ),
               loading: () => const SizedBox.shrink(),
@@ -167,6 +193,7 @@ class ReportsScreen extends ConsumerWidget {
           TextButton.icon(
             onPressed: () {
               ref.read(attendanceReportFilterProvider.notifier).clear();
+              ref.read(attendanceReportPageProvider.notifier).reset();
             },
             icon: const Icon(Icons.clear, color: AppColors.textMuted),
             label: const Text('Limpiar', style: TextStyle(color: AppColors.textMuted)),
@@ -212,6 +239,59 @@ class ReportsScreen extends ConsumerWidget {
 
   String _formatTime(DateTime dt) {
     return '${dt.hour.toString().padLeft(2, '0')}:${dt.minute.toString().padLeft(2, '0')}';
+  }
+
+  Widget _buildPagination(
+    BuildContext context,
+    WidgetRef ref,
+    int currentPage,
+    int totalPages,
+  ) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        IconButton(
+          onPressed: currentPage > 0
+              ? () => ref.read(attendanceReportPageProvider.notifier).setPage(currentPage - 1)
+              : null,
+          icon: const Icon(Icons.chevron_left, color: AppColors.gold),
+          tooltip: 'Anterior',
+        ),
+        Text(
+          'Página ${currentPage + 1} de $totalPages',
+          style: const TextStyle(color: AppColors.textMuted),
+        ),
+        IconButton(
+          onPressed: currentPage < totalPages - 1
+              ? () => ref.read(attendanceReportPageProvider.notifier).setPage(currentPage + 1)
+              : null,
+          icon: const Icon(Icons.chevron_right, color: AppColors.gold),
+          tooltip: 'Siguiente',
+        ),
+      ],
+    );
+  }
+
+  Future<void> _exportCsv(BuildContext context, List<AttendanceReportRow> rows) async {
+    final now = DateTime.now();
+    final dateStr = '${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}';
+    try {
+      await ReportExporter.exportAttendanceCsv(
+        rows,
+        fileName: 'reporte_asistencia_$dateStr',
+      );
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          AppTheme.successSnackBar('Reporte exportado correctamente'),
+        );
+      }
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          AppTheme.errorSnackBar('Error al exportar: $e'),
+        );
+      }
+    }
   }
 }
 

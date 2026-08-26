@@ -9,6 +9,9 @@ class WorkplaceModel extends Equatable {
   final double? longitud;
   final double? radio;
   final String? codigo;
+  final String? horaInicio;
+  final String? horaFin;
+  final int toleranciaMinutos;
   final bool isActive;
   final DateTime createdAt;
   final DateTime? updatedAt;
@@ -22,6 +25,9 @@ class WorkplaceModel extends Equatable {
     this.longitud,
     this.radio,
     this.codigo,
+    this.horaInicio,
+    this.horaFin,
+    this.toleranciaMinutos = 15,
     this.isActive = true,
     required this.createdAt,
     this.updatedAt,
@@ -36,6 +42,9 @@ class WorkplaceModel extends Equatable {
     double? longitud,
     double? radio,
     String? codigo,
+    String? horaInicio,
+    String? horaFin,
+    int? toleranciaMinutos,
     bool? isActive,
     DateTime? createdAt,
     DateTime? updatedAt,
@@ -49,6 +58,9 @@ class WorkplaceModel extends Equatable {
       longitud: longitud ?? this.longitud,
       radio: radio ?? this.radio,
       codigo: codigo ?? this.codigo,
+      horaInicio: horaInicio ?? this.horaInicio,
+      horaFin: horaFin ?? this.horaFin,
+      toleranciaMinutos: toleranciaMinutos ?? this.toleranciaMinutos,
       isActive: isActive ?? this.isActive,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
@@ -65,6 +77,9 @@ class WorkplaceModel extends Equatable {
       longitud: (json['longitud'] as num?)?.toDouble(),
       radio: (json['radio'] as num?)?.toDouble(),
       codigo: json['codigo'] as String?,
+      horaInicio: json['horaInicio'] as String?,
+      horaFin: json['horaFin'] as String?,
+      toleranciaMinutos: (json['toleranciaMinutos'] as num?)?.toInt() ?? 15,
       isActive: json['isActive'] as bool? ?? true,
       createdAt: DateTime.parse(json['createdAt'] as String),
       updatedAt: json['updatedAt'] != null
@@ -83,6 +98,9 @@ class WorkplaceModel extends Equatable {
       'longitud': longitud,
       'radio': radio,
       'codigo': codigo,
+      'horaInicio': horaInicio,
+      'horaFin': horaFin,
+      'toleranciaMinutos': toleranciaMinutos,
       'isActive': isActive,
       'createdAt': createdAt.toIso8601String(),
       'updatedAt': updatedAt?.toIso8601String(),
@@ -99,6 +117,9 @@ class WorkplaceModel extends Equatable {
         longitud,
         radio,
         codigo,
+        horaInicio,
+        horaFin,
+        toleranciaMinutos,
         isActive,
         createdAt,
         updatedAt,

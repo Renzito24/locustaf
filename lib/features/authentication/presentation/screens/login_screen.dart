@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../../core/constants/app_colors.dart';
+import '../../../../core/providers/firebase_providers.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../providers/auth_provider.dart';
 
@@ -104,10 +105,26 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
 
     try {
       final authRepo = ref.read(authRepositoryProvider);
-      await authRepo.login(
+      final credential = await authRepo.login(
         emailController.text.trim(),
         passwordController.text,
       );
+
+      final uid = credential.user?.uid;
+      if (uid != null) {
+        final svc = ref.read(firestoreServiceProvider);
+        final userDoc = await svc.getDocument(path: 'users', documentId: uid);
+        final isActive = userDoc?['isActive'] as bool? ?? true;
+        final isDeleted = userDoc?['isDeleted'] as bool? ?? false;
+        if (!isActive || isDeleted) {
+          await authRepo.logout();
+          if (!mounted) return;
+          setState(() {
+            errorMessage = 'Tu cuenta ha sido desactivada o eliminada. Contactá al administrador.';
+          });
+          return;
+        }
+      }
 
       if (!mounted) return;
       context.go('/dashboard');

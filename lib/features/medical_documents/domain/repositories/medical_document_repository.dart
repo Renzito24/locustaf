@@ -4,5 +4,10 @@ abstract class MedicalDocumentRepository {
   Stream<List<MedicalDocumentModel>> getDocuments();
   Future<void> createDocument(MedicalDocumentModel document);
   Future<void> updateDocument(MedicalDocumentModel document);
+  Future<void> updateEstado(
+    String id, {
+    required MedicalDocumentEstado estado,
+    String? observacionRechazo,
+  });
   Future<void> softDeleteDocument(String id);
 }
