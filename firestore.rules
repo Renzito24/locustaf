@@ -49,6 +49,12 @@ service cloud.firestore {
       return isAuthenticated() && companyId == getCompanyId();
     }
 
+    // Usuario autenticado que aún no tiene empresa asignada
+    // (flujo de onboarding: crea su empresa y su documento de usuario).
+    function isOnboardingUser() {
+      return isAuthenticated() && getCompanyId() == null;
+    }
+
     // En updates, los campos sensibles no pueden cambiar.
     function noSensitiveFieldChanges() {
       return request.resource.data.companyId == resource.data.companyId
@@ -75,7 +81,8 @@ service cloud.firestore {
             || (isEmployee() && isOwner(uid)));
       allow create: if isAuthenticated()
         && (isSuperadmin()
-            || (isAdmin() && request.resource.data.companyId == getCompanyId()));
+            || (isAdmin() && request.resource.data.companyId == getCompanyId())
+            || (isOwner(uid) && getCompanyId() == null));
       allow update: if isAuthenticated()
         && (isSuperadmin()
             || (isAdmin() && inCompany(resource.data.companyId)))
@@ -91,7 +98,7 @@ service cloud.firestore {
     match /companies/{companyId} {
       allow read: if isAuthenticated()
         && (isSuperadmin() || inCompany(companyId));
-      allow create: if isSuperadmin();
+      allow create: if isSuperadmin() || isOnboardingUser();
       allow update: if isSuperadmin()
         || (isAdmin() && inCompany(companyId));
       allow delete: if isSuperadmin();

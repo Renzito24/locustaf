@@ -58,6 +58,12 @@ class AppRouter {
         return goingToOnboarding ? null : '/onboarding';
       }
 
+      // Si el usuario está autenticado, ya no necesita onboarding (tiene
+      // empresa o es superadmin) y está en /onboarding, salir de ahí.
+      if (loggedIn && state.matchedLocation == '/onboarding') {
+        return _auth.isEmployee ? '/attendance' : '/dashboard';
+      }
+
       final role = _auth.role;
 
       if (loggedIn && (goingToLogin || goingToSplash)) {

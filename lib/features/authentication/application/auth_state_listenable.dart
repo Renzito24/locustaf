@@ -33,14 +33,16 @@ class AuthStateListenable extends ChangeNotifier {
   bool get isAdmin => _role == UserRole.admin;
   bool get isSupervisor => _role == UserRole.supervisor;
   bool get isEmployee => _role == UserRole.employee;
+  bool get isSuperadmin => _role == UserRole.superadmin;
 
   bool get isUserActive => _isActive == true;
   bool get isUserDeleted => _isDeleted == true;
   bool get isUserBlocked => _isActive == false || _isDeleted == true;
 
   /// El usuario está autenticado pero aún no tiene empresa asignada
-  /// (debe completar el onboarding).
-  bool get needsOnboarding => isLoggedIn && _companyId == null;
+  /// (debe completar el onboarding). El superadmin queda excluido: no tiene
+  /// empresa propia y gestiona todas las empresas desde la pantalla Empresas.
+  bool get needsOnboarding => isLoggedIn && _companyId == null && !isSuperadmin;
 
   void _onAuthChanged(User? user) {
     _userDocSub?.cancel();
