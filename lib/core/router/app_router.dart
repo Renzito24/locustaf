@@ -3,6 +3,7 @@ import 'package:go_router/go_router.dart';
 import '../../features/splash/presentation/screens/splash_screen.dart';
 import '../../features/authentication/presentation/screens/login_screen.dart';
 import '../../features/authentication/application/auth_state_listenable.dart';
+import '../../core/models/company_model.dart';
 import '../../core/models/user_model.dart';
 import '../../features/profile/presentation/screens/profile_screen.dart';
 import '../../features/dashboard/presentation/widgets/dashboard_layout.dart';
@@ -28,6 +29,7 @@ import '../../features/justificativos/presentation/screens/employee_justificativ
 import '../../features/justificativos/presentation/screens/employee_create_incidence_screen.dart';
 import '../../features/justificativos/presentation/screens/employee_create_medical_document_screen.dart';
 import '../../features/companies/presentation/screens/companies_screen.dart';
+import '../../features/companies/presentation/screens/company_form_screen.dart';
 import '../../features/companies/presentation/screens/onboarding_screen.dart';
 import 'app_routes.dart';
 
@@ -115,6 +117,16 @@ class AppRouter {
           GoRoute(
             path: RoutePaths.companies,
             builder: (context, state) => const CompaniesScreen(),
+          ),
+          GoRoute(
+            path: RoutePaths.createCompany,
+            builder: (context, state) => const CompanyFormScreen(),
+          ),
+          GoRoute(
+            path: RoutePaths.editCompany,
+            builder: (context, state) => CompanyFormScreen(
+              company: state.extra as CompanyModel?,
+            ),
           ),
           GoRoute(
             path: RoutePaths.employees,
