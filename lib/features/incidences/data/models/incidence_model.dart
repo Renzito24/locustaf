@@ -87,6 +87,34 @@ extension IncidenceStateExtension on IncidenceState {
   }
 }
 
+enum IncidenceEstado { pendiente, aprobado, rechazado }
+
+extension IncidenceEstadoExtension on IncidenceEstado {
+  String get label {
+    switch (this) {
+      case IncidenceEstado.pendiente:
+        return 'Pendiente';
+      case IncidenceEstado.aprobado:
+        return 'Aprobado';
+      case IncidenceEstado.rechazado:
+        return 'Rechazado';
+    }
+  }
+
+  static IncidenceEstado fromString(String value) {
+    switch (value) {
+      case 'pendiente':
+        return IncidenceEstado.pendiente;
+      case 'aprobado':
+        return IncidenceEstado.aprobado;
+      case 'rechazado':
+        return IncidenceEstado.rechazado;
+      default:
+        throw ArgumentError('Invalid IncidenceEstado: $value');
+    }
+  }
+}
+
 class IncidenceModel extends Equatable {
   final String id;
   final String userId;
@@ -95,6 +123,8 @@ class IncidenceModel extends Equatable {
   final DateTime fechaFin;
   final String observaciones;
   final String? documentoRelacionado;
+  final IncidenceEstado estado;
+  final String? observacionRechazo;
   final String? companyId;
   final bool isActive;
   final DateTime createdAt;
@@ -108,6 +138,8 @@ class IncidenceModel extends Equatable {
     required this.fechaFin,
     this.observaciones = '',
     this.documentoRelacionado,
+    this.estado = IncidenceEstado.pendiente,
+    this.observacionRechazo,
     this.companyId,
     this.isActive = true,
     required this.createdAt,
@@ -132,6 +164,8 @@ class IncidenceModel extends Equatable {
     DateTime? fechaFin,
     String? observaciones,
     String? documentoRelacionado,
+    IncidenceEstado? estado,
+    String? observacionRechazo,
     String? companyId,
     bool? isActive,
     DateTime? createdAt,
@@ -145,6 +179,8 @@ class IncidenceModel extends Equatable {
       fechaFin: fechaFin ?? this.fechaFin,
       observaciones: observaciones ?? this.observaciones,
       documentoRelacionado: documentoRelacionado ?? this.documentoRelacionado,
+      estado: estado ?? this.estado,
+      observacionRechazo: observacionRechazo ?? this.observacionRechazo,
       companyId: companyId ?? this.companyId,
       isActive: isActive ?? this.isActive,
       createdAt: createdAt ?? this.createdAt,
@@ -161,6 +197,10 @@ class IncidenceModel extends Equatable {
       fechaFin: DateTime.parse(json['fechaFin'] as String),
       observaciones: json['observaciones'] as String? ?? '',
       documentoRelacionado: json['documentoRelacionado'] as String?,
+      estado: json['estado'] != null
+          ? IncidenceEstadoExtension.fromString(json['estado'] as String)
+          : IncidenceEstado.pendiente,
+      observacionRechazo: json['observacionRechazo'] as String?,
       companyId: json['companyId'] as String?,
       isActive: json['isActive'] as bool? ?? true,
       createdAt: DateTime.parse(json['createdAt'] as String),
@@ -179,6 +219,8 @@ class IncidenceModel extends Equatable {
       'fechaFin': fechaFin.toIso8601String(),
       'observaciones': observaciones,
       'documentoRelacionado': documentoRelacionado,
+      'estado': estado.name,
+      'observacionRechazo': observacionRechazo,
       'companyId': companyId,
       'isActive': isActive,
       'createdAt': createdAt.toIso8601String(),
@@ -195,6 +237,8 @@ class IncidenceModel extends Equatable {
         fechaFin,
         observaciones,
         documentoRelacionado,
+        estado,
+        observacionRechazo,
         companyId,
         isActive,
         createdAt,

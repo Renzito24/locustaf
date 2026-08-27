@@ -29,6 +29,7 @@ class IncidenceForm extends ConsumerStatefulWidget {
   final IncidenceModel? existingIncidence;
   final bool isLoading;
   final String? errorMessage;
+  final String? fixedUserId;
   final void Function(IncidenceFormData data) onSubmit;
 
   const IncidenceForm({
@@ -36,6 +37,7 @@ class IncidenceForm extends ConsumerStatefulWidget {
     this.existingIncidence,
     this.isLoading = false,
     this.errorMessage,
+    this.fixedUserId,
     required this.onSubmit,
   });
 
@@ -57,7 +59,7 @@ class _IncidenceFormState extends ConsumerState<IncidenceForm> {
   void initState() {
     super.initState();
     final inc = widget.existingIncidence;
-    _userId = inc?.userId ?? '';
+    _userId = widget.fixedUserId ?? inc?.userId ?? '';
     _type = inc?.type ?? IncidenceType.vacaciones;
     _fechaInicio = inc?.fechaInicio ?? DateTime.now();
     _fechaFin = inc?.fechaFin ?? DateTime.now().add(const Duration(days: 1));
@@ -99,35 +101,37 @@ class _IncidenceFormState extends ConsumerState<IncidenceForm> {
                 style: const TextStyle(color: AppColors.error, fontSize: 13),
               ),
             ),
-          usersAsync.when(
-            data: (users) {
-              final employees =
-                  users.where((u) => u.rol == UserRole.employee && !u.isDeleted).toList();
-              return DropdownButtonFormField<String>(
-                initialValue: _userId.isEmpty ? null : _userId,
+          if (widget.fixedUserId == null) ...[
+            usersAsync.when(
+              data: (users) {
+                final employees =
+                    users.where((u) => u.rol == UserRole.employee && !u.isDeleted).toList();
+                return DropdownButtonFormField<String>(
+                  initialValue: _userId.isEmpty ? null : _userId,
+                  decoration: AppTheme.inputDecoration(label: 'Empleado', icon: Icons.person),
+                  dropdownColor: AppColors.cardDark,
+                  style: const TextStyle(color: AppColors.textWhite),
+                  items: employees
+                      .map((e) => DropdownMenuItem<String>(
+                            value: e.id,
+                            child: Text(e.nombreCompleto),
+                          ))
+                      .toList(),
+                  onChanged: isEditing ? null : (v) => setState(() => _userId = v ?? ''),
+                  validator: (v) => (v == null || v.isEmpty) ? 'Seleccione un empleado' : null,
+                );
+              },
+              loading: () => TextField(
                 decoration: AppTheme.inputDecoration(label: 'Empleado', icon: Icons.person),
-                dropdownColor: AppColors.cardDark,
-                style: const TextStyle(color: AppColors.textWhite),
-                items: employees
-                    .map((e) => DropdownMenuItem<String>(
-                          value: e.id,
-                          child: Text(e.nombreCompleto),
-                        ))
-                    .toList(),
-                onChanged: isEditing ? null : (v) => setState(() => _userId = v ?? ''),
-                validator: (v) => (v == null || v.isEmpty) ? 'Seleccione un empleado' : null,
-              );
-            },
-            loading: () => TextField(
-              decoration: AppTheme.inputDecoration(label: 'Empleado', icon: Icons.person),
-              enabled: false,
+                enabled: false,
+              ),
+              error: (_, _) => TextField(
+                decoration: AppTheme.inputDecoration(label: 'Empleado', icon: Icons.person),
+                enabled: false,
+              ),
             ),
-            error: (_, _) => TextField(
-              decoration: AppTheme.inputDecoration(label: 'Empleado', icon: Icons.person),
-              enabled: false,
-            ),
-          ),
-          const SizedBox(height: 16),
+            const SizedBox(height: 16),
+          ],
           DropdownButtonFormField<IncidenceType>(
             initialValue: _type,
             decoration: AppTheme.inputDecoration(label: 'Tipo de incidencia', icon: Icons.category),

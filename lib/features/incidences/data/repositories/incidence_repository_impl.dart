@@ -39,6 +39,23 @@ class IncidenceRepositoryImpl implements IncidenceRepository {
   }
 
   @override
+  Future<void> updateEstado(
+    String id, {
+    required IncidenceEstado estado,
+    String? observacionRechazo,
+  }) async {
+    await _firestoreService.updateDocument(
+      path: 'incidences',
+      documentId: id,
+      data: {
+        'estado': estado.name,
+        'observacionRechazo': observacionRechazo,
+        'updatedAt': DateTime.now().toIso8601String(),
+      },
+    );
+  }
+
+  @override
   Future<void> softDeleteIncidence(String id) async {
     await _firestoreService.updateDocument(
       path: 'incidences',

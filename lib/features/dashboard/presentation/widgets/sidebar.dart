@@ -22,6 +22,7 @@ class Sidebar extends ConsumerWidget {
     _MenuItem(icon: Icons.medical_services_outlined, label: 'Documentación', route: RoutePaths.medicalDocuments, visibleFor: {UserRole.admin}),
     _MenuItem(icon: Icons.warning_amber_outlined, label: 'Incidencias', route: RoutePaths.incidences, visibleFor: {UserRole.admin, UserRole.supervisor}),
     _MenuItem(icon: Icons.bar_chart_outlined, label: 'Reportes', route: RoutePaths.reports, visibleFor: {UserRole.admin, UserRole.employee}),
+    _MenuItem(icon: Icons.assignment_outlined, label: 'Justificativos', route: RoutePaths.employeeJustificativos, visibleFor: {UserRole.employee}),
     _MenuItem(icon: Icons.person_outline, label: 'Perfil', route: RoutePaths.profile, visibleFor: {UserRole.admin, UserRole.supervisor, UserRole.employee}),
   ];
 

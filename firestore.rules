@@ -68,6 +68,22 @@ service cloud.firestore {
             || request.resource.data.rol == resource.data.rol);
     }
 
+    // Un usuario solo puede actualizar su propio perfil y únicamente campos
+    // no sensibles (nombre, apellido, telefono, updatedAt). Los campos
+    // sensibles (id, email, dni, rol, isActive, isDeleted, companyId,
+    // lugarDeTrabajoId, createdAt) deben permanecer idénticos.
+    function isOwnProfileUpdate() {
+      return request.resource.data.id == resource.data.id
+        && request.resource.data.email == resource.data.email
+        && request.resource.data.dni == resource.data.dni
+        && request.resource.data.rol == resource.data.rol
+        && request.resource.data.isActive == resource.data.isActive
+        && request.resource.data.isDeleted == resource.data.isDeleted
+        && request.resource.data.companyId == resource.data.companyId
+        && request.resource.data.lugarDeTrabajoId == resource.data.lugarDeTrabajoId
+        && request.resource.data.createdAt == resource.data.createdAt;
+    }
+
     // ====================================================================
     // USERS
     // Superadmin : full access (todas las empresas)
@@ -85,7 +101,8 @@ service cloud.firestore {
             || (isOwner(uid) && getCompanyId() == null));
       allow update: if isAuthenticated()
         && (isSuperadmin()
-            || (isAdmin() && inCompany(resource.data.companyId)))
+            || (isAdmin() && inCompany(resource.data.companyId))
+            || (isOwner(uid) && isOwnProfileUpdate()))
         && noUserSensitiveChanges();
       allow delete: if isSuperadmin();
     }
@@ -151,15 +168,20 @@ service cloud.firestore {
     // MEDICAL DOCUMENTS
     // Superadmin : full access
     // Admin      : full access de su empresa
-    // Superv/Empl: no access
+    // Superv     : no access
+    // Empl       : create/read own (justificativos)
     // ====================================================================
     match /medical_documents/{docId} {
       allow read: if isAuthenticated()
         && (isSuperadmin()
-            || (isAdmin() && inCompany(resource.data.companyId)));
+            || (isAdmin() && inCompany(resource.data.companyId))
+            || (isEmployee() && isOwner(resource.data.userId)
+                && inCompany(resource.data.companyId)));
       allow create: if isAuthenticated()
         && (isSuperadmin()
-            || (isAdmin() && request.resource.data.companyId == getCompanyId()));
+            || (isAdmin() && request.resource.data.companyId == getCompanyId())
+            || (isEmployee() && request.resource.data.userId == request.auth.uid
+                && request.resource.data.companyId == getCompanyId()));
       allow update: if isAuthenticated()
         && (isSuperadmin()
             || (isAdmin() && inCompany(resource.data.companyId)))
@@ -173,14 +195,17 @@ service cloud.firestore {
     // Superadmin : full access
     // Admin      : full access de su empresa
     // Superv     : read de su empresa
-    // Empl       : no access
+    // Empl       : create/read own (justificativos)
     // ====================================================================
     match /incidences/{docId} {
       allow read: if isAuthenticated()
-        && (isSuperadmin() || inCompany(resource.data.companyId));
+        && (isSuperadmin() || inCompany(resource.data.companyId)
+            || (isEmployee() && isOwner(resource.data.userId)));
       allow create: if isAuthenticated()
         && (isSuperadmin()
-            || (isAdmin() && request.resource.data.companyId == getCompanyId()));
+            || (isAdmin() && request.resource.data.companyId == getCompanyId())
+            || (isEmployee() && request.resource.data.userId == request.auth.uid
+                && request.resource.data.companyId == getCompanyId()));
       allow update: if isAuthenticated()
         && (isSuperadmin()
             || (isAdmin() && inCompany(resource.data.companyId)))

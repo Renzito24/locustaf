@@ -1,10 +1,13 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/theme/app_theme.dart';
+import '../../../authentication/presentation/providers/auth_provider.dart';
 import '../../data/models/incidence_model.dart';
+import '../providers/incidences_provider.dart';
 
-class IncidenceDetailDialog extends StatelessWidget {
+class IncidenceDetailDialog extends ConsumerWidget {
   final IncidenceModel incidence;
   final String employeeName;
   final String employeeEmail;
@@ -33,7 +36,10 @@ class IncidenceDetailDialog extends StatelessWidget {
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final isAdmin = ref.watch(isAdminProvider);
+    final isApproving = ref.watch(incidenceApprovalProvider).isLoading;
+
     return Dialog(
       backgroundColor: AppColors.cardDark,
       shape: RoundedRectangleBorder(
@@ -78,13 +84,106 @@ class IncidenceDetailDialog extends StatelessWidget {
                 value: '${_formatDate(incidence.fechaInicio)} → ${_formatDate(incidence.fechaFin)}',
               ),
               _DetailRow(label: 'Estado', value: incidence.state.label, valueColor: _stateColor(incidence.state)),
+              _DetailRow(
+                label: 'Aprobación',
+                value: incidence.estado.label,
+                valueColor: _estadoColor(incidence.estado),
+              ),
               if (incidence.observaciones.isNotEmpty)
                 _DetailRow(label: 'Observaciones', value: incidence.observaciones),
               if (incidence.documentoRelacionado != null && incidence.documentoRelacionado!.isNotEmpty)
                 _DetailRow(label: 'Documento', value: incidence.documentoRelacionado!),
+              if (incidence.observacionRechazo != null && incidence.observacionRechazo!.isNotEmpty)
+                _DetailRow(
+                  label: 'Motivo de rechazo',
+                  value: incidence.observacionRechazo!,
+                  valueColor: AppColors.error,
+                ),
+              if (isAdmin && incidence.estado == IncidenceEstado.pendiente) ...[
+                const SizedBox(height: 16),
+                Divider(height: 24, color: AppColors.gold.withValues(alpha: 0.15)),
+                Row(
+                  children: [
+                    Expanded(
+                      child: OutlinedButton.icon(
+                        onPressed: isApproving
+                            ? null
+                            : () => _confirmReject(context, ref),
+                        icon: const Icon(Icons.close, size: 18),
+                        label: const Text('Rechazar'),
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: AppColors.error,
+                          side: const BorderSide(color: AppColors.error),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: FilledButton.icon(
+                        onPressed: isApproving
+                            ? null
+                            : () {
+                                ref.read(incidenceApprovalProvider.notifier)
+                                    .approve(incidence.id);
+                              },
+                        icon: const Icon(Icons.check, size: 18),
+                        label: const Text('Aprobar'),
+                        style: FilledButton.styleFrom(
+                          backgroundColor: AppColors.success,
+                          foregroundColor: Colors.white,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
             ],
           ),
         ),
+      ),
+    );
+  }
+
+  void _confirmReject(BuildContext context, WidgetRef ref) {
+    final controller = TextEditingController();
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: AppColors.cardDark,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(AppTheme.radiusLg),
+          side: BorderSide(color: AppColors.gold.withValues(alpha: 0.3)),
+        ),
+        title: Text('Rechazar incidencia', style: AppTheme.headingMd),
+        content: TextField(
+          controller: controller,
+          maxLines: 3,
+          style: const TextStyle(color: AppColors.textWhite),
+          decoration: AppTheme.inputDecoration(
+            label: 'Motivo del rechazo *',
+            icon: Icons.comment_outlined,
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(),
+            child: const Text('Cancelar', style: TextStyle(color: AppColors.textMuted)),
+          ),
+          FilledButton(
+            onPressed: () {
+              final motivo = controller.text.trim();
+              if (motivo.isEmpty) return;
+              Navigator.of(ctx).pop();
+              ref.read(incidenceApprovalProvider.notifier)
+                  .reject(incidence.id, observacion: motivo);
+            },
+            style: FilledButton.styleFrom(
+              backgroundColor: AppColors.error,
+              foregroundColor: Colors.white,
+            ),
+            child: const Text('Rechazar'),
+          ),
+        ],
       ),
     );
   }
@@ -101,6 +200,17 @@ class IncidenceDetailDialog extends StatelessWidget {
         return AppColors.success;
       case IncidenceState.finalizada:
         return AppColors.textMuted;
+    }
+  }
+
+  Color _estadoColor(IncidenceEstado estado) {
+    switch (estado) {
+      case IncidenceEstado.pendiente:
+        return AppColors.warning;
+      case IncidenceEstado.aprobado:
+        return AppColors.success;
+      case IncidenceEstado.rechazado:
+        return AppColors.error;
     }
   }
 }

@@ -43,6 +43,22 @@ class IncidencesScreen extends ConsumerWidget {
       );
     });
 
+    ref.listen<AsyncValue<void>>(incidenceApprovalProvider, (prev, next) {
+      next.whenOrNull(
+        data: (_) {
+          ref.read(incidenceApprovalProvider.notifier).reset();
+          ScaffoldMessenger.of(context).showSnackBar(
+            AppTheme.successSnackBar('Estado de la incidencia actualizado'),
+          );
+        },
+        error: (error, _) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            AppTheme.errorSnackBar('Error al actualizar el estado: $error'),
+          );
+        },
+      );
+    });
+
     return Padding(
       padding: const EdgeInsets.all(24.0),
       child: Column(

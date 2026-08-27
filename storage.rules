@@ -37,7 +37,7 @@ service firebase.storage {
     // Path: companies/{companyId}/medical_documents/{userId}/{fileName}
     // Superadmin : full access
     // Admin      : full access de su empresa
-    // Empl       : read own files only (reserved for future use)
+    // Empl       : read/create/update/delete own files (justificativos)
     // ====================================================================
     match /companies/{companyId}/medical_documents/{userId}/{fileName} {
       allow read: if isAuthenticated()
@@ -46,13 +46,16 @@ service firebase.storage {
             || (request.auth.uid == userId && companyId == getCompanyId()));
       allow create: if isAuthenticated()
         && (isSuperadmin()
-            || (isAdmin() && companyId == getCompanyId()));
+            || (isAdmin() && companyId == getCompanyId())
+            || (request.auth.uid == userId && companyId == getCompanyId()));
       allow update: if isAuthenticated()
         && (isSuperadmin()
-            || (isAdmin() && companyId == getCompanyId()));
+            || (isAdmin() && companyId == getCompanyId())
+            || (request.auth.uid == userId && companyId == getCompanyId()));
       allow delete: if isAuthenticated()
         && (isSuperadmin()
-            || (isAdmin() && companyId == getCompanyId()));
+            || (isAdmin() && companyId == getCompanyId())
+            || (request.auth.uid == userId && companyId == getCompanyId()));
     }
 
     // ====================================================================

@@ -19,4 +19,7 @@ class RoutePaths {
   static const String editMedicalDocument = '/medical_documents/edit';
   static const String createIncidence = '/incidences/create';
   static const String editIncidence = '/incidences/edit';
+  static const String employeeJustificativos = '/justificativos';
+  static const String employeeCreateIncidence = '/justificativos/incidencia/create';
+  static const String employeeCreateMedicalDocument = '/justificativos/documento/create';
 }

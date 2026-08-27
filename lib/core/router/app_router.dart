@@ -24,6 +24,9 @@ import '../../features/medical_documents/presentation/screens/edit_medical_docum
 import '../../features/medical_documents/presentation/screens/medical_documents_screen.dart';
 import '../../features/reports/presentation/screens/reports_screen.dart';
 import '../../features/reports/presentation/screens/employee_reports_screen.dart';
+import '../../features/justificativos/presentation/screens/employee_justificativos_screen.dart';
+import '../../features/justificativos/presentation/screens/employee_create_incidence_screen.dart';
+import '../../features/justificativos/presentation/screens/employee_create_medical_document_screen.dart';
 import '../../features/companies/presentation/screens/companies_screen.dart';
 import '../../features/companies/presentation/screens/onboarding_screen.dart';
 import 'app_routes.dart';
@@ -73,7 +76,7 @@ class AppRouter {
       final path = state.matchedLocation;
 
       if (role == UserRole.employee) {
-        final allowed = ['/attendance', '/reports', '/profile'];
+        final allowed = ['/attendance', '/reports', '/profile', '/justificativos'];
         if (!allowed.any((r) => path.startsWith(r)) && path != '/' && !path.startsWith('/login')) {
           return '/attendance';
         }
@@ -172,6 +175,18 @@ class AppRouter {
           GoRoute(
             path: RoutePaths.profile,
             builder: (context, state) => const ProfileScreen(),
+          ),
+          GoRoute(
+            path: RoutePaths.employeeJustificativos,
+            builder: (context, state) => const EmployeeJustificativosScreen(),
+          ),
+          GoRoute(
+            path: RoutePaths.employeeCreateIncidence,
+            builder: (context, state) => const EmployeeCreateIncidenceScreen(),
+          ),
+          GoRoute(
+            path: RoutePaths.employeeCreateMedicalDocument,
+            builder: (context, state) => const EmployeeCreateMedicalDocumentScreen(),
           ),
           GoRoute(
             path: RoutePaths.createEmployee,

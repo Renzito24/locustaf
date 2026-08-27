@@ -33,6 +33,7 @@ class MedicalDocumentForm extends ConsumerStatefulWidget {
   final bool isLoading;
   final double uploadProgress;
   final String? errorMessage;
+  final String? fixedUserId;
   final void Function(MedicalDocumentFormData data) onSubmit;
 
   const MedicalDocumentForm({
@@ -41,6 +42,7 @@ class MedicalDocumentForm extends ConsumerStatefulWidget {
     this.isLoading = false,
     this.uploadProgress = 0,
     this.errorMessage,
+    this.fixedUserId,
     required this.onSubmit,
   });
 
@@ -63,7 +65,7 @@ class _MedicalDocumentFormState extends ConsumerState<MedicalDocumentForm> {
   void initState() {
     super.initState();
     final doc = widget.existingDocument;
-    _userId = doc?.userId ?? '';
+    _userId = widget.fixedUserId ?? doc?.userId ?? '';
     _tipo = doc?.tipo ?? MedicalDocumentTipo.enfermedad;
     _fechaInicio = doc?.fechaInicio ?? DateTime.now();
     _fechaFin = doc?.fechaFin ?? DateTime.now().add(const Duration(days: 30));
@@ -106,42 +108,44 @@ class _MedicalDocumentFormState extends ConsumerState<MedicalDocumentForm> {
                 style: const TextStyle(color: AppColors.error, fontSize: 13),
               ),
             ),
-          usersAsync.when(
-            data: (users) {
-              final employees =
-                  users.where((u) => u.rol == UserRole.employee && !u.isDeleted).toList();
-              return DropdownButtonFormField<String>(
-                initialValue: _userId.isEmpty ? null : _userId,
+          if (widget.fixedUserId == null) ...[
+            usersAsync.when(
+              data: (users) {
+                final employees =
+                    users.where((u) => u.rol == UserRole.employee && !u.isDeleted).toList();
+                return DropdownButtonFormField<String>(
+                  initialValue: _userId.isEmpty ? null : _userId,
+                  decoration: AppTheme.inputDecoration(label: 'Empleado', icon: Icons.person),
+                  dropdownColor: AppColors.cardDark,
+                  style: const TextStyle(color: AppColors.textWhite),
+                  items: employees
+                      .map((e) => DropdownMenuItem<String>(
+                            value: e.id,
+                            child: Text(e.nombreCompleto),
+                          ))
+                      .toList(),
+                  onChanged: isEditing
+                      ? null
+                      : (value) {
+                          setState(() => _userId = value ?? '');
+                        },
+                  validator: (value) {
+                    if (value == null || value.isEmpty) return 'Seleccione un empleado';
+                    return null;
+                  },
+                );
+              },
+              loading: () => TextField(
                 decoration: AppTheme.inputDecoration(label: 'Empleado', icon: Icons.person),
-                dropdownColor: AppColors.cardDark,
-                style: const TextStyle(color: AppColors.textWhite),
-                items: employees
-                    .map((e) => DropdownMenuItem<String>(
-                          value: e.id,
-                          child: Text(e.nombreCompleto),
-                        ))
-                    .toList(),
-                onChanged: isEditing
-                    ? null
-                    : (value) {
-                        setState(() => _userId = value ?? '');
-                      },
-                validator: (value) {
-                  if (value == null || value.isEmpty) return 'Seleccione un empleado';
-                  return null;
-                },
-              );
-            },
-            loading: () => TextField(
-              decoration: AppTheme.inputDecoration(label: 'Empleado', icon: Icons.person),
-              enabled: false,
+                enabled: false,
+              ),
+              error: (_, _) => TextField(
+                decoration: AppTheme.inputDecoration(label: 'Empleado', icon: Icons.person),
+                enabled: false,
+              ),
             ),
-            error: (_, _) => TextField(
-              decoration: AppTheme.inputDecoration(label: 'Empleado', icon: Icons.person),
-              enabled: false,
-            ),
-          ),
-          const SizedBox(height: 16),
+            const SizedBox(height: 16),
+          ],
           DropdownButtonFormField<MedicalDocumentTipo>(
             initialValue: _tipo,
             decoration: AppTheme.inputDecoration(label: 'Tipo de documento', icon: Icons.description),
