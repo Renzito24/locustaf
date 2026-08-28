@@ -76,47 +76,49 @@ class HomeScreen extends ConsumerWidget {
   }
 
   Widget _buildDashboard(int total, int present, int absent, int workplaces, BuildContext context) {
-    final isMobile = AppTheme.isMobile(context);
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final width = constraints.maxWidth;
+        final crossAxisCount = width < 500 ? 2 : (width < 900 ? 3 : 4);
+        final itemWidth = (width - (crossAxisCount - 1) * 16) / crossAxisCount;
 
-    return SingleChildScrollView(
-      child: Column(
-        children: [
-          GridView.count(
-            crossAxisCount: isMobile ? 2 : 4,
-            shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(),
-            mainAxisSpacing: 16,
-            crossAxisSpacing: 16,
-            childAspectRatio: isMobile ? 1.4 : 1.6,
+        return SingleChildScrollView(
+          child: Wrap(
+            spacing: 16,
+            runSpacing: 16,
             children: [
               _KpiCard(
                 icon: Icons.people_outline,
                 label: 'Empleados activos',
                 value: total.toString(),
                 color: AppColors.gold,
+                width: itemWidth,
               ),
               _KpiCard(
                 icon: Icons.check_circle_outline,
                 label: 'Presentes hoy',
                 value: present.toString(),
                 color: AppColors.success,
+                width: itemWidth,
               ),
               _KpiCard(
                 icon: Icons.cancel_outlined,
                 label: 'Ausentes hoy',
                 value: absent.toString(),
                 color: absent > 0 ? AppColors.error : AppColors.success,
+                width: itemWidth,
               ),
               _KpiCard(
                 icon: Icons.business_outlined,
                 label: 'Sucursales activas',
                 value: workplaces.toString(),
                 color: AppColors.goldLight,
+                width: itemWidth,
               ),
             ],
           ),
-        ],
-      ),
+        );
+      },
     );
   }
 }
@@ -126,46 +128,51 @@ class _KpiCard extends StatelessWidget {
   final String label;
   final String value;
   final Color color;
+  final double width;
 
   const _KpiCard({
     required this.icon,
     required this.label,
     required this.value,
     required this.color,
+    required this.width,
   });
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: AppTheme.cardDecoration(),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Container(
-            width: 44,
-            height: 44,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              gradient: LinearGradient(
-                colors: [color.withValues(alpha: 0.3), color.withValues(alpha: 0.1)],
+    return SizedBox(
+      width: width,
+      child: Container(
+        padding: const EdgeInsets.all(20),
+        decoration: AppTheme.cardDecoration(),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 44,
+              height: 44,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                gradient: LinearGradient(
+                  colors: [color.withValues(alpha: 0.3), color.withValues(alpha: 0.1)],
+                ),
+              ),
+              child: Icon(icon, color: color, size: 22),
+            ),
+            const SizedBox(height: 14),
+            Text(
+              value,
+              style: TextStyle(
+                fontSize: 28,
+                fontWeight: FontWeight.bold,
+                color: color,
               ),
             ),
-            child: Icon(icon, color: color, size: 22),
-          ),
-          const SizedBox(height: 14),
-          Text(
-            value,
-            style: TextStyle(
-              fontSize: 28,
-              fontWeight: FontWeight.bold,
-              color: color,
-            ),
-          ),
-          const SizedBox(height: 4),
-          Text(label, style: AppTheme.bodyMd),
-        ],
+            const SizedBox(height: 4),
+            Text(label, style: AppTheme.bodyMd),
+          ],
+        ),
       ),
     );
   }

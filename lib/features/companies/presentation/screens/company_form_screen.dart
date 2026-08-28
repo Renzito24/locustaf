@@ -44,30 +44,29 @@ class _CompanyFormScreenState extends ConsumerState<CompanyFormScreen> {
       );
     });
 
-    return Scaffold(
-      backgroundColor: AppColors.bgDarkTop,
-      appBar: AppBar(
-        backgroundColor: AppColors.bgDarkTop,
-        title: Text(
-          isEditing ? 'Editar empresa' : 'Nueva empresa',
-          style: AppTheme.headingMd,
-        ),
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: AppColors.textWhite),
-          onPressed: () => context.pop(),
-        ),
-        bottom: PreferredSize(
-          preferredSize: const Size.fromHeight(1),
-          child: Container(color: AppColors.gold.withValues(alpha: 0.15)),
-        ),
-      ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(24),
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(24),
+      child: Center(
         child: ConstrainedBox(
           constraints: const BoxConstraints(maxWidth: 600),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              Row(
+                children: [
+                  IconButton(
+                    icon: const Icon(Icons.arrow_back, color: AppColors.textWhite),
+                    tooltip: 'Volver',
+                    onPressed: () => context.pop(),
+                  ),
+                  const SizedBox(width: 8),
+                  Text(
+                    isEditing ? 'Editar empresa' : 'Nueva empresa',
+                    style: AppTheme.headingMd,
+                  ),
+                ],
+              ),
+              const SizedBox(height: 24),
               Text(
                 isEditing
                     ? 'Modificá los datos de la empresa.'
@@ -86,6 +85,13 @@ class _CompanyFormScreenState extends ConsumerState<CompanyFormScreen> {
                     await ref.read(createCompanyProvider.notifier).createCompany(data);
                   }
                 },
+              ),
+              const SizedBox(height: 12),
+              Center(
+                child: TextButton(
+                  onPressed: () => context.pop(),
+                  child: const Text('Cancelar y volver al listado'),
+                ),
               ),
             ],
           ),
