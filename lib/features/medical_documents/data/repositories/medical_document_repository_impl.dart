@@ -61,6 +61,7 @@ class MedicalDocumentRepositoryImpl implements MedicalDocumentRepository {
     String id, {
     required MedicalDocumentEstado estado,
     String? observacionRechazo,
+    String? reviewedBy,
   }) async {
     await _firestoreService.updateDocument(
       path: 'medical_documents',
@@ -68,6 +69,8 @@ class MedicalDocumentRepositoryImpl implements MedicalDocumentRepository {
       data: {
         'estado': estado.name,
         'observacionRechazo': observacionRechazo,
+        'reviewedBy': reviewedBy,
+        'reviewedAt': DateTime.now().toIso8601String(),
         'updatedAt': DateTime.now().toIso8601String(),
       },
     );

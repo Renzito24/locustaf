@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/providers/data_providers.dart';
 import '../../../../core/theme/app_theme.dart';
+import '../../../../core/utils/validators.dart';
 import '../../data/models/workplace_model.dart';
 import '../providers/workplace_notifier.dart';
 import '../widgets/workplace_map_picker.dart';
@@ -291,10 +292,9 @@ class _WorkplaceFormState extends ConsumerState<_WorkplaceForm> {
                               if (value == null || value.trim().isEmpty) {
                                 return 'Obligatorio';
                               }
-                              if (double.tryParse(value.trim()) == null) {
-                                return 'Número inválido';
-                              }
-                              return null;
+                              final v = double.tryParse(value.trim());
+                              if (v == null) return 'Número inválido';
+                              return Validators.latitud(v);
                             },
                           ),
                         ),
@@ -314,10 +314,9 @@ class _WorkplaceFormState extends ConsumerState<_WorkplaceForm> {
                               if (value == null || value.trim().isEmpty) {
                                 return 'Obligatorio';
                               }
-                              if (double.tryParse(value.trim()) == null) {
-                                return 'Número inválido';
-                              }
-                              return null;
+                              final v = double.tryParse(value.trim());
+                              if (v == null) return 'Número inválido';
+                              return Validators.longitud(v);
                             },
                           ),
                         ),

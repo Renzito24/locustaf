@@ -8,6 +8,7 @@ abstract class IncidenceRepository {
     String id, {
     required IncidenceEstado estado,
     String? observacionRechazo,
+    String? reviewedBy,
   });
   Future<void> softDeleteIncidence(String id);
 }

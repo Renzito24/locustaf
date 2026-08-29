@@ -4,7 +4,6 @@ import '../../../../core/models/company_model.dart';
 import '../../../../core/models/user_model.dart';
 import '../../../../core/providers/firebase_providers.dart';
 import '../../../authentication/presentation/providers/auth_provider.dart';
-import 'company_providers.dart';
 
 class OnboardingState {
   final bool isLoading;
@@ -40,27 +39,30 @@ class OnboardingNotifier extends Notifier<OnboardingState> {
       return;
     }
 
-    final companyRepo = ref.read(companyRepositoryProvider);
     final firestore = ref.read(firestoreServiceProvider);
 
     try {
-      // 1. Crear la empresa
-      final companyId = await companyRepo.createCompany(company);
+      // Crear la empresa y el usuario admin en una única transacción para
+      // evitar empresas huérfanas si falla la creación del usuario.
+      await firestore.runTransaction<String>((transaction) async {
+        final companyRef = firestore.collection('companies').doc();
+        final companyData = company.toJson();
+        companyData['id'] = companyRef.id;
+        transaction.set(companyRef, companyData);
 
-      // 2. Crear el usuario admin con companyId
-      final user = profile.copyWith(
-        id: authUser.uid,
-        rol: UserRole.admin,
-        companyId: companyId,
-        isActive: true,
-        isDeleted: false,
-        createdAt: DateTime.now(),
-      );
-      await firestore.setDocument(
-        path: 'users',
-        documentId: authUser.uid,
-        data: user.toJson(),
-      );
+        final user = profile.copyWith(
+          id: authUser.uid,
+          rol: UserRole.admin,
+          companyId: companyRef.id,
+          isActive: true,
+          isDeleted: false,
+          createdAt: DateTime.now(),
+        );
+        final userRef = firestore.collection('users').doc(authUser.uid);
+        transaction.set(userRef, user.toJson());
+
+        return companyRef.id;
+      });
 
       state = const OnboardingState(isLoading: false);
     } catch (e) {

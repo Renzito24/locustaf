@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/models/company_model.dart';
 import '../../../../core/theme/app_theme.dart';
+import '../../../../core/utils/validators.dart';
 import '../providers/company_action_provider.dart';
 
 class CompanyForm extends ConsumerStatefulWidget {
@@ -121,8 +122,7 @@ class _CompanyFormState extends ConsumerState<CompanyForm> {
             ),
             keyboardType: TextInputType.number,
             inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-            validator: (v) =>
-                (v == null || v.trim().isEmpty) ? 'Requerido' : null,
+            validator: Validators.cuit,
             enabled: !widget.isLoading,
           ),
           const SizedBox(height: 12),
@@ -134,6 +134,10 @@ class _CompanyFormState extends ConsumerState<CompanyForm> {
               icon: Icons.email_outlined,
             ),
             keyboardType: TextInputType.emailAddress,
+            validator: (v) {
+              if (v == null || v.trim().isEmpty) return null;
+              return Validators.email(v);
+            },
             enabled: !widget.isLoading,
           ),
           const SizedBox(height: 12),

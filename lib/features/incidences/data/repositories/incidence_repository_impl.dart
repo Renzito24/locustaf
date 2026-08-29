@@ -61,6 +61,7 @@ class IncidenceRepositoryImpl implements IncidenceRepository {
     String id, {
     required IncidenceEstado estado,
     String? observacionRechazo,
+    String? reviewedBy,
   }) async {
     await _firestoreService.updateDocument(
       path: 'incidences',
@@ -68,6 +69,8 @@ class IncidenceRepositoryImpl implements IncidenceRepository {
       data: {
         'estado': estado.name,
         'observacionRechazo': observacionRechazo,
+        'reviewedBy': reviewedBy,
+        'reviewedAt': DateTime.now().toIso8601String(),
         'updatedAt': DateTime.now().toIso8601String(),
       },
     );

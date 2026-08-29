@@ -8,6 +8,7 @@ abstract class MedicalDocumentRepository {
     String id, {
     required MedicalDocumentEstado estado,
     String? observacionRechazo,
+    String? reviewedBy,
   });
   Future<void> softDeleteDocument(String id);
 }

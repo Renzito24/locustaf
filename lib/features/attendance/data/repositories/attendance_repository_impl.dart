@@ -60,10 +60,29 @@ class AttendanceRepositoryImpl implements AttendanceRepository {
       final lockDoc = await transaction.get(lockRef);
       if (lockDoc.exists) {
         final data = lockDoc.data() as Map<String, dynamic>;
-        throw AttendanceException(
-          'Ya tenés una asistencia activa desde las ${data['checkInTime'] ?? 'desconocido'}. '
-          'Finalizala antes de registrar una nueva.',
-        );
+        final attendanceId = data['attendanceId'] as String?;
+
+        // El lock puede ser huérfano: la asistencia asociada ya fue finalizada
+        // (o no existe). En ese caso se reclama el lock y se continúa.
+        if (attendanceId != null) {
+          final attendanceRef =
+              _firestoreService.collection('attendances').doc(attendanceId);
+          final attendanceDoc = await transaction.get(attendanceRef);
+          final isCompleted = attendanceDoc.exists &&
+              (attendanceDoc.data() as Map<String, dynamic>)['status'] ==
+                  'completed';
+          if (!isCompleted) {
+            throw AttendanceException(
+              'Ya tenés una asistencia activa desde las ${data['checkInTime'] ?? 'desconocido'}. '
+              'Finalizala antes de registrar una nueva.',
+            );
+          }
+        } else {
+          throw AttendanceException(
+            'Ya tenés una asistencia activa desde las ${data['checkInTime'] ?? 'desconocido'}. '
+            'Finalizala antes de registrar una nueva.',
+          );
+        }
       }
 
       final attendanceRef =

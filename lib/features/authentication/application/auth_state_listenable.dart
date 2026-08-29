@@ -74,11 +74,22 @@ class AuthStateListenable extends ChangeNotifier {
       documentId: uid,
       fromJson: UserModel.fromJson,
     ).listen((userModel) {
-      _role = userModel?.rol;
-      _isActive = userModel?.isActive;
-      _isDeleted = userModel?.isDeleted;
-      _companyId = userModel?.companyId;
-      _startListeningCompanyDoc(svc, userModel?.companyId);
+      if (userModel == null) {
+        // El documento del usuario fue eliminado físicamente: se trata como
+        // cuenta eliminada para bloquear el acceso.
+        _role = null;
+        _isActive = false;
+        _isDeleted = true;
+        _companyId = null;
+        _startListeningCompanyDoc(svc, null);
+        notifyListeners();
+        return;
+      }
+      _role = userModel.rol;
+      _isActive = userModel.isActive;
+      _isDeleted = userModel.isDeleted;
+      _companyId = userModel.companyId;
+      _startListeningCompanyDoc(svc, userModel.companyId);
       notifyListeners();
     });
   }

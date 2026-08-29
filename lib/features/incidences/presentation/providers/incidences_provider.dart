@@ -220,8 +220,13 @@ class IncidenceApprovalNotifier extends AsyncNotifier<void> {
   Future<void> approve(String id) async {
     state = const AsyncLoading();
     final repo = ref.read(incidenceRepositoryProvider);
+    final reviewerId = ref.read(currentUserProvider)?.uid;
     try {
-      await repo.updateEstado(id, estado: IncidenceEstado.aprobado);
+      await repo.updateEstado(
+        id,
+        estado: IncidenceEstado.aprobado,
+        reviewedBy: reviewerId,
+      );
       state = const AsyncData(null);
     } catch (e, st) {
       state = AsyncError(e, st);
@@ -231,11 +236,13 @@ class IncidenceApprovalNotifier extends AsyncNotifier<void> {
   Future<void> reject(String id, {required String observacion}) async {
     state = const AsyncLoading();
     final repo = ref.read(incidenceRepositoryProvider);
+    final reviewerId = ref.read(currentUserProvider)?.uid;
     try {
       await repo.updateEstado(
         id,
         estado: IncidenceEstado.rechazado,
         observacionRechazo: observacion,
+        reviewedBy: reviewerId,
       );
       state = const AsyncData(null);
     } catch (e, st) {

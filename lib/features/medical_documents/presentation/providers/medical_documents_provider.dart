@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/providers/data_providers.dart';
 import '../../../../core/providers/firebase_providers.dart';
 import '../../../../core/services/storage_service.dart';
+import '../../../../core/utils/file_utils.dart';
 import '../../../authentication/presentation/providers/auth_provider.dart';
 import '../../../employees/presentation/providers/users_provider.dart';
 import '../../data/models/medical_document_model.dart';
@@ -183,7 +184,8 @@ class MedicalDocumentCreateNotifier extends Notifier<MedicalDocumentActionState>
     try {
       if (file != null) {
         final docId = ref.read(firestoreServiceProvider).generateId('medical_documents');
-        final storagePath = 'companies/$companyId/medical_documents/${document.userId}/${docId}_${file.name}';
+        final safeName = FileUtils.sanitizeFileName(file.name);
+        final storagePath = 'companies/$companyId/medical_documents/${document.userId}/${docId}_$safeName';
 
         uploadedUrl = await storageService.uploadFile(
           path: storagePath,
@@ -192,8 +194,8 @@ class MedicalDocumentCreateNotifier extends Notifier<MedicalDocumentActionState>
             state = MedicalDocumentActionState(isLoading: true, uploadProgress: progress);
           },
         );
-        mimeType = file.extension;
-        fileName = file.name;
+        mimeType = FileUtils.mimeTypeFromExtension(file.extension);
+        fileName = safeName;
       }
 
       state = MedicalDocumentActionState(isLoading: true, uploadProgress: 1);
@@ -254,7 +256,8 @@ class MedicalDocumentUpdateNotifier extends Notifier<MedicalDocumentActionState>
         final docId = document.id.isEmpty
             ? ref.read(firestoreServiceProvider).generateId('medical_documents')
             : document.id;
-        final storagePath = 'companies/$companyId/medical_documents/${document.userId}/${docId}_${file.name}';
+        final safeName = FileUtils.sanitizeFileName(file.name);
+        final storagePath = 'companies/$companyId/medical_documents/${document.userId}/${docId}_$safeName';
 
         // 1. Subir nuevo archivo primero
         uploadedUrl = await storageService.uploadFile(
@@ -264,8 +267,8 @@ class MedicalDocumentUpdateNotifier extends Notifier<MedicalDocumentActionState>
             state = MedicalDocumentActionState(isLoading: true, uploadProgress: progress);
           },
         );
-        newFileName = file.name;
-        newMimeType = file.extension;
+        newFileName = safeName;
+        newMimeType = FileUtils.mimeTypeFromExtension(file.extension);
 
         // 2. Eliminar archivo anterior (nuevo ya está seguro en Storage)
         if (document.archivoUrl != null) {
@@ -352,8 +355,13 @@ class MedicalDocumentApprovalNotifier extends AsyncNotifier<void> {
   Future<void> approve(String id) async {
     state = const AsyncLoading();
     final repo = ref.read(medicalDocumentRepositoryProvider);
+    final reviewerId = ref.read(currentUserProvider)?.uid;
     try {
-      await repo.updateEstado(id, estado: MedicalDocumentEstado.aprobado);
+      await repo.updateEstado(
+        id,
+        estado: MedicalDocumentEstado.aprobado,
+        reviewedBy: reviewerId,
+      );
       state = const AsyncData(null);
     } catch (e, st) {
       state = AsyncError(e, st);
@@ -363,11 +371,13 @@ class MedicalDocumentApprovalNotifier extends AsyncNotifier<void> {
   Future<void> reject(String id, {required String observacion}) async {
     state = const AsyncLoading();
     final repo = ref.read(medicalDocumentRepositoryProvider);
+    final reviewerId = ref.read(currentUserProvider)?.uid;
     try {
       await repo.updateEstado(
         id,
         estado: MedicalDocumentEstado.rechazado,
         observacionRechazo: observacion,
+        reviewedBy: reviewerId,
       );
       state = const AsyncData(null);
     } catch (e, st) {
