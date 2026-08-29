@@ -8,6 +8,7 @@ import '../../domain/repositories/attendance_repository.dart';
 import '../../domain/services/attendance_calculator.dart';
 import '../../../../core/providers/data_providers.dart';
 import '../../../../core/providers/firebase_providers.dart';
+import '../../../../core/services/logging_service.dart';
 import '../../../workplaces/data/models/workplace_model.dart';
 
 final attendanceRepositoryProvider = Provider<AttendanceRepository>((ref) {
@@ -154,10 +155,23 @@ class AttendanceNotifier extends Notifier<AttendanceActionState> {
       );
 
       await repo.checkIn(attendance);
+      LoggingService.instance.info(
+        'Check-in registrado',
+        tag: 'attendance',
+      );
       state = AttendanceActionState.success('Asistencia registrada correctamente.');
     } on AttendanceException catch (e) {
+      LoggingService.instance.warning(
+        'Check-in rechazado: ${e.message}',
+        tag: 'attendance',
+      );
       state = AttendanceActionState.error(e.message);
     } catch (e) {
+      LoggingService.instance.error(
+        'Error al registrar check-in',
+        tag: 'attendance',
+        error: e,
+      );
       state = AttendanceActionState.error('Error al registrar asistencia: $e');
     }
   }
@@ -219,10 +233,23 @@ class AttendanceNotifier extends Notifier<AttendanceActionState> {
         checkOutLatitud: location.latitude,
         checkOutLongitud: location.longitude,
       );
+      LoggingService.instance.info(
+        'Check-out registrado',
+        tag: 'attendance',
+      );
       state = AttendanceActionState.success('Jornada finalizada correctamente.');
     } on AttendanceException catch (e) {
+      LoggingService.instance.warning(
+        'Check-out rechazado: ${e.message}',
+        tag: 'attendance',
+      );
       state = AttendanceActionState.error(e.message);
     } catch (e) {
+      LoggingService.instance.error(
+        'Error al finalizar jornada',
+        tag: 'attendance',
+        error: e,
+      );
       state = AttendanceActionState.error('Error al finalizar jornada: $e');
     }
   }
@@ -234,10 +261,23 @@ class AttendanceNotifier extends Notifier<AttendanceActionState> {
     final repo = ref.read(attendanceRepositoryProvider);
     try {
       await repo.finalizeOrphaned(attendanceId, userId);
+      LoggingService.instance.info(
+        'Jornada huérfana finalizada',
+        tag: 'attendance',
+      );
       state = AttendanceActionState.success('Jornada huérfana finalizada correctamente.');
     } on AttendanceException catch (e) {
+      LoggingService.instance.warning(
+        'Finalizar huérfana rechazado: ${e.message}',
+        tag: 'attendance',
+      );
       state = AttendanceActionState.error(e.message);
     } catch (e) {
+      LoggingService.instance.error(
+        'Error al finalizar jornada huérfana',
+        tag: 'attendance',
+        error: e,
+      );
       state = AttendanceActionState.error('Error al finalizar jornada: $e');
     }
   }

@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/providers/data_providers.dart';
 import '../../../../core/providers/firebase_providers.dart';
 import '../../../../core/services/storage_service.dart';
+import '../../../../core/services/logging_service.dart';
 import '../../../../core/utils/file_utils.dart';
 import '../../../authentication/presentation/providers/auth_provider.dart';
 import '../../../employees/presentation/providers/users_provider.dart';
@@ -362,8 +363,18 @@ class MedicalDocumentApprovalNotifier extends AsyncNotifier<void> {
         estado: MedicalDocumentEstado.aprobado,
         reviewedBy: reviewerId,
       );
+      LoggingService.instance.info(
+        'Documento médico aprobado: $id',
+        tag: 'medical_documents',
+      );
       state = const AsyncData(null);
     } catch (e, st) {
+      LoggingService.instance.error(
+        'Error al aprobar documento médico: $id',
+        tag: 'medical_documents',
+        error: e,
+        stackTrace: st,
+      );
       state = AsyncError(e, st);
     }
   }
@@ -379,8 +390,18 @@ class MedicalDocumentApprovalNotifier extends AsyncNotifier<void> {
         observacionRechazo: observacion,
         reviewedBy: reviewerId,
       );
+      LoggingService.instance.info(
+        'Documento médico rechazado: $id',
+        tag: 'medical_documents',
+      );
       state = const AsyncData(null);
     } catch (e, st) {
+      LoggingService.instance.error(
+        'Error al rechazar documento médico: $id',
+        tag: 'medical_documents',
+        error: e,
+        stackTrace: st,
+      );
       state = AsyncError(e, st);
     }
   }

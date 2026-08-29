@@ -7,6 +7,7 @@ import '../../data/repositories/incidence_repository_impl.dart';
 import '../../domain/repositories/incidence_repository.dart';
 import '../../../../core/providers/data_providers.dart';
 import '../../../../core/providers/firebase_providers.dart';
+import '../../../../core/services/logging_service.dart';
 
 final incidenceRepositoryProvider = Provider<IncidenceRepository>((ref) {
   final firestoreService = ref.read(firestoreServiceProvider);
@@ -227,8 +228,18 @@ class IncidenceApprovalNotifier extends AsyncNotifier<void> {
         estado: IncidenceEstado.aprobado,
         reviewedBy: reviewerId,
       );
+      LoggingService.instance.info(
+        'Incidencia aprobada: $id',
+        tag: 'incidences',
+      );
       state = const AsyncData(null);
     } catch (e, st) {
+      LoggingService.instance.error(
+        'Error al aprobar incidencia: $id',
+        tag: 'incidences',
+        error: e,
+        stackTrace: st,
+      );
       state = AsyncError(e, st);
     }
   }
@@ -244,8 +255,18 @@ class IncidenceApprovalNotifier extends AsyncNotifier<void> {
         observacionRechazo: observacion,
         reviewedBy: reviewerId,
       );
+      LoggingService.instance.info(
+        'Incidencia rechazada: $id',
+        tag: 'incidences',
+      );
       state = const AsyncData(null);
     } catch (e, st) {
+      LoggingService.instance.error(
+        'Error al rechazar incidencia: $id',
+        tag: 'incidences',
+        error: e,
+        stackTrace: st,
+      );
       state = AsyncError(e, st);
     }
   }
