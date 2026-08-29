@@ -181,6 +181,12 @@ class _MedicalDocumentFormState extends ConsumerState<MedicalDocumentForm> {
                   label: 'Fecha de vencimiento',
                   value: _fechaFin,
                   onChanged: (d) => setState(() => _fechaFin = d),
+                  validator: (_) {
+                    if (_fechaFin.isBefore(_fechaInicio)) {
+                      return 'La fecha de vencimiento no puede ser anterior a la de emisión';
+                    }
+                    return null;
+                  },
                 ),
               ),
             ],
@@ -315,8 +321,9 @@ class _MedicalDocumentFormState extends ConsumerState<MedicalDocumentForm> {
     required String label,
     required DateTime value,
     required void Function(DateTime) onChanged,
+    String? Function(String?)? validator,
   }) {
-    return TextField(
+    return TextFormField(
       decoration: AppTheme.inputDecoration(
         label: label,
         icon: Icons.calendar_today,
@@ -353,6 +360,7 @@ class _MedicalDocumentFormState extends ConsumerState<MedicalDocumentForm> {
             '${value.year}-${value.month.toString().padLeft(2, '0')}-${value.day.toString().padLeft(2, '0')}',
       ),
       readOnly: true,
+      validator: validator,
     );
   }
 

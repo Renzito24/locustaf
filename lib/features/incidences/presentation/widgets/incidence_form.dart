@@ -164,6 +164,12 @@ class _IncidenceFormState extends ConsumerState<IncidenceForm> {
                   label: 'Fecha fin',
                   value: _fechaFin,
                   onChanged: (d) => setState(() => _fechaFin = d),
+                  validator: (_) {
+                    if (_fechaFin.isBefore(_fechaInicio)) {
+                      return 'La fecha fin no puede ser anterior a la fecha inicio';
+                    }
+                    return null;
+                  },
                 ),
               ),
             ],
@@ -224,8 +230,9 @@ class _IncidenceFormState extends ConsumerState<IncidenceForm> {
     required String label,
     required DateTime value,
     required void Function(DateTime) onChanged,
+    String? Function(String?)? validator,
   }) {
-    return TextField(
+    return TextFormField(
       decoration: AppTheme.inputDecoration(
         label: label,
         icon: Icons.calendar_today,
@@ -261,6 +268,7 @@ class _IncidenceFormState extends ConsumerState<IncidenceForm> {
         text: '${value.year}-${value.month.toString().padLeft(2, '0')}-${value.day.toString().padLeft(2, '0')}',
       ),
       readOnly: true,
+      validator: validator,
     );
   }
 
