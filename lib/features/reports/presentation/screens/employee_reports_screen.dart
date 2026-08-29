@@ -165,12 +165,7 @@ class _EmployeeReportsScreenState extends ConsumerState<EmployeeReportsScreen> {
     final totalMinutes = completed.fold<int>(0, (sum, a) => sum + (a.durationMinutes ?? 0));
     final totalHours = totalMinutes / 60;
 
-    int lateArrivals = 0;
-    for (final a in completed) {
-      if (a.checkInTime.hour > 8 || (a.checkInTime.hour == 8 && a.checkInTime.minute > 0)) {
-        lateArrivals++;
-      }
-    }
+    int lateArrivals = completed.where((a) => a.isLate ?? false).length;
 
     final uniqueDays = completed.map((a) => a.date).toSet().length;
 

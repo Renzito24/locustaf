@@ -115,18 +115,18 @@ class IncidenceFilterBar extends ConsumerWidget {
     );
   }
 
-  Widget _buildStateDropdown(WidgetRef ref, IncidenceState? selectedState) {
+  Widget _buildStateDropdown(WidgetRef ref, IncidenceEstado? selectedState) {
     return SizedBox(
       width: 180,
-      child: DropdownButtonFormField<IncidenceState?>(
+      child: DropdownButtonFormField<IncidenceEstado?>(
         initialValue: selectedState,
         decoration: AppTheme.inputDecoration(label: 'Estado', icon: Icons.flag),
         dropdownColor: AppColors.cardDark,
         style: const TextStyle(color: AppColors.textWhite),
         items: [
-          const DropdownMenuItem<IncidenceState?>(value: null, child: Text('Todos')),
-          ...IncidenceState.values.map(
-            (s) => DropdownMenuItem<IncidenceState?>(
+          const DropdownMenuItem<IncidenceEstado?>(value: null, child: Text('Todos')),
+          ...IncidenceEstado.values.map(
+            (s) => DropdownMenuItem<IncidenceEstado?>(
               value: s,
               child: Text(s.label),
             ),

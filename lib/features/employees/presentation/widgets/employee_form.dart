@@ -6,6 +6,7 @@ import '../../../../core/constants/app_sizes.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/utils/validators.dart';
 import '../../../../core/models/user_model.dart';
+import '../../../authentication/presentation/providers/auth_provider.dart';
 import '../../../workplaces/presentation/providers/workplace_notifier.dart';
 import '../providers/update_employee_notifier.dart';
 import '../providers/users_provider.dart';
@@ -414,13 +415,19 @@ class _EmployeeFormState extends ConsumerState<EmployeeForm> {
             initialValue: _selectedRole,
             decoration: _inputDeco('Rol *',
                 icon: Icons.admin_panel_settings_outlined),
-            items: const [
-              DropdownMenuItem(
+            items: [
+              if (ref.watch(userRoleProvider) == UserRole.superadmin)
+                const DropdownMenuItem(
+                  value: UserRole.superadmin,
+                  child: Text('Super Administrador',
+                      style: TextStyle(color: AppColors.textWhite)),
+                ),
+              const DropdownMenuItem(
                 value: UserRole.employee,
                 child: Text('Empleado',
                     style: TextStyle(color: AppColors.textWhite)),
               ),
-              DropdownMenuItem(
+              const DropdownMenuItem(
                 value: UserRole.supervisor,
                 child: Text('Supervisor',
                     style: TextStyle(color: AppColors.textWhite)),

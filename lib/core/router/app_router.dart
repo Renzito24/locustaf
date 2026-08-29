@@ -56,6 +56,11 @@ class AppRouter {
         return goingToLogin ? null : '/login?blocked=true';
       }
 
+      // Si la empresa del usuario está inactiva, bloquear el acceso a la app.
+      if (loggedIn && _auth.isCompanyInactive) {
+        return goingToLogin ? null : '/login?company=inactive';
+      }
+
       // Si el usuario está autenticado pero no tiene empresa, debe completar
       // el onboarding (crear su empresa).
       if (loggedIn && _auth.needsOnboarding) {

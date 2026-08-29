@@ -33,14 +33,22 @@ final todayAttendancesProvider = Provider<List<AttendanceModel>>((ref) {
 
 final employeesPresentTodayProvider = Provider<int>((ref) {
   final today = ref.watch(todayAttendancesProvider);
-  final uniqueUserIds = today.map((a) => a.userId).toSet();
-  return uniqueUserIds.length;
+  final activeUserIds = today
+      .where((a) => a.status == AttendanceStatus.active)
+      .map((a) => a.userId)
+      .toSet();
+  return activeUserIds.length;
+});
+
+final employeesPresentOrCompletedTodayProvider = Provider<int>((ref) {
+  final today = ref.watch(todayAttendancesProvider);
+  return today.map((a) => a.userId).toSet().length;
 });
 
 final employeesAbsentTodayProvider = Provider<int>((ref) {
   final total = ref.watch(totalActiveEmployeesProvider);
-  final present = ref.watch(employeesPresentTodayProvider);
-  return (total - present).clamp(0, total);
+  final presentOrCompleted = ref.watch(employeesPresentOrCompletedTodayProvider);
+  return (total - presentOrCompleted).clamp(0, total);
 });
 
 class AttendanceReportRow {
@@ -141,18 +149,15 @@ final filteredAttendanceReportProvider = Provider<List<AttendanceReportRow>>((re
   }
 
   if (filter.workplaceId != null && filter.workplaceId!.isNotEmpty) {
-    filtered = filtered.where((a) {
-      final user = userMap[a.userId];
-      return user?.lugarDeTrabajoId == filter.workplaceId;
-    }).toList();
+    filtered = filtered.where((a) => a.workplaceId == filter.workplaceId).toList();
   }
 
   filtered.sort((a, b) => b.checkInTime.compareTo(a.checkInTime));
 
   return filtered.map((a) {
     final user = userMap[a.userId];
-    final workplaceName = user?.lugarDeTrabajoId != null
-        ? workplaceMap[user!.lugarDeTrabajoId]
+    final workplaceName = a.workplaceId != null
+        ? workplaceMap[a.workplaceId]
         : null;
     return AttendanceReportRow(
       employeeName: user?.nombreCompleto ?? 'Usuario ${a.userId.substring(0, 6)}',

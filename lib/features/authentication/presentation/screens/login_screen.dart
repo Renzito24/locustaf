@@ -36,6 +36,10 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
       final uri = GoRouterState.of(context).uri;
       if (uri.queryParameters['blocked'] == 'true') {
         _autoLogoutBlockedUser();
+      } else if (uri.queryParameters['company'] == 'inactive') {
+        setState(() {
+          errorMessage = 'Tu empresa está inactiva. Contactá al administrador.';
+        });
       }
     });
 

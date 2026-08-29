@@ -30,7 +30,7 @@ class IncidencesFilterState {
   final String searchQuery;
   final String? employeeId;
   final IncidenceType? type;
-  final IncidenceState? state;
+  final IncidenceEstado? state;
 
   const IncidencesFilterState({
     this.searchQuery = '',
@@ -43,7 +43,7 @@ class IncidencesFilterState {
     String? searchQuery,
     String? employeeId,
     IncidenceType? type,
-    IncidenceState? state,
+    IncidenceEstado? state,
     bool clearType = false,
     bool clearState = false,
   }) {
@@ -72,7 +72,7 @@ class IncidencesFilterNotifier extends Notifier<IncidencesFilterState> {
     state = state.copyWith(type: type, clearType: type == null);
   }
 
-  void setState(IncidenceState? stateValue) {
+  void setState(IncidenceEstado? stateValue) {
     state = state.copyWith(state: stateValue, clearState: stateValue == null);
   }
 
@@ -117,7 +117,7 @@ final filteredIncidencesProvider = Provider<List<IncidenceModel>>((ref) {
   }
 
   if (filter.state != null) {
-    filtered = filtered.where((i) => i.state == filter.state).toList();
+    filtered = filtered.where((i) => i.estado == filter.state).toList();
   }
 
   filtered.sort((a, b) => b.fechaInicio.compareTo(a.fechaInicio));

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
@@ -217,6 +218,11 @@ class EmployeeJustificativosScreen extends ConsumerWidget {
                     value: doc.observacionRechazo!,
                     valueColor: AppColors.error,
                   ),
+                if (doc.archivoUrl != null && doc.archivoUrl!.isNotEmpty)
+                  _FileRow(
+                    fileName: doc.archivoNombre ?? doc.archivoUrl!,
+                    url: doc.archivoUrl!,
+                  ),
               ],
             ),
           ),
@@ -249,6 +255,60 @@ class EmployeeJustificativosScreen extends ConsumerWidget {
       case MedicalDocumentEstado.rechazado:
         return AppColors.error;
     }
+  }
+}
+
+class _FileRow extends StatelessWidget {
+  final String fileName;
+  final String url;
+
+  const _FileRow({
+    required this.fileName,
+    required this.url,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 6),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const SizedBox(
+            width: 130,
+            child: Text(
+              'Archivo',
+              style: TextStyle(color: AppColors.textMuted, fontSize: 14),
+            ),
+          ),
+          Expanded(
+            child: GestureDetector(
+              onTap: () => Clipboard.setData(ClipboardData(text: url)),
+              child: Row(
+                children: [
+                  const Icon(Icons.attach_file, size: 16, color: AppColors.gold),
+                  const SizedBox(width: 4),
+                  Flexible(
+                    child: Text(
+                      fileName,
+                      style: const TextStyle(
+                        color: AppColors.gold,
+                        fontSize: 14,
+                        fontWeight: FontWeight.w500,
+                        decoration: TextDecoration.underline,
+                      ),
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                  const SizedBox(width: 4),
+                  const Icon(Icons.copy, size: 14, color: AppColors.textMuted),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
   }
 }
 

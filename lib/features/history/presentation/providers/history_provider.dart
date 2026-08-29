@@ -97,10 +97,7 @@ final filteredHistoryProvider = Provider<List<HistoryRecordModel>>((ref) {
   }
 
   if (filter.workplaceId != null) {
-    filtered = filtered.where((a) {
-      final user = userMap[a.userId];
-      return user?.lugarDeTrabajoId == filter.workplaceId;
-    }).toList();
+    filtered = filtered.where((a) => a.workplaceId == filter.workplaceId).toList();
   }
 
   if (filter.status != null) {
@@ -132,8 +129,8 @@ final filteredHistoryProvider = Provider<List<HistoryRecordModel>>((ref) {
 
   return filtered.map((a) {
     final user = userMap[a.userId];
-    final workplaceName = user?.lugarDeTrabajoId != null
-        ? workplaceMap[user!.lugarDeTrabajoId]
+    final workplaceName = a.workplaceId != null
+        ? workplaceMap[a.workplaceId]
         : null;
     return HistoryRecordModel(
       id: a.id,

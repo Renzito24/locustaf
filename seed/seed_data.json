@@ -12,6 +12,19 @@
   ],
   "users": [
     {
+      "nombre": "Super",
+      "apellido": "Admin",
+      "email": "superadmin@locustaf.com",
+      "password": "SuperAdmin123!",
+      "dni": "99999999",
+      "telefono": "+54 11 5555-0000",
+      "rol": "superadmin",
+      "isActive": true,
+      "isDeleted": false,
+      "lugarDeTrabajoId": null,
+      "companyId": null
+    },
+    {
       "nombre": "Admin",
       "apellido": "Sistema",
       "email": "admin@locustaf.com",

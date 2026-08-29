@@ -4,6 +4,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
 
 import '../../../core/models/user_model.dart';
+import '../../../core/models/company_model.dart';
 import '../../../../core/services/firestore_service.dart';
 
 class AuthStateListenable extends ChangeNotifier {
@@ -19,10 +20,12 @@ class AuthStateListenable extends ChangeNotifier {
 
   late final StreamSubscription _authSub;
   StreamSubscription<Object?>? _userDocSub;
+  StreamSubscription<Object?>? _companyDocSub;
   UserRole? _role;
   bool? _isActive;
   bool? _isDeleted;
   String? _companyId;
+  CompanyEstado? _companyEstado;
 
   User? get user => FirebaseAuth.instance.currentUser;
 
@@ -39,6 +42,10 @@ class AuthStateListenable extends ChangeNotifier {
   bool get isUserDeleted => _isDeleted == true;
   bool get isUserBlocked => _isActive == false || _isDeleted == true;
 
+  /// La empresa del usuario está inactiva (solo aplica a usuarios con empresa).
+  bool get isCompanyInactive =>
+      _companyId != null && _companyEstado == CompanyEstado.inactiva;
+
   /// El usuario está autenticado pero aún no tiene empresa asignada
   /// (debe completar el onboarding). El superadmin queda excluido: no tiene
   /// empresa propia y gestiona todas las empresas desde la pantalla Empresas.
@@ -47,10 +54,13 @@ class AuthStateListenable extends ChangeNotifier {
   void _onAuthChanged(User? user) {
     _userDocSub?.cancel();
     _userDocSub = null;
+    _companyDocSub?.cancel();
+    _companyDocSub = null;
     _role = null;
     _isActive = null;
     _isDeleted = null;
     _companyId = null;
+    _companyEstado = null;
     if (user != null) {
       _startListeningUserDoc(user.uid);
     }
@@ -68,6 +78,22 @@ class AuthStateListenable extends ChangeNotifier {
       _isActive = userModel?.isActive;
       _isDeleted = userModel?.isDeleted;
       _companyId = userModel?.companyId;
+      _startListeningCompanyDoc(svc, userModel?.companyId);
+      notifyListeners();
+    });
+  }
+
+  void _startListeningCompanyDoc(FirestoreService svc, String? companyId) {
+    _companyDocSub?.cancel();
+    _companyDocSub = null;
+    _companyEstado = null;
+    if (companyId == null) return;
+    _companyDocSub = svc.documentStream<CompanyModel>(
+      path: 'companies',
+      documentId: companyId,
+      fromJson: CompanyModel.fromJson,
+    ).listen((company) {
+      _companyEstado = company?.estado;
       notifyListeners();
     });
   }
@@ -76,6 +102,7 @@ class AuthStateListenable extends ChangeNotifier {
   void dispose() {
     _authSub.cancel();
     _userDocSub?.cancel();
+    _companyDocSub?.cancel();
     super.dispose();
   }
 }
