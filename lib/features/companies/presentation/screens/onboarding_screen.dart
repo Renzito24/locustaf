@@ -73,6 +73,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
       email: _empresaEmailController.text.trim().isEmpty
           ? null
           : _empresaEmailController.text.trim(),
+      createdBy: authUser.uid,
       createdAt: DateTime.now(),
     );
 

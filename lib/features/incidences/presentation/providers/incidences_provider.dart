@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../employees/presentation/providers/users_provider.dart';
+import '../../../authentication/presentation/providers/auth_provider.dart';
 import '../../data/models/incidence_model.dart';
 import '../../data/repositories/incidence_repository_impl.dart';
 import '../../domain/repositories/incidence_repository.dart';
@@ -10,7 +11,14 @@ import '../../../../core/providers/firebase_providers.dart';
 final incidenceRepositoryProvider = Provider<IncidenceRepository>((ref) {
   final firestoreService = ref.read(firestoreServiceProvider);
   final companyId = ref.watch(currentCompanyIdProvider);
-  return IncidenceRepositoryImpl(firestoreService, companyId: companyId);
+  final role = ref.watch(userRoleProvider);
+  final userId = ref.watch(currentUserProvider)?.uid;
+  return IncidenceRepositoryImpl(
+    firestoreService,
+    companyId: companyId,
+    userId: userId,
+    role: role,
+  );
 });
 
 final incidencesStreamProvider = StreamProvider<List<IncidenceModel>>((ref) {

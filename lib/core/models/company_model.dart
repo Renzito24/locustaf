@@ -33,6 +33,7 @@ class CompanyModel extends Equatable {
   final String? telefono;
   final String? email;
   final CompanyEstado estado;
+  final String? createdBy;
   final DateTime createdAt;
   final DateTime? updatedAt;
 
@@ -45,6 +46,7 @@ class CompanyModel extends Equatable {
     this.telefono,
     this.email,
     this.estado = CompanyEstado.activa,
+    this.createdBy,
     required this.createdAt,
     this.updatedAt,
   });
@@ -58,6 +60,7 @@ class CompanyModel extends Equatable {
     String? telefono,
     String? email,
     CompanyEstado? estado,
+    String? createdBy,
     DateTime? createdAt,
     DateTime? updatedAt,
   }) {
@@ -70,6 +73,7 @@ class CompanyModel extends Equatable {
       telefono: telefono ?? this.telefono,
       email: email ?? this.email,
       estado: estado ?? this.estado,
+      createdBy: createdBy ?? this.createdBy,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
     );
@@ -85,6 +89,7 @@ class CompanyModel extends Equatable {
       telefono: json['telefono'] as String?,
       email: json['email'] as String?,
       estado: CompanyEstadoExtension.fromString(json['estado'] as String),
+      createdBy: json['createdBy'] as String?,
       createdAt: DateTime.parse(json['createdAt'] as String),
       updatedAt: json['updatedAt'] != null
           ? DateTime.parse(json['updatedAt'] as String)
@@ -102,6 +107,7 @@ class CompanyModel extends Equatable {
       'telefono': telefono,
       'email': email,
       'estado': estado.name,
+      'createdBy': createdBy,
       'createdAt': createdAt.toIso8601String(),
       'updatedAt': updatedAt?.toIso8601String(),
     };
@@ -117,6 +123,7 @@ class CompanyModel extends Equatable {
         telefono,
         email,
         estado,
+        createdBy,
         createdAt,
         updatedAt,
       ];

@@ -63,6 +63,21 @@ service cloud.firestore {
         && request.resource.data.userId == resource.data.userId;
     }
 
+    // En updates de asistencias, los campos fijados en el check-in no pueden
+    // cambiar (evita falsificar hora de entrada, fecha, lugar o coordenadas).
+    // El empleado solo puede modificar checkOutTime, durationMinutes, status
+    // y coordenadas de salida.
+    function noAttendanceServerFieldChanges() {
+      return request.resource.data.userId == resource.data.userId
+        && request.resource.data.companyId == resource.data.companyId
+        && request.resource.data.checkInTime == resource.data.checkInTime
+        && request.resource.data.date == resource.data.date
+        && request.resource.data.isLate == resource.data.isLate
+        && request.resource.data.workplaceId == resource.data.workplaceId
+        && request.resource.data.checkInLatitud == resource.data.checkInLatitud
+        && request.resource.data.checkInLongitud == resource.data.checkInLongitud;
+    }
+
     // Para la colección users, además el rol no puede cambiar salvo admin/superadmin.
     function noUserSensitiveChanges() {
       return noSensitiveFieldChanges()
@@ -95,12 +110,16 @@ service cloud.firestore {
     // ====================================================================
     match /users/{uid} {
       allow read: if isAuthenticated()
-        && (isSuperadmin() || isOwner(uid) || inCompany(resource.data.companyId)
-            || (isEmployee() && isOwner(uid)));
+        && (isSuperadmin() || isOwner(uid)
+            || ((isAdmin() || isSupervisor()) && inCompany(resource.data.companyId)));
       allow create: if isAuthenticated()
         && (isSuperadmin()
             || (isAdmin() && request.resource.data.companyId == getCompanyId())
-            || (isOwner(uid) && getCompanyId() == null));
+            || (isOwner(uid) && getCompanyId() == null
+                && request.resource.data.rol == 'admin'
+                && request.resource.data.companyId != null
+                && exists(/databases/$(database)/documents/companies/$(request.resource.data.companyId))
+                && get(/databases/$(database)/documents/companies/$(request.resource.data.companyId)).data.createdBy == request.auth.uid));
       allow update: if isAuthenticated()
         && (isSuperadmin()
             || (isAdmin() && inCompany(resource.data.companyId))
@@ -117,7 +136,8 @@ service cloud.firestore {
     match /companies/{companyId} {
       allow read: if isAuthenticated()
         && (isSuperadmin() || inCompany(companyId));
-      allow create: if isSuperadmin() || isOnboardingUser();
+      allow create: if isSuperadmin()
+        || (isOnboardingUser() && request.resource.data.createdBy == request.auth.uid);
       allow update: if isSuperadmin()
         || (isAdmin() && inCompany(companyId));
       allow delete: if isSuperadmin();
@@ -141,7 +161,7 @@ service cloud.firestore {
         && (isSuperadmin()
             || (isEmployee() && resource.data.userId == request.auth.uid
                 && inCompany(resource.data.companyId)))
-        && noSensitiveFieldChanges();
+        && (isSuperadmin() || noAttendanceServerFieldChanges());
       allow delete: if isSuperadmin();
     }
 
@@ -201,7 +221,8 @@ service cloud.firestore {
     // ====================================================================
     match /incidences/{docId} {
       allow read: if isAuthenticated()
-        && (isSuperadmin() || inCompany(resource.data.companyId)
+        && (isSuperadmin()
+            || ((isAdmin() || isSupervisor()) && inCompany(resource.data.companyId))
             || (isEmployee() && isOwner(resource.data.userId)));
       allow create: if isAuthenticated()
         && (isSuperadmin()
@@ -220,8 +241,10 @@ service cloud.firestore {
     // ATTENDANCE LOCKS (internal concurrency control)
     // ====================================================================
     match /_attendance_locks/{lockId} {
-      allow read: if isAuthenticated();
-      allow write: if isAuthenticated();
+      allow read: if isAuthenticated()
+        && (isSuperadmin() || lockId == request.auth.uid);
+      allow write: if isAuthenticated()
+        && (isSuperadmin() || lockId == request.auth.uid);
     }
   }
 }

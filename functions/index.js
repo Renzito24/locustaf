@@ -20,7 +20,7 @@ initializeApp();
 exports.syncUserAuthStatus = onDocumentUpdated(
   {
     document: 'users/{userId}',
-    region: 'us-central1',
+    region: 'southamerica-east1',
   },
   async (event) => {
     const userId = event.params.userId;
