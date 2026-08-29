@@ -41,6 +41,12 @@ class CompaniesScreen extends ConsumerWidget {
         children: [
           Row(
             children: [
+              IconButton(
+                icon: const Icon(Icons.arrow_back, color: AppColors.textWhite),
+                tooltip: 'Volver al dashboard',
+                onPressed: () => context.go(RoutePaths.dashboard),
+              ),
+              const SizedBox(width: 8),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,

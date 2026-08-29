@@ -88,9 +88,23 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
           return 'Demasiados intentos. Intente más tarde';
         case 'network-request-failed':
           return 'Error de red. Verifique su conexión';
+        case 'account-exists-with-different-credential':
+          return 'Ya existe una cuenta con ese correo usando otro método de inicio de sesión';
+        case 'popup-closed-by-user':
+        case 'cancelled-popup-request':
+          return 'Inicio de sesión cancelado';
         default:
           return 'Error al iniciar sesión: ${error.message ?? error.code}';
       }
+    }
+    final msg = error.toString().toLowerCase();
+    if (msg.contains('idpiframe_initialization_failed') ||
+        msg.contains('google sign-in is not initialized') ||
+        msg.contains('clientid')) {
+      return 'Error de configuración de Google Sign-In. Verificá el Client ID web en index.html.';
+    }
+    if (msg.contains('popup')) {
+      return 'Inicio de sesión cancelado';
     }
     return 'Error inesperado. Intente nuevamente.';
   }
@@ -379,6 +393,23 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
                                   ),
                                 ),
                               ),
+                              const SizedBox(height: 24),
+                              Row(
+                                children: [
+                                  Expanded(child: Divider(color: AppColors.textMuted.withValues(alpha: 0.3))),
+                                  Padding(
+                                    padding: const EdgeInsets.symmetric(horizontal: 12),
+                                    child: Text(
+                                      '¿Sos nuevo?',
+                                      style: TextStyle(
+                                        color: AppColors.textMuted.withValues(alpha: 0.8),
+                                        fontSize: 13,
+                                      ),
+                                    ),
+                                  ),
+                                  Expanded(child: Divider(color: AppColors.textMuted.withValues(alpha: 0.3))),
+                                ],
+                              ),
                               const SizedBox(height: 16),
                               SizedBox(
                                 width: double.infinity,
@@ -387,7 +418,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
                                   onPressed: isLoading ? null : loginWithGoogle,
                                   icon: const Icon(Icons.g_mobiledata, color: AppColors.textWhite, size: 26),
                                   label: const Text(
-                                    'Ingresar con Google',
+                                    'Crear cuenta con Google',
                                     style: TextStyle(
                                       fontSize: 15,
                                       fontWeight: FontWeight.w600,
@@ -402,6 +433,17 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
                                       borderRadius: BorderRadius.circular(AppTheme.radiusLg),
                                     ),
                                   ),
+                                ),
+                              ),
+                              const SizedBox(height: 10),
+                              Center(
+                                child: Text(
+                                  'Si ya tenés una cuenta, usá tu correo y contraseña.',
+                                  style: TextStyle(
+                                    color: AppColors.textMuted.withValues(alpha: 0.7),
+                                    fontSize: 12,
+                                  ),
+                                  textAlign: TextAlign.center,
                                 ),
                               ),
                             ],

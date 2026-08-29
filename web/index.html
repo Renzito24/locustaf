@@ -31,6 +31,15 @@
 
   <title>app_locustaf</title>
   <link rel="manifest" href="manifest.json">
+
+  <!--
+    Google Sign-In web client ID.
+    Reemplazá YOUR_WEB_CLIENT_ID.apps.googleusercontent.com por el Client ID
+    web de tu proyecto Firebase (Authentication > Sign-in method > Google).
+  -->
+  <meta name="google-signin-client_id" content="167995437113-m9tbaos5e47rj8qjn3tpsicfimqo39vf.apps.googleusercontent.com">
+  <!-- Google Identity Services SDK requerido por google_sign_in en web. -->
+  <script src="https://accounts.google.com/gsi/client" async defer></script>
 </head>
 <body>
   <!--
@@ -40,7 +49,7 @@
 
     For more details:
     * https://docs.flutter.dev/platform-integration/web/initialization
-  -->
+    -->
   <script src="flutter_bootstrap.js" async></script>
 </body>
 </html>

@@ -45,8 +45,10 @@ service cloud.firestore {
     }
 
     // El documento pertenece a la empresa del usuario autenticado.
+    // Requiere companyId no nulo para evitar que usuarios sin empresa
+    // (onboarding) puedan leer documentos ajenos con companyId vacío.
     function inCompany(companyId) {
-      return isAuthenticated() && companyId == getCompanyId();
+      return isAuthenticated() && companyId != null && companyId == getCompanyId();
     }
 
     // Usuario autenticado que aún no tiene empresa asignada
@@ -93,7 +95,7 @@ service cloud.firestore {
     // ====================================================================
     match /users/{uid} {
       allow read: if isAuthenticated()
-        && (isSuperadmin() || inCompany(resource.data.companyId)
+        && (isSuperadmin() || isOwner(uid) || inCompany(resource.data.companyId)
             || (isEmployee() && isOwner(uid)));
       allow create: if isAuthenticated()
         && (isSuperadmin()

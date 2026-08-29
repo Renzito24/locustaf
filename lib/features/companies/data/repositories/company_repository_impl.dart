@@ -36,14 +36,12 @@ class CompanyRepositoryImpl implements CompanyRepository {
 
   @override
   Future<String> createCompany(CompanyModel company) async {
+    // addDocument ya incluye el id generado en el documento, por lo que no
+    // es necesario realizar un update posterior. Esto evita errores de
+    // permisos durante el onboarding, cuando el usuario aún no tiene rol.
     final id = await _firestoreService.addDocument(
       path: 'companies',
       data: company.toJson(),
-    );
-    await _firestoreService.updateDocument(
-      path: 'companies',
-      documentId: id,
-      data: {'id': id},
     );
     return id;
   }
