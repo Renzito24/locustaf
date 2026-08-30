@@ -14,8 +14,9 @@
 # Orden de despliegue (según especificación):
 #   1. Reglas de Firestore (firestore.rules)
 #   2. Índices compuestos (firestore.indexes.json)
-#   3. Cloud Functions
-#   4. Hosting (app Flutter compilada en web)
+#   3. Reglas de Storage (storage.rules)
+#   4. Cloud Functions
+#   5. Hosting (app Flutter compilada en web, public: build/web)
 # ============================================================================
 
 set -euo pipefail
@@ -55,30 +56,34 @@ echo "  LOCUSTAF → $ENV_NAME ($PROJECT_ID)"
 echo "=============================================="
 
 # --- 0. Verificación de código ---------------------------------------------
-echo "[0/5] flutter analyze..."
+echo "[0/6] flutter analyze..."
 flutter analyze
 
-echo "[0/5] flutter test..."
+echo "[0/6] flutter test..."
 flutter test
 
 # --- 1. Reglas de Firestore -------------------------------------------------
-echo "[1/5] Desplegando reglas de Firestore..."
+echo "[1/6] Desplegando reglas de Firestore..."
 firebase use "$PROJECT_ID"
 firebase deploy --only firestore:rules
 
 # --- 2. Índices compuestos --------------------------------------------------
-echo "[2/5] Desplegando índices de Firestore..."
+echo "[2/6] Desplegando índices de Firestore..."
 firebase deploy --only firestore:indexes
 
-# --- 3. Cloud Functions -----------------------------------------------------
-echo "[3/5] Desplegando Cloud Functions..."
+# --- 3. Reglas de Storage ---------------------------------------------------
+echo "[3/6] Desplegando reglas de Storage..."
+firebase deploy --only storage:rules
+
+# --- 4. Cloud Functions -----------------------------------------------------
+echo "[4/6] Desplegando Cloud Functions..."
 firebase deploy --only functions
 
-# --- 4. Hosting (app Flutter web) -------------------------------------------
-echo "[4/5] Compilando app Flutter web..."
+# --- 5. Hosting (app Flutter web) -------------------------------------------
+echo "[5/6] Compilando app Flutter web..."
 flutter build web --release
 
-echo "[5/5] Desplegando Hosting..."
+echo "[6/6] Desplegando Hosting..."
 firebase deploy --only hosting
 
 echo "=============================================="

@@ -10,18 +10,27 @@ service firebase.storage {
       return request.auth != null;
     }
 
+    // VUL-1: getUserData()/getRole()/getCompanyId() deben tolerar la ausencia
+    // del documento del usuario. Acceder a campos de un doc inexistente lanza
+    // un error y rompe la evaluación de la regla (fail-closed indeseado).
     function getUserData() {
-      return firestore.get(
+      return firestore.exists(
         /databases/(default)/documents/users/$(request.auth.uid)
-      ).data;
+      )
+        ? firestore.get(
+            /databases/(default)/documents/users/$(request.auth.uid)
+          ).data
+        : null;
     }
 
     function getRole() {
-      return getUserData().rol;
+      let data = getUserData();
+      return data != null ? data.rol : null;
     }
 
     function getCompanyId() {
-      return getUserData().companyId;
+      let data = getUserData();
+      return data != null ? data.companyId : null;
     }
 
     function isSuperadmin() {
@@ -30,6 +39,15 @@ service firebase.storage {
 
     function isAdmin() {
       return isAuthenticated() && getRole() == 'admin';
+    }
+
+    // M1: validación server-side de los archivos subidos como justificativos:
+    // máximo 10 MB y solo PDF, JPEG o PNG. Antes solo se validaba en el cliente.
+    function validMedicalFile() {
+      return request.resource.size <= 10 * 1024 * 1024
+        && (request.resource.contentType.matches('application/pdf')
+            || request.resource.contentType.matches('image/jpeg')
+            || request.resource.contentType.matches('image/png'));
     }
 
     // ====================================================================
@@ -45,10 +63,12 @@ service firebase.storage {
             || (isAdmin() && companyId == getCompanyId())
             || (request.auth.uid == userId && companyId == getCompanyId()));
       allow create: if isAuthenticated()
+        && validMedicalFile()
         && (isSuperadmin()
             || (isAdmin() && companyId == getCompanyId())
             || (request.auth.uid == userId && companyId == getCompanyId()));
       allow update: if isAuthenticated()
+        && validMedicalFile()
         && (isSuperadmin()
             || (isAdmin() && companyId == getCompanyId())
             || (request.auth.uid == userId && companyId == getCompanyId()));
