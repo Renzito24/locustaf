@@ -93,10 +93,12 @@ service cloud.firestore {
         && diff <= toleranceMillis;
     }
 
-    // En updates, los campos sensibles no pueden cambiar.
-    function noSensitiveFieldChanges() {
+    // En updates, los campos sensibles no pueden cambiar. Compara la identidad
+    // del documento según la colección ([identityField]): 'id' para
+    // users/workplaces, 'userId' para attendances/incidences/medical_documents.
+    function noSensitiveFieldChanges(identityField) {
       return request.resource.data.companyId == resource.data.companyId
-        && request.resource.data.userId == resource.data.userId;
+        && request.resource.data[identityField] == resource.data[identityField];
     }
 
     // VUL-4b/M1: en el alta de incidencias y documentos médicos el estado solo
@@ -108,26 +110,69 @@ service cloud.firestore {
         && !('reviewedAt' in request.resource.data);
     }
 
-    // En updates de asistencias, los campos fijados en el check-in no pueden
-    // cambiar (evita falsificar hora de entrada, fecha, lugar o coordenadas).
-    // El empleado solo puede modificar checkOutTime, durationMinutes, status
-    // y coordenadas de salida.
+    // En updates de asistencias, los campos fijados en el check-in y la identidad
+    // no pueden cambiar (evita falsificar hora de entrada, fecha, lugar o
+    // coordenadas de ingreso). Además se protegen los campos server-only:
+    //  - El estado solo puede pasar 'active' -> 'completed' (nunca reabrir), y
+    //    para completar una jornada se debe fijar checkOutTime.
+    //  - Un checkOutTime existente no puede modificarse ni eliminarse.
+    //  - durationMinutes se deriva del servidor (checkOutTime - checkInTime);
+    //    el cliente no puede fijar una duración arbitraria.
+    //  - isOrphaned solo puede marcarse como true (jornada huérfana), nunca
+    //    borrarse ni pasarse a false desde el cliente.
     function noAttendanceServerFieldChanges() {
-      return request.resource.data.userId == resource.data.userId
-        && request.resource.data.companyId == resource.data.companyId
-        && request.resource.data.checkInTime == resource.data.checkInTime
+      let identityOk = request.resource.data.userId == resource.data.userId
+        && request.resource.data.companyId == resource.data.companyId;
+      let checkInFrozen = request.resource.data.checkInTime == resource.data.checkInTime
         && request.resource.data.date == resource.data.date
         && request.resource.data.isLate == resource.data.isLate
         && request.resource.data.workplaceId == resource.data.workplaceId
         && request.resource.data.checkInLatitud == resource.data.checkInLatitud
         && request.resource.data.checkInLongitud == resource.data.checkInLongitud;
+      let statusOk = request.resource.data.status == resource.data.status
+        || (resource.data.status == 'active'
+            && request.resource.data.status == 'completed'
+            && 'checkOutTime' in request.resource.data);
+      let checkOutImmutable = !('checkOutTime' in resource.data)
+        || (('checkOutTime' in request.resource.data)
+            && request.resource.data.checkOutTime == resource.data.checkOutTime);
+      let durationOk = !('durationMinutes' in request.resource.data)
+        || !('checkOutTime' in request.resource.data)
+        || (request.resource.data.checkOutTime.toMillis() - resource.data.checkInTime.toMillis()
+            >= request.resource.data.durationMinutes * 60000
+            && request.resource.data.checkOutTime.toMillis() - resource.data.checkInTime.toMillis()
+            < (request.resource.data.durationMinutes + 1) * 60000);
+      let orphanOk = !('isOrphaned' in request.resource.data)
+        || request.resource.data.isOrphaned == true
+        || (('isOrphaned' in resource.data)
+            && request.resource.data.isOrphaned == resource.data.isOrphaned);
+      return identityOk && checkInFrozen && statusOk
+        && checkOutImmutable && durationOk && orphanOk;
     }
 
-    // Para la colección users, además el rol no puede cambiar salvo admin/superadmin.
+    // Para la colección users:
+    //  - Superadmin puede modificar cualquier campo (incluido el rol).
+    //  - El dueño de su propio documento (incluido un admin) no puede cambiar
+    //    su rol, isActive ni isDeleted.
+    //  - Un admin puede editar empleados/supervisores de su empresa, inclusive
+    //    el rol, pero NUNCA asignar 'admin'/'superadmin' (bloquea la escalada
+    //    admin -> superadmin que rompería el aislamiento multiempresa).
+    //  - Empleado/supervisor vía owner path: el rol no puede cambiar.
+    //    (isOwnProfileUpdate ya exige el resto de campos sensibles intactos).
     function noUserSensitiveChanges() {
-      return noSensitiveFieldChanges()
-        && (isSuperadmin() || isAdmin()
-            || request.resource.data.rol == resource.data.rol);
+      let allowed = noSensitiveFieldChanges('id');
+      let selfSensitiveUnchanged = request.auth.uid == resource.data.id
+        && request.resource.data.rol == resource.data.rol
+        && request.resource.data.isActive == resource.data.isActive
+        && request.resource.data.isDeleted == resource.data.isDeleted;
+      let adminRoleClamped = isAdmin()
+        && request.auth.uid != resource.data.id
+        && (request.resource.data.rol == 'employee'
+            || request.resource.data.rol == 'supervisor');
+      return allowed
+        && (isSuperadmin()
+            || adminRoleClamped
+            || selfSensitiveUnchanged);
     }
 
     // Un usuario solo puede actualizar su propio perfil y únicamente campos
@@ -188,7 +233,13 @@ service cloud.firestore {
         || (isOnboardingUser() && request.resource.data.createdBy == request.auth.uid);
       allow update: if isSuperadmin()
         || (isAdmin() && inCompany(companyId));
-      allow delete: if isSuperadmin();
+      // El delete solo lo permite el superadmin. Excepción: el usuario en
+      // onboarding puede eliminar una empresa que acaba de crear si falló el
+      // alta de su documento de admin (limpieza de empresa huérfana), siempre
+      // que aún no tenga empresa asignada.
+      allow delete: if isSuperadmin()
+        || (isOnboardingUser()
+            && resource.data.createdBy == request.auth.uid);
     }
 
     // ====================================================================
@@ -230,7 +281,7 @@ service cloud.firestore {
       allow update: if isAuthenticated()
         && (isSuperadmin()
             || (isAdmin() && inCompany(resource.data.companyId)))
-        && noSensitiveFieldChanges();
+        && noSensitiveFieldChanges('id');
       allow delete: if isSuperadmin()
         || (isAdmin() && inCompany(resource.data.companyId));
     }
@@ -258,7 +309,7 @@ service cloud.firestore {
       allow update: if isAuthenticated()
         && (isSuperadmin()
             || (isAdmin() && inCompany(resource.data.companyId)))
-        && noSensitiveFieldChanges();
+        && noSensitiveFieldChanges('userId');
       allow delete: if isSuperadmin()
         || (isAdmin() && inCompany(resource.data.companyId));
     }
@@ -285,7 +336,7 @@ service cloud.firestore {
       allow update: if isAuthenticated()
         && (isSuperadmin()
             || (isAdmin() && inCompany(resource.data.companyId)))
-        && noSensitiveFieldChanges();
+        && noSensitiveFieldChanges('userId');
       allow delete: if isSuperadmin()
         || (isAdmin() && inCompany(resource.data.companyId));
     }

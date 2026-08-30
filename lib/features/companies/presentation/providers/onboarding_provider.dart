@@ -42,27 +42,35 @@ class OnboardingNotifier extends Notifier<OnboardingState> {
     final firestore = ref.read(firestoreServiceProvider);
 
     try {
-      // Crear la empresa y el usuario admin en una única transacción para
-      // evitar empresas huérfanas si falla la creación del usuario.
-      await firestore.runTransaction<String>((transaction) async {
-        final companyRef = firestore.collection('companies').doc();
-        final companyData = company.toJson();
-        companyData['id'] = companyRef.id;
-        transaction.set(companyRef, companyData);
+      // Las reglas de Firestore no ven las escrituras pendientes de una misma
+      // transacción (una empresa recién creada no existe aún para la regla de
+      // alta del usuario admin), por lo que el alta se realiza en dos pasos:
+      // 1) crear la empresa; 2) crear el documento del admin. Si falla el
+      // segundo paso se elimina la empresa huérfana (permitido por las reglas
+      // para el usuario en onboarding que la creó).
+      final companyRef = firestore.collection('companies').doc();
+      final companyData = company.toJson();
+      companyData['id'] = companyRef.id;
+      companyData['createdBy'] = authUser.uid;
+      await companyRef.set(companyData);
 
-        final user = profile.copyWith(
-          id: authUser.uid,
-          rol: UserRole.admin,
-          companyId: companyRef.id,
-          isActive: true,
-          isDeleted: false,
-          createdAt: DateTime.now(),
-        );
-        final userRef = firestore.collection('users').doc(authUser.uid);
-        transaction.set(userRef, user.toJson());
+      final user = profile.copyWith(
+        id: authUser.uid,
+        rol: UserRole.admin,
+        companyId: companyRef.id,
+        isActive: true,
+        isDeleted: false,
+        createdAt: DateTime.now(),
+      );
+      final userRef = firestore.collection('users').doc(authUser.uid);
 
-        return companyRef.id;
-      });
+      try {
+        await userRef.set(user.toJson());
+      } catch (_) {
+        // Limpieza de la empresa huérfana si falló el alta del admin.
+        await companyRef.delete();
+        rethrow;
+      }
 
       state = const OnboardingState(isLoading: false);
     } catch (e) {
