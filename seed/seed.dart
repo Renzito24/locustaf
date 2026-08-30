@@ -13,6 +13,12 @@ const String _firestoreBaseUrl =
 Future<void> main(List<String> args) async {
   print('=== LOCUSTAF Seed Script ===\n');
 
+  print('⚠  AVISO: este script usa credenciales de USO EXCLUSIVO para DEMO');
+  print('  (admin@locustaf.com / Admin123!, supervisor@locustaf.com / Super123!,');
+  print('  employee@locustaf.com / Empl123! y superadmin@locustaf.com / SuperAdmin123!).');
+  print('  NO lo ejecutes contra el proyecto de PRODUCCIÓN. Ejecútalo solo en un');
+  print('  proyecto de pruebas/desarrollo que puedas descartar.\n');
+
   final seedFile = File('${Directory.current.path}/seed/seed_data.json');
   if (!seedFile.existsSync()) {
     stderr.writeln('ERROR: seed/seed_data.json not found');
@@ -47,6 +53,7 @@ Future<void> main(List<String> args) async {
     data['updatedAt'] = now;
     companyId = await _createFirestoreDocument('companies', data, adminIdToken);
     if (companyId != null) {
+      data['id'] = companyId;
       print('  Created company: ${data['nombreComercial']} (id: $companyId)');
     }
   }
@@ -64,6 +71,7 @@ Future<void> main(List<String> args) async {
     }
     workplaceId = await _createFirestoreDocument('workplaces', data, adminIdToken);
     if (workplaceId != null) {
+      data['id'] = workplaceId;
       print('  Created workplace: ${data['nombre']} (id: $workplaceId)');
     }
   }
@@ -93,6 +101,7 @@ Future<void> main(List<String> args) async {
     final now = DateTime.now().toIso8601String();
     data['createdAt'] = now;
     data['updatedAt'] = now;
+    data['id'] = uid;
     final docId = await _createFirestoreDocument('users', data, adminIdToken, documentId: uid);
     if (docId != null) {
       print('  Created user: $email (id: $docId)');
