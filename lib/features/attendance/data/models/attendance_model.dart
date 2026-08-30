@@ -1,3 +1,4 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:equatable/equatable.dart';
 
 enum AttendanceStatus { active, completed }
@@ -96,9 +97,9 @@ class AttendanceModel extends Equatable {
     return AttendanceModel(
       id: (json['id'] ?? json['uid'] ?? '') as String,
       userId: json['userId'] as String,
-      checkInTime: DateTime.parse(json['checkInTime'] as String),
+      checkInTime: _parseTimestamp(json['checkInTime']),
       checkOutTime: json['checkOutTime'] != null
-          ? DateTime.parse(json['checkOutTime'] as String)
+          ? _parseTimestamp(json['checkOutTime'])
           : null,
       durationMinutes: json['durationMinutes'] as int?,
       date: json['date'] as String,
@@ -113,12 +114,20 @@ class AttendanceModel extends Equatable {
     );
   }
 
+  static DateTime _parseTimestamp(dynamic value) {
+    if (value is Timestamp) return value.toDate().toLocal();
+    if (value is DateTime) return value;
+    return DateTime.parse(value as String).toLocal();
+  }
+
   Map<String, dynamic> toJson() {
     return {
       'id': id,
       'userId': userId,
-      'checkInTime': checkInTime.toIso8601String(),
-      'checkOutTime': checkOutTime?.toIso8601String(),
+      'checkInTime': Timestamp.fromDate(checkInTime),
+      'checkOutTime': checkOutTime != null
+          ? Timestamp.fromDate(checkOutTime!)
+          : null,
       'durationMinutes': durationMinutes,
       'date': date,
       'status': status.name,

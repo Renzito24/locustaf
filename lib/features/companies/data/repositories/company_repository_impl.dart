@@ -62,7 +62,7 @@ class CompanyRepositoryImpl implements CompanyRepository {
       documentId: companyId,
       data: {
         'estado': estado.name,
-        'updatedAt': DateTime.now().toIso8601String(),
+        'updatedAt': DateTime.now().toUtc().toIso8601String(),
       },
     );
   }

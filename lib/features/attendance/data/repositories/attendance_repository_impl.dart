@@ -1,3 +1,5 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
+
 import '../../../../core/services/firestore_service.dart';
 import '../../../../core/models/user_model.dart';
 import '../../../workplaces/data/models/workplace_model.dart';
@@ -9,8 +11,27 @@ class AttendanceRepositoryImpl implements AttendanceRepository {
   final FirestoreService _firestoreService;
   final String? _companyId;
 
+  /// Un lock se considera huérfano/abandonado tras este tiempo sin check-out,
+  /// y puede ser reclamado en un nuevo check-in (TTL de recuperación).
+  static const Duration lockStaleTimeout = Duration(hours: 24);
+
   AttendanceRepositoryImpl(this._firestoreService, {String? companyId})
       : _companyId = companyId;
+
+  DateTime? _parseLockTime(dynamic value) {
+    if (value is Timestamp) return value.toDate();
+    if (value is String) {
+      return DateTime.tryParse(value)?.toLocal();
+    }
+    if (value is DateTime) return value;
+    return null;
+  }
+
+  bool _isLockStale(dynamic lockedAt) {
+    final time = _parseLockTime(lockedAt);
+    if (time == null) return false;
+    return DateTime.now().difference(time) > lockStaleTimeout;
+  }
 
   @override
   Stream<List<AttendanceModel>> getAttendancesByUser(String userId) {
@@ -33,6 +54,37 @@ class AttendanceRepositoryImpl implements AttendanceRepository {
       path: 'attendances',
       filters: {'companyId': _companyId},
       fromJson: AttendanceModel.fromJson,
+    );
+  }
+
+  @override
+  Future<AttendancePage> getAttendancePage({
+    required int limit,
+    Object? startAfter,
+  }) async {
+    if (_companyId == null) return const AttendancePage(items: [], hasMore: false);
+    final page = await _firestoreService.queryPage<AttendanceModel>(
+      path: 'attendances',
+      filters: {'companyId': _companyId},
+      fromJson: AttendanceModel.fromJson,
+      orderField: 'checkInTime',
+      descending: true,
+      limit: limit,
+      startAfter: startAfter,
+    );
+    return AttendancePage(
+      items: page.items,
+      hasMore: page.hasMore,
+      lastCheckInTime: page.lastOrderValue,
+    );
+  }
+
+  @override
+  Future<int> countCompanyAttendances() async {
+    if (_companyId == null) return 0;
+    return _firestoreService.countDocuments(
+      path: 'attendances',
+      filters: {'companyId': _companyId},
     );
   }
 
@@ -63,21 +115,18 @@ class AttendanceRepositoryImpl implements AttendanceRepository {
         final attendanceId = data['attendanceId'] as String?;
 
         // El lock puede ser huérfano: la asistencia asociada ya fue finalizada
-        // (o no existe). En ese caso se reclama el lock y se continúa.
-        if (attendanceId != null) {
+        // (o no existe), o el lock quedó abandonado más allá de la tolerancia
+        // TTL. En esos casos se reclama el lock y se continúa.
+        var isReclaimable = _isLockStale(data['lockedAt'] ?? data['checkInTime']);
+        if (!isReclaimable && attendanceId != null) {
           final attendanceRef =
               _firestoreService.collection('attendances').doc(attendanceId);
           final attendanceDoc = await transaction.get(attendanceRef);
-          final isCompleted = attendanceDoc.exists &&
+          isReclaimable = !attendanceDoc.exists ||
               (attendanceDoc.data() as Map<String, dynamic>)['status'] ==
                   'completed';
-          if (!isCompleted) {
-            throw AttendanceException(
-              'Ya tenés una asistencia activa desde las ${data['checkInTime'] ?? 'desconocido'}. '
-              'Finalizala antes de registrar una nueva.',
-            );
-          }
-        } else {
+        }
+        if (!isReclaimable) {
           throw AttendanceException(
             'Ya tenés una asistencia activa desde las ${data['checkInTime'] ?? 'desconocido'}. '
             'Finalizala antes de registrar una nueva.',
@@ -95,6 +144,7 @@ class AttendanceRepositoryImpl implements AttendanceRepository {
       transaction.set(lockRef, {
         'attendanceId': attendanceRef.id,
         'checkInTime': attendance.checkInTime.toIso8601String(),
+        'lockedAt': Timestamp.fromDate(DateTime.now().toUtc()),
         'status': 'active',
       });
     });
@@ -138,7 +188,7 @@ class AttendanceRepositoryImpl implements AttendanceRepository {
       final durationMinutes = now.difference(checkInTime).inMinutes;
 
       transaction.update(attendanceRef, {
-        'checkOutTime': now.toIso8601String(),
+        'checkOutTime': Timestamp.fromDate(now.toUtc()),
         'durationMinutes': durationMinutes,
         'status': 'completed',
         'checkOutLatitud': checkOutLatitud,
@@ -175,7 +225,7 @@ class AttendanceRepositoryImpl implements AttendanceRepository {
       final durationMinutes = now.difference(checkInTime).inMinutes;
 
       transaction.update(attendanceRef, {
-        'checkOutTime': now.toIso8601String(),
+        'checkOutTime': Timestamp.fromDate(now.toUtc()),
         'durationMinutes': durationMinutes,
         'status': 'completed',
         'isOrphaned': true,

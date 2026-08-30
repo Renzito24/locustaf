@@ -50,7 +50,7 @@ class WorkplaceRepositoryImpl implements WorkplaceRepository {
       documentId: id,
       data: {
         'isActive': false,
-        'updatedAt': DateTime.now().toIso8601String(),
+        'updatedAt': DateTime.now().toUtc().toIso8601String(),
       },
     );
   }
@@ -62,7 +62,7 @@ class WorkplaceRepositoryImpl implements WorkplaceRepository {
       documentId: id,
       data: {
         'isActive': true,
-        'updatedAt': DateTime.now().toIso8601String(),
+        'updatedAt': DateTime.now().toUtc().toIso8601String(),
       },
     );
   }

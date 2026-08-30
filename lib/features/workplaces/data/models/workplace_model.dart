@@ -86,9 +86,9 @@ class WorkplaceModel extends Equatable {
       toleranciaMinutos: (json['toleranciaMinutos'] as num?)?.toInt() ?? 15,
       companyId: json['companyId'] as String?,
       isActive: json['isActive'] as bool? ?? true,
-      createdAt: DateTime.parse(json['createdAt'] as String),
+      createdAt: DateTime.parse(json['createdAt'] as String).toLocal(),
       updatedAt: json['updatedAt'] != null
-          ? DateTime.parse(json['updatedAt'] as String)
+          ? DateTime.parse(json['updatedAt'] as String).toLocal()
           : null,
     );
   }
@@ -108,8 +108,8 @@ class WorkplaceModel extends Equatable {
       'toleranciaMinutos': toleranciaMinutos,
       'companyId': companyId,
       'isActive': isActive,
-      'createdAt': createdAt.toIso8601String(),
-      'updatedAt': updatedAt?.toIso8601String(),
+      'createdAt': createdAt.toUtc().toIso8601String(),
+      'updatedAt': updatedAt?.toUtc().toIso8601String(),
     };
   }
 

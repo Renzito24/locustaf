@@ -280,3 +280,50 @@ Grupo: Pizzería
 Latitud: -34.xxxxx
 Longitud: -58.xxxxx
 Radio: 50 metros
+```
+
+---
+
+# 11. CONFIGURACIÓN DE ASISTENCIA Y ROBUSTEZ (FASE D-E-F)
+
+## 11.1 Tolerancia de check-in (por empresa)
+
+- Cada empresa define `toleranciaCheckIn` (minutos, default 15).
+- En el alta de una asistencia, la regla de Firestore valida que `checkInTime`
+  no se desvíe más de ±tolerancia vs el tiempo del servidor (`request.time`).
+- Configurable desde **Configuración de empresa** (admin/superadmin).
+
+## 11.2 Días laborables (por empresa)
+
+- `diasLaborables`: lista ISO (1=Lun ... 7=Dom), default `[1,2,3,4,5]`.
+- Los reportes de ausencias del mes consideran el día laborable actual: si
+  hoy no es laborable, las "ausencias del día" se muestran como 0.
+- Configurable desde **Configuración de empresa** (admin/superadmin).
+
+## 11.3 Locks de sesión de asistencia (anti doble check-in)
+
+- Colección interna `_attendance_locks/{userId}`: garantiza una sola asistencia
+  activa por empleado.
+- Campos de cada lock: `attendanceId`, `checkInTime`, `lockedAt`, `status`.
+- Reclamación de locks huérfanos en nuevo check-in si:
+  - el lock supera `lockStaleTimeout` (24 h) desde `lockedAt`; o
+  - la asistencia asociada no existe o ya está `completed`.
+- Al borrar (soft delete) un empleado se purga su lock para liberar el ID.
+
+## 11.4 Timestamps y zonas horarias
+
+- `checkInTime` / `checkOutTime` se persisten como `Timestamp` UTC de Firestore.
+- El resto de la metadata (`createdAt`, `updatedAt`, `reviewedAt`) se persiste
+  como ISO-8601 en UTC (`toUtc().toIso8601String()`).
+- En la lectura de datos, se convierte a hora local (`.toLocal()`) para que la
+  UI muestre siempre el horario local del dispositivo.
+
+## 11.5 Historial con paginación
+
+- El historial de asistencias se carga por páginas de 25 registros
+  (orden `checkInTime` DESC, cursor `startAfter`), acumulando de a páginas con
+  botón "Cargar más".
+- Los totales se obtienen con `COUNT()` agregado de Firestore (sin descargar
+  todo el historial).
+- El filtrado (búsqueda y rango de fechas) se aplica client-side sobre las
+  páginas cargadas.

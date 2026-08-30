@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../attendance/data/models/attendance_model.dart';
 import '../../../../core/models/user_model.dart';
 import '../../../../core/providers/data_providers.dart';
+import '../../../companies/presentation/providers/company_providers.dart';
 
 final totalActiveEmployeesProvider = Provider<int>((ref) {
   final usersAsync = ref.watch(allUsersStreamProvider);
@@ -45,7 +46,19 @@ final employeesPresentOrCompletedTodayProvider = Provider<int>((ref) {
   return today.map((a) => a.userId).toSet().length;
 });
 
+/// Indica si hoy es día laborable según la configuración de la empresa.
+final isTodayWorkingDayProvider = Provider<bool>((ref) {
+  final companyAsync = ref.watch(currentCompanyProvider);
+  final company = companyAsync.value;
+  final days = (company?.diasLaborables.isNotEmpty ?? false)
+      ? company!.diasLaborables
+      : const [1, 2, 3, 4, 5];
+  return days.contains(DateTime.now().weekday);
+});
+
 final employeesAbsentTodayProvider = Provider<int>((ref) {
+  // Los ausentes solo tienen sentido en días laborables.
+  if (!ref.watch(isTodayWorkingDayProvider)) return 0;
   final total = ref.watch(totalActiveEmployeesProvider);
   final presentOrCompleted = ref.watch(employeesPresentOrCompletedTodayProvider);
   return (total - presentOrCompleted).clamp(0, total);

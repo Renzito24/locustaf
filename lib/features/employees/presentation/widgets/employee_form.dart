@@ -422,6 +422,12 @@ class _EmployeeFormState extends ConsumerState<EmployeeForm> {
                   child: Text('Super Administrador',
                       style: TextStyle(color: AppColors.textWhite)),
                 ),
+              if (ref.watch(userRoleProvider) == UserRole.superadmin)
+                const DropdownMenuItem(
+                  value: UserRole.admin,
+                  child: Text('Administrador',
+                      style: TextStyle(color: AppColors.textWhite)),
+                ),
               const DropdownMenuItem(
                 value: UserRole.employee,
                 child: Text('Empleado',

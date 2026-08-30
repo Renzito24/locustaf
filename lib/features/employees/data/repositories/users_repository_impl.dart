@@ -76,8 +76,14 @@ class UsersRepositoryImpl implements UsersRepository {
       documentId: uid,
       data: {
         'isDeleted': true,
-        'updatedAt': DateTime.now().toIso8601String(),
+        'updatedAt': DateTime.now().toUtc().toIso8601String(),
       },
+    );
+    // Purgar el lock de asistencia del usuario para liberar el ID y evitar
+    // locks huérfanos que bloqueen un futuro re-ingreso.
+    await _firestoreService.deleteDocument(
+      path: '_attendance_locks',
+      documentId: uid,
     );
   }
 }

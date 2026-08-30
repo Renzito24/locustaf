@@ -9,6 +9,14 @@
   "functions": {
     "source": "functions"
   },
+  "emulators": {
+    "firestore": {
+      "port": 8081
+    },
+    "ui": {
+      "enabled": false
+    }
+  },
   "flutter": {
     "platforms": {
       "android": {

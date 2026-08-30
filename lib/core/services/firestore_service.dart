@@ -1,5 +1,18 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 
+/// Resultado de una consulta paginada.
+class QueryPage<T> {
+  final List<T> items;
+  final bool hasMore;
+  final Object? lastOrderValue;
+
+  const QueryPage({
+    required this.items,
+    required this.hasMore,
+    this.lastOrderValue,
+  });
+}
+
 class FirestoreService {
   final FirebaseFirestore _firestore;
 
@@ -144,6 +157,61 @@ class FirestoreService {
     required Map<String, dynamic> data,
   }) {
     return _firestore.collection(path).doc(documentId).set(data);
+  }
+
+  /// Consulta paginada con orden estable (usa [orderField] como cursor).
+  /// Requiere un índice compuesto que cubra [filters] + [orderField].
+  Future<QueryPage<T>> queryPage<T>({
+    required String path,
+    required Map<String, dynamic> filters,
+    required T Function(Map<String, dynamic> json) fromJson,
+    String? orderField,
+    bool descending = false,
+    required int limit,
+    Object? startAfter,
+  }) async {
+    var query = _firestore.collection(path) as Query<Map<String, dynamic>>;
+    filters.forEach((field, value) {
+      query = query.where(field, isEqualTo: value);
+    });
+    if (orderField != null) {
+      query = query.orderBy(orderField, descending: descending);
+    }
+    if (startAfter != null) {
+      query = query.startAfter([startAfter]);
+    }
+    query = query.limit(limit);
+
+    final snapshot = await query.get();
+    final items = snapshot.docs.map((doc) {
+      return fromJson({
+        ...doc.data(),
+        'id': doc.id,
+      });
+    }).toList();
+
+    final lastValue = snapshot.docs.isEmpty || orderField == null
+        ? null
+        : snapshot.docs.last.get(orderField);
+    return QueryPage<T>(
+      items: items,
+      hasMore: snapshot.docs.length == limit,
+      lastOrderValue: lastValue,
+    );
+  }
+
+  /// Cuenta documentos que cumplen los filtros usando la agregación COUNT
+  /// nativa de Firestore (sin descargar los documentos).
+  Future<int> countDocuments({
+    required String path,
+    required Map<String, dynamic> filters,
+  }) async {
+    var query = _firestore.collection(path) as Query<Map<String, dynamic>>;
+    filters.forEach((field, value) {
+      query = query.where(field, isEqualTo: value);
+    });
+    final snapshot = await query.count().get();
+    return snapshot.count ?? 0;
   }
 
   /// IMPORTANTE: Se escribe tanto 'id' como 'uid' para mantener compatibilidad

@@ -2,6 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../attendance/data/models/attendance_model.dart';
 import '../../../../core/providers/data_providers.dart';
+import '../../../attendance/presentation/providers/attendance_notifier.dart';
 import '../../data/models/history_record_model.dart';
 
 class HistoryFilterState {
@@ -77,13 +78,110 @@ final historyFilterProvider = NotifierProvider<HistoryFilterNotifier, HistoryFil
   HistoryFilterNotifier.new,
 );
 
+/// Tamaño de página para el historial paginado.
+const int historyPageSize = 25;
+
+class HistoryPageState {
+  final List<AttendanceModel> items;
+  final bool hasMore;
+  final Object? lastCheckInTime;
+
+  const HistoryPageState({
+    this.items = const [],
+    this.hasMore = true,
+    this.lastCheckInTime,
+  });
+
+  HistoryPageState copyWith({
+    List<AttendanceModel>? items,
+    bool? hasMore,
+    Object? lastCheckInTime,
+    bool clearLastCheckInTime = false,
+  }) {
+    return HistoryPageState(
+      items: items ?? this.items,
+      hasMore: hasMore ?? this.hasMore,
+      lastCheckInTime: clearLastCheckInTime
+          ? null
+          : lastCheckInTime ?? this.lastCheckInTime,
+    );
+  }
+}
+
+/// Carga del historial por páginas (cursor por checkInTime DESC), acumulando
+/// los registros ya traídos. Filtrado client-side sobre las páginas cargadas.
+class HistoryPaginationNotifier extends AsyncNotifier<HistoryPageState> {
+  @override
+  Future<HistoryPageState> build() async {
+    ref.watch(currentCompanyIdProvider);
+    final repo = ref.read(attendanceRepositoryProvider);
+    final page = await repo.getAttendancePage(limit: historyPageSize);
+    return HistoryPageState(
+      items: page.items,
+      hasMore: page.hasMore,
+      lastCheckInTime: page.lastCheckInTime,
+    );
+  }
+
+  Future<void> loadMore() async {
+    final current = state.value;
+    if (current == null || !current.hasMore) return;
+    final repo = ref.read(attendanceRepositoryProvider);
+    try {
+      final page = await repo.getAttendancePage(
+        limit: historyPageSize,
+        startAfter: current.lastCheckInTime,
+      );
+      state = AsyncData(
+        current.copyWith(
+          items: [...current.items, ...page.items],
+          hasMore: page.hasMore,
+          lastCheckInTime: page.lastCheckInTime,
+        ),
+      );
+    } catch (e, st) {
+      state = AsyncError(e, st);
+    }
+  }
+
+  Future<void> reload() async {
+    state = const AsyncData(HistoryPageState());
+    final repo = ref.read(attendanceRepositoryProvider);
+    try {
+      final page = await repo.getAttendancePage(limit: historyPageSize);
+      state = AsyncData(
+        HistoryPageState(
+          items: page.items,
+          hasMore: page.hasMore,
+          lastCheckInTime: page.lastCheckInTime,
+        ),
+      );
+    } catch (e, st) {
+      state = AsyncError(e, st);
+    }
+  }
+}
+
+final historyPaginationProvider = AsyncNotifierProvider<HistoryPaginationNotifier, HistoryPageState>(
+  HistoryPaginationNotifier.new,
+);
+
+/// Total real de asistencias de la empresa (agregación COUNT nativa).
+final attendanceTotalCountProvider = FutureProvider<int>((ref) {
+  final repo = ref.watch(attendanceRepositoryProvider);
+  return repo.countCompanyAttendances();
+});
+
+final paginatedAttendancesProvider = Provider<List<AttendanceModel>>((ref) {
+  return ref.watch(historyPaginationProvider).value?.items ?? const [];
+});
+
 final filteredHistoryProvider = Provider<List<HistoryRecordModel>>((ref) {
-  final attendancesAsync = ref.watch(allAttendancesStreamProvider);
+  final attendances = ref.watch(paginatedAttendancesProvider);
   final usersAsync = ref.watch(allUsersStreamProvider);
   final workplacesAsync = ref.watch(allWorkplacesStreamProvider);
   final filter = ref.watch(historyFilterProvider);
 
-  final attendances = attendancesAsync.value ?? [];
   final users = usersAsync.value ?? [];
   final workplaces = workplacesAsync.value ?? [];
 

@@ -57,6 +57,36 @@ service cloud.firestore {
       return isAuthenticated() && getCompanyId() == null;
     }
 
+    // Tolerancia (en milisegundos) que permite el check-in respecto del tiempo
+    // del servidor. Se lee de la configuración de la empresa (campo
+    // `toleranciaCheckIn` en minutos, editable por el admin). Default 15 min.
+    function getCompanyToleranceMinutes(companyId) {
+      return get(/databases/$(database)/documents/companies/$(companyId)).data.toleranciaCheckIn;
+    }
+
+    function getCheckInToleranceMillis(companyId) {
+      return (companyId != null
+          && exists(/databases/$(database)/documents/companies/$(companyId))
+          && getCompanyToleranceMinutes(companyId) != null
+              ? getCompanyToleranceMinutes(companyId)
+              : 15) * 60000;
+    }
+
+    // VUL-3: en el alta de una asistencia el cliente no puede fijar una hora
+    // de entrada arbitraria. checkInTime debe ser un timestamp dentro de la
+    // tolerancia configurada vs el tiempo del servidor, y la asistencia debe
+    // crearse siempre como 'active' sin campos de cierre.
+    function validAttendanceCreate() {
+      let companyId = request.resource.data.companyId;
+      let diff = request.resource.data.checkInTime.toMillis() - request.time.toMillis();
+      let toleranceMillis = getCheckInToleranceMillis(companyId);
+      return request.resource.data.status == 'active'
+        && !('checkOutTime' in request.resource.data)
+        && !('durationMinutes' in request.resource.data)
+        && diff >= -toleranceMillis
+        && diff <= toleranceMillis;
+    }
+
     // En updates, los campos sensibles no pueden cambiar.
     function noSensitiveFieldChanges() {
       return request.resource.data.companyId == resource.data.companyId
@@ -114,7 +144,10 @@ service cloud.firestore {
             || ((isAdmin() || isSupervisor()) && inCompany(resource.data.companyId)));
       allow create: if isAuthenticated()
         && (isSuperadmin()
-            || (isAdmin() && request.resource.data.companyId == getCompanyId())
+            || (isAdmin()
+                && request.resource.data.companyId == getCompanyId()
+                && (request.resource.data.rol == 'employee'
+                    || request.resource.data.rol == 'supervisor'))
             || (isOwner(uid) && getCompanyId() == null
                 && request.resource.data.rol == 'admin'
                 && request.resource.data.companyId != null
@@ -156,7 +189,8 @@ service cloud.firestore {
       allow create: if isAuthenticated()
         && (isSuperadmin()
             || (isEmployee() && request.resource.data.userId == request.auth.uid
-                && request.resource.data.companyId == getCompanyId()));
+                && request.resource.data.companyId == getCompanyId()
+                && validAttendanceCreate()));
       allow update: if isAuthenticated()
         && (isSuperadmin()
             || (isEmployee() && resource.data.userId == request.auth.uid

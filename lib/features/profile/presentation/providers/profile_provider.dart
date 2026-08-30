@@ -40,7 +40,7 @@ class ProfileUpdateNotifier extends Notifier<ProfileUpdateState> {
           'nombre': nombre,
           'apellido': apellido,
           'telefono': telefono,
-          'updatedAt': DateTime.now().toIso8601String(),
+          'updatedAt': DateTime.now().toUtc().toIso8601String(),
         },
       );
       state = const ProfileUpdateState.success('Perfil actualizado correctamente.');

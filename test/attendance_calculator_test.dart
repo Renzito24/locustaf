@@ -114,6 +114,24 @@ void main() {
       final checkOut = DateTime(2026, 8, 26, 8, 0);
       expect(AttendanceCalculator.calculateDuration(checkIn, checkOut), 0);
     });
+
+    test('jornada que cruza la medianoche', () {
+      final checkIn = DateTime(2026, 8, 26, 22, 0);
+      final checkOut = DateTime(2026, 8, 27, 6, 0);
+      expect(AttendanceCalculator.calculateDuration(checkIn, checkOut), 480);
+    });
+
+    test('jornada de exactamente una hora', () {
+      final checkIn = DateTime(2026, 8, 26, 9, 0);
+      final checkOut = DateTime(2026, 8, 26, 10, 0);
+      expect(AttendanceCalculator.calculateDuration(checkIn, checkOut), 60);
+    });
+
+    test('misma hora de entrada y salida da cero', () {
+      final checkIn = DateTime(2026, 8, 26, 9, 0);
+      final checkOut = DateTime(2026, 8, 26, 9, 0);
+      expect(AttendanceCalculator.calculateDuration(checkIn, checkOut), 0);
+    });
   });
 
   group('AttendanceCalculator.calculateExpectedDuration', () {

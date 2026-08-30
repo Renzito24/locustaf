@@ -11,6 +11,8 @@ class CompanyFormData {
   final String? telefono;
   final String? email;
   final CompanyEstado estado;
+  final int toleranciaCheckIn;
+  final List<int> diasLaborables;
 
   const CompanyFormData({
     required this.nombreComercial,
@@ -20,6 +22,8 @@ class CompanyFormData {
     this.telefono,
     this.email,
     this.estado = CompanyEstado.activa,
+    this.toleranciaCheckIn = 15,
+    this.diasLaborables = const [1, 2, 3, 4, 5],
   });
 }
 
@@ -41,6 +45,8 @@ class CreateCompanyNotifier extends AsyncNotifier<void> {
         email: data.email,
         estado: data.estado,
         createdAt: DateTime.now(),
+        toleranciaCheckIn: data.toleranciaCheckIn,
+        diasLaborables: data.diasLaborables,
       );
       await repo.createCompany(company);
       state = const AsyncData(null);
@@ -71,6 +77,8 @@ class UpdateCompanyNotifier extends AsyncNotifier<void> {
         email: data.email,
         estado: data.estado,
         updatedAt: DateTime.now(),
+        toleranciaCheckIn: data.toleranciaCheckIn,
+        diasLaborables: data.diasLaborables,
       );
       await repo.updateCompany(updated);
       state = const AsyncData(null);

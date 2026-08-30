@@ -70,8 +70,8 @@ class MedicalDocumentRepositoryImpl implements MedicalDocumentRepository {
         'estado': estado.name,
         'observacionRechazo': observacionRechazo,
         'reviewedBy': reviewedBy,
-        'reviewedAt': DateTime.now().toIso8601String(),
-        'updatedAt': DateTime.now().toIso8601String(),
+        'reviewedAt': DateTime.now().toUtc().toIso8601String(),
+        'updatedAt': DateTime.now().toUtc().toIso8601String(),
       },
     );
   }
@@ -83,7 +83,7 @@ class MedicalDocumentRepositoryImpl implements MedicalDocumentRepository {
       documentId: id,
       data: {
         'isActive': false,
-        'updatedAt': DateTime.now().toIso8601String(),
+        'updatedAt': DateTime.now().toUtc().toIso8601String(),
       },
     );
   }

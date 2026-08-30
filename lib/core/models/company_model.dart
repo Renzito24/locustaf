@@ -37,6 +37,14 @@ class CompanyModel extends Equatable {
   final DateTime createdAt;
   final DateTime? updatedAt;
 
+  /// Tolerancia del check-in en minutos que valida Firestore Rules contra el
+  /// tiempo del servidor. Configurable por el admin de la empresa (D1).
+  final int toleranciaCheckIn;
+
+  /// Días laborables de la empresa (ISO 1=Lu .. 7=Do). En los días no
+  /// laborables no se contabilizan ausencias. Configurable por el admin (D2).
+  final List<int> diasLaborables;
+
   const CompanyModel({
     required this.id,
     required this.nombreComercial,
@@ -49,6 +57,8 @@ class CompanyModel extends Equatable {
     this.createdBy,
     required this.createdAt,
     this.updatedAt,
+    this.toleranciaCheckIn = 15,
+    this.diasLaborables = const [1, 2, 3, 4, 5],
   });
 
   CompanyModel copyWith({
@@ -63,6 +73,8 @@ class CompanyModel extends Equatable {
     String? createdBy,
     DateTime? createdAt,
     DateTime? updatedAt,
+    int? toleranciaCheckIn,
+    List<int>? diasLaborables,
   }) {
     return CompanyModel(
       id: id ?? this.id,
@@ -76,6 +88,8 @@ class CompanyModel extends Equatable {
       createdBy: createdBy ?? this.createdBy,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
+      toleranciaCheckIn: toleranciaCheckIn ?? this.toleranciaCheckIn,
+      diasLaborables: diasLaborables ?? this.diasLaborables,
     );
   }
 
@@ -90,10 +104,15 @@ class CompanyModel extends Equatable {
       email: json['email'] as String?,
       estado: CompanyEstadoExtension.fromString(json['estado'] as String),
       createdBy: json['createdBy'] as String?,
-      createdAt: DateTime.parse(json['createdAt'] as String),
+      createdAt: DateTime.parse(json['createdAt'] as String).toLocal(),
       updatedAt: json['updatedAt'] != null
-          ? DateTime.parse(json['updatedAt'] as String)
+          ? DateTime.parse(json['updatedAt'] as String).toLocal()
           : null,
+      toleranciaCheckIn: (json['toleranciaCheckIn'] as num?)?.toInt() ?? 15,
+      diasLaborables: (json['diasLaborables'] as List<dynamic>?)
+              ?.map((e) => (e as num).toInt())
+              .toList() ??
+          const [1, 2, 3, 4, 5],
     );
   }
 
@@ -108,8 +127,10 @@ class CompanyModel extends Equatable {
       'email': email,
       'estado': estado.name,
       'createdBy': createdBy,
-      'createdAt': createdAt.toIso8601String(),
-      'updatedAt': updatedAt?.toIso8601String(),
+      'createdAt': createdAt.toUtc().toIso8601String(),
+      'updatedAt': updatedAt?.toUtc().toIso8601String(),
+      'toleranciaCheckIn': toleranciaCheckIn,
+      'diasLaborables': diasLaborables,
     };
   }
 
@@ -126,5 +147,7 @@ class CompanyModel extends Equatable {
         createdBy,
         createdAt,
         updatedAt,
+        toleranciaCheckIn,
+        diasLaborables,
       ];
 }

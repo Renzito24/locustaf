@@ -30,6 +30,7 @@ import '../../features/justificativos/presentation/screens/employee_create_incid
 import '../../features/justificativos/presentation/screens/employee_create_medical_document_screen.dart';
 import '../../features/companies/presentation/screens/companies_screen.dart';
 import '../../features/companies/presentation/screens/company_form_screen.dart';
+import '../../features/companies/presentation/screens/company_settings_screen.dart';
 import '../../features/companies/presentation/screens/onboarding_screen.dart';
 import 'app_routes.dart';
 
@@ -90,7 +91,7 @@ class AppRouter {
       }
 
       if (role == UserRole.supervisor) {
-        final restricted = ['/attendance', '/medical_documents', '/reports', '/employees/create', '/employees/edit', '/workplaces/create', '/workplaces/edit', '/incidences/create', '/incidences/edit'];
+        final restricted = ['/attendance', '/settings', '/medical_documents', '/reports', '/employees/create', '/employees/edit', '/workplaces/create', '/workplaces/edit', '/incidences/create', '/incidences/edit'];
         if (restricted.any((r) => path.startsWith(r))) {
           return '/dashboard';
         }
@@ -132,6 +133,10 @@ class AppRouter {
             builder: (context, state) => CompanyFormScreen(
               company: state.extra as CompanyModel?,
             ),
+          ),
+          GoRoute(
+            path: RoutePaths.companySettings,
+            builder: (context, state) => const CompanySettingsScreen(),
           ),
           GoRoute(
             path: RoutePaths.employees,

@@ -34,7 +34,9 @@ class _CompanyFormState extends ConsumerState<CompanyForm> {
   final _direccionController = TextEditingController();
   final _telefonoController = TextEditingController();
   final _emailController = TextEditingController();
+  final _toleranciaController = TextEditingController();
   CompanyEstado _estado = CompanyEstado.activa;
+  Set<int> _diasLaborables = const {1, 2, 3, 4, 5};
 
   @override
   void initState() {
@@ -46,7 +48,9 @@ class _CompanyFormState extends ConsumerState<CompanyForm> {
     _direccionController.text = company?.direccion ?? '';
     _telefonoController.text = company?.telefono ?? '';
     _emailController.text = company?.email ?? '';
+    _toleranciaController.text = (company?.toleranciaCheckIn ?? 15).toString();
     _estado = company?.estado ?? CompanyEstado.activa;
+    _diasLaborables = Set.of(company?.diasLaborables ?? const [1, 2, 3, 4, 5]);
   }
 
   @override
@@ -57,11 +61,13 @@ class _CompanyFormState extends ConsumerState<CompanyForm> {
     _direccionController.dispose();
     _telefonoController.dispose();
     _emailController.dispose();
+    _toleranciaController.dispose();
     super.dispose();
   }
 
   void _submit() {
     if (!_formKey.currentState!.validate()) return;
+    final dias = _diasLaborables.toList()..sort();
     widget.onSubmit(CompanyFormData(
       nombreComercial: _nombreController.text.trim(),
       razonSocial: _razonSocialController.text.trim(),
@@ -76,7 +82,28 @@ class _CompanyFormState extends ConsumerState<CompanyForm> {
           ? null
           : _emailController.text.trim(),
       estado: _estado,
+      toleranciaCheckIn: int.tryParse(_toleranciaController.text.trim()) ?? 15,
+      diasLaborables: dias.isEmpty ? const [1, 2, 3, 4, 5] : dias,
     ));
+  }
+
+  String _dayLabel(int day) {
+    switch (day) {
+      case 1:
+        return 'Lun';
+      case 2:
+        return 'Mar';
+      case 3:
+        return 'Mié';
+      case 4:
+        return 'Jue';
+      case 5:
+        return 'Vie';
+      case 6:
+        return 'Sáb';
+      default:
+        return 'Dom';
+    }
   }
 
   @override
@@ -179,6 +206,76 @@ class _CompanyFormState extends ConsumerState<CompanyForm> {
             onChanged: widget.isLoading
                 ? null
                 : (v) => setState(() => _estado = v ?? CompanyEstado.activa),
+          ),
+          const SizedBox(height: 16),
+          TextFormField(
+            controller: _toleranciaController,
+            style: const TextStyle(color: AppColors.textWhite),
+            decoration: AppTheme.inputDecoration(
+              label: 'Tolerancia de check-in (minutos)',
+              hint: 'Minutos permitidos para marcar entrada (default 15)',
+              icon: Icons.timer_outlined,
+            ),
+            keyboardType: TextInputType.number,
+            inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+            validator: (v) {
+              if (v == null || v.trim().isEmpty) return null;
+              final n = int.tryParse(v.trim());
+              if (n == null || n < 0) {
+                return 'Debe ser un número mayor o igual a 0';
+              }
+              return null;
+            },
+            enabled: !widget.isLoading,
+          ),
+          const SizedBox(height: 16),
+          Text(
+            'Días laborables',
+            style: TextStyle(
+              color: AppColors.textSecondary,
+              fontWeight: FontWeight.w500,
+              fontSize: 13,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: List.generate(7, (i) {
+              final day = i + 1;
+              final selected = _diasLaborables.contains(day);
+              return FilterChip(
+                label: Text(_dayLabel(day)),
+                selected: selected,
+                selectedColor: AppColors.gold,
+                checkmarkColor: AppColors.textWhite,
+                backgroundColor: AppColors.cardDark,
+                labelStyle: TextStyle(
+                  color: selected
+                      ? AppColors.textWhite
+                      : AppColors.textSecondary,
+                ),
+                side: selected
+                    ? const BorderSide(color: AppColors.gold, width: 1)
+                    : BorderSide.none,
+                onSelected: widget.isLoading
+                    ? null
+                    : (v) => setState(() {
+                          final updated = Set<int>.of(_diasLaborables);
+                          if (v) {
+                            updated.add(day);
+                          } else {
+                            updated.remove(day);
+                          }
+                          _diasLaborables = updated;
+                        }),
+              );
+            }),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            'Los reportes de "Ausentes" solo aplican en días laborables.',
+            style: TextStyle(color: AppColors.textSecondary, fontSize: 12),
           ),
           if (widget.errorMessage != null) ...[
             const SizedBox(height: 12),

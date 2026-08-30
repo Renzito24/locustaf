@@ -24,4 +24,5 @@ class RoutePaths {
   static const String employeeCreateMedicalDocument = '/justificativos/documento/create';
   static const String createCompany = '/companies/create';
   static const String editCompany = '/companies/edit';
+  static const String companySettings = '/settings';
 }
