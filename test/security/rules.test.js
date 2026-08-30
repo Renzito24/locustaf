@@ -239,6 +239,18 @@ describe('VUL-4b: incidencias por rol', () => {
       }),
     );
   });
+
+  it('un empleado SÍ puede crear una incidencia en estado pendiente', async () => {
+    await seedUser('emp-1', { rol: 'employee', companyId: 'emp-1', isActive: true, isDeleted: false });
+    const ctx = testEnv.authenticatedContext('emp-1');
+    await assertSucceeds(
+      ctx.firestore().doc('incidences/inc-1').set({
+        userId: 'emp-1',
+        companyId: 'emp-1',
+        estado: 'pendiente',
+      }),
+    );
+  });
 });
 
 describe('M1: documentos médicos', () => {
@@ -250,6 +262,18 @@ describe('M1: documentos médicos', () => {
         userId: 'emp-1',
         companyId: 'emp-1',
         estado: 'aprobado',
+      }),
+    );
+  });
+
+  it('un empleado SÍ puede crear un documento médico en estado pendiente', async () => {
+    await seedUser('emp-1', { rol: 'employee', companyId: 'emp-1', isActive: true, isDeleted: false });
+    const ctx = testEnv.authenticatedContext('emp-1');
+    await assertSucceeds(
+      ctx.firestore().doc('medical_documents/doc-1').set({
+        userId: 'emp-1',
+        companyId: 'emp-1',
+        estado: 'pendiente',
       }),
     );
   });

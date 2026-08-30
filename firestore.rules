@@ -10,18 +10,24 @@ service cloud.firestore {
       return request.auth != null;
     }
 
+    // VUL-1: getUserData()/getRole()/getCompanyId() deben tolerar la ausencia
+    // del documento del usuario (flujo de onboarding, donde el usuario crea su
+    // propio documento). Acceder a campos de un doc inexistente lanza
+    // "Null value error" y rompe la evaluación de la regla.
     function getUserData() {
-      return get(
-        /databases/$(database)/documents/users/$(request.auth.uid)
-      ).data;
+      return exists(/databases/$(database)/documents/users/$(request.auth.uid))
+        ? get(/databases/$(database)/documents/users/$(request.auth.uid)).data
+        : null;
     }
 
     function getRole() {
-      return getUserData().rol;
+      let data = getUserData();
+      return data != null ? data.rol : null;
     }
 
     function getCompanyId() {
-      return getUserData().companyId;
+      let data = getUserData();
+      return data != null ? data.companyId : null;
     }
 
     function isSuperadmin() {
@@ -91,6 +97,15 @@ service cloud.firestore {
     function noSensitiveFieldChanges() {
       return request.resource.data.companyId == resource.data.companyId
         && request.resource.data.userId == resource.data.userId;
+    }
+
+    // VUL-4b/M1: en el alta de incidencias y documentos médicos el estado solo
+    // puede ser 'pendiente' y no se pueden fijar los campos de revisión, para
+    // evitar que el cliente cree justificativos auto-aprobados.
+    function validServiceCreate() {
+      return request.resource.data.estado == 'pendiente'
+        && !('reviewedBy' in request.resource.data)
+        && !('reviewedAt' in request.resource.data);
     }
 
     // En updates de asistencias, los campos fijados en el check-in no pueden
@@ -235,9 +250,11 @@ service cloud.firestore {
                 && inCompany(resource.data.companyId)));
       allow create: if isAuthenticated()
         && (isSuperadmin()
-            || (isAdmin() && request.resource.data.companyId == getCompanyId())
+            || (isAdmin() && request.resource.data.companyId == getCompanyId()
+                && validServiceCreate())
             || (isEmployee() && request.resource.data.userId == request.auth.uid
-                && request.resource.data.companyId == getCompanyId()));
+                && request.resource.data.companyId == getCompanyId()
+                && validServiceCreate()));
       allow update: if isAuthenticated()
         && (isSuperadmin()
             || (isAdmin() && inCompany(resource.data.companyId)))
@@ -260,9 +277,11 @@ service cloud.firestore {
             || (isEmployee() && isOwner(resource.data.userId)));
       allow create: if isAuthenticated()
         && (isSuperadmin()
-            || (isAdmin() && request.resource.data.companyId == getCompanyId())
+            || (isAdmin() && request.resource.data.companyId == getCompanyId()
+                && validServiceCreate())
             || (isEmployee() && request.resource.data.userId == request.auth.uid
-                && request.resource.data.companyId == getCompanyId()));
+                && request.resource.data.companyId == getCompanyId()
+                && validServiceCreate()));
       allow update: if isAuthenticated()
         && (isSuperadmin()
             || (isAdmin() && inCompany(resource.data.companyId)))
