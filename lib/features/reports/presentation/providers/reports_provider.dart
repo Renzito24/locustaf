@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../attendance/data/models/attendance_model.dart';
 import '../../../../core/models/user_model.dart';
 import '../../../../core/providers/data_providers.dart';
+import '../../../../core/utils/string_utils.dart';
 import '../../../companies/presentation/providers/company_providers.dart';
 
 final totalActiveEmployeesProvider = Provider<int>((ref) {
@@ -173,7 +174,7 @@ final filteredAttendanceReportProvider = Provider<List<AttendanceReportRow>>((re
         ? workplaceMap[a.workplaceId]
         : null;
     return AttendanceReportRow(
-      employeeName: user?.nombreCompleto ?? 'Usuario ${a.userId.substring(0, 6)}',
+      employeeName: user?.nombreCompleto ?? 'Usuario ${StringUtils.safePrefix(a.userId, 6)}',
       workplaceName: workplaceName,
       checkInTime: a.checkInTime,
       checkOutTime: a.checkOutTime,

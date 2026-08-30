@@ -6,6 +6,7 @@ import '../../../../core/constants/app_colors.dart';
 import '../../../../core/router/app_routes.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/models/user_model.dart';
+import '../../../../core/utils/string_utils.dart';
 import '../../../authentication/presentation/providers/auth_provider.dart';
 import '../../../employees/presentation/providers/users_provider.dart';
 import '../../data/models/medical_document_model.dart';
@@ -171,7 +172,7 @@ class MedicalDocumentsScreen extends ConsumerWidget {
                   final user = userMap[doc.userId];
                   return MedicalDocumentCard(
                     document: doc,
-                    employeeName: user?.nombreCompleto ?? 'Usuario ${doc.userId.substring(0, 6)}',
+                    employeeName: user?.nombreCompleto ?? 'Usuario ${StringUtils.safePrefix(doc.userId, 6)}',
                     onTap: () => MedicalDocumentDetailDialog.show(
                       context,
                       document: doc,

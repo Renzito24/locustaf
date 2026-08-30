@@ -6,6 +6,7 @@ import '../../../../core/constants/app_colors.dart';
 import '../../../../core/router/app_routes.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/models/user_model.dart';
+import '../../../../core/utils/string_utils.dart';
 import '../../../authentication/presentation/providers/auth_provider.dart';
 import '../../../employees/presentation/providers/users_provider.dart';
 import '../../data/models/incidence_model.dart';
@@ -151,7 +152,7 @@ class IncidencesScreen extends ConsumerWidget {
                   final user = userMap[inc.userId];
                   return IncidenceCard(
                     incidence: inc,
-                    employeeName: user?.nombreCompleto ?? 'Usuario ${inc.userId.substring(0, 6)}',
+                    employeeName: user?.nombreCompleto ?? 'Usuario ${StringUtils.safePrefix(inc.userId, 6)}',
                     onTap: () => IncidenceDetailDialog.show(
                       context,
                       incidence: inc,

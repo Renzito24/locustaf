@@ -2,6 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../attendance/data/models/attendance_model.dart';
 import '../../../../core/providers/data_providers.dart';
+import '../../../../core/utils/string_utils.dart';
 import '../../../attendance/presentation/providers/attendance_notifier.dart';
 import '../../data/models/history_record_model.dart';
 
@@ -232,7 +233,7 @@ final filteredHistoryProvider = Provider<List<HistoryRecordModel>>((ref) {
         : null;
     return HistoryRecordModel(
       id: a.id,
-      employeeName: user?.nombreCompleto ?? 'Usuario ${a.userId.substring(0, 6)}',
+      employeeName: user?.nombreCompleto ?? 'Usuario ${StringUtils.safePrefix(a.userId, 6)}',
       employeeEmail: user?.email ?? '',
       workplaceName: workplaceName,
       checkInTime: a.checkInTime,
