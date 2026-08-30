@@ -14,6 +14,7 @@
 const { onDocumentUpdated } = require('firebase-functions/v2/firestore');
 const { initializeApp } = require('firebase-admin/app');
 const { getAuth } = require('firebase-admin/auth');
+const { computeUserAuthUpdate } = require('./userStatus');
 
 initializeApp();
 
@@ -32,18 +33,16 @@ exports.syncUserAuthStatus = onDocumentUpdated(
       return;
     }
 
-    const wasDisabled = !before.isActive || before.isDeleted;
-    const isDisabled = !after.isActive || after.isDeleted;
-
-    // Si el estado no cambió, no hacemos nada.
-    if (wasDisabled === isDisabled) {
+    // Lógica pura extraída a userStatus.js para poder unit-testearla.
+    const decision = computeUserAuthUpdate(before, after);
+    if (!decision.update) {
       return;
     }
 
     try {
-      await getAuth().updateUser(userId, { disabled: isDisabled });
+      await getAuth().updateUser(userId, { disabled: decision.disabled });
       console.log(
-        `Usuario ${userId} ${isDisabled ? 'deshabilitado' : 'habilitado'} en Auth.`
+        `Usuario ${userId} ${decision.disabled ? 'deshabilitado' : 'habilitado'} en Auth.`
       );
     } catch (err) {
       console.error(`Error al actualizar Auth del usuario ${userId}:`, err);
