@@ -19,19 +19,25 @@ let testEnv;
 
 async function seedUser(uid, data) {
   await testEnv.withSecurityRulesDisabled(async (context) => {
-    await context.firestore().doc(`users/${uid}`).set(data);
+    await context.firestore().doc(`users/${uid}`).set({ ...data, id: uid });
   });
 }
 
 async function seedCompany(id, data) {
   await testEnv.withSecurityRulesDisabled(async (context) => {
-    await context.firestore().doc(`companies/${id}`).set(data);
+    await context.firestore().doc(`companies/${id}`).set({ ...data, id });
   });
 }
 
 async function seedAttendance(id, data) {
   await testEnv.withSecurityRulesDisabled(async (context) => {
-    await context.firestore().doc(`attendances/${id}`).set(data);
+    await context.firestore().doc(`attendances/${id}`).set({ ...data, id });
+  });
+}
+
+async function seedWorkplace(id, data) {
+  await testEnv.withSecurityRulesDisabled(async (context) => {
+    await context.firestore().doc(`workplaces/${id}`).set({ ...data, id });
   });
 }
 
@@ -141,12 +147,12 @@ describe('VUL-3: campos server-only en asistencias', () => {
     );
   });
 
-  it('un empleado SÍ puede modificar checkOutTime y status', async () => {
+  it('un empleado SÍ puede hacer un check-out válido (active -> completed)', async () => {
     await seedUser('emp-1', { rol: 'employee', companyId: 'emp-1', isActive: true, isDeleted: false });
     await seedAttendance('att-1', {
       userId: 'emp-1',
       companyId: 'emp-1',
-      checkInTime: '2026-08-26T08:00:00.000',
+      checkInTime: new Date('2026-08-26T08:00:00.000Z'),
       date: '2026-08-26',
       isLate: false,
       workplaceId: 'wp-1',
@@ -157,9 +163,99 @@ describe('VUL-3: campos server-only en asistencias', () => {
     const ctx = testEnv.authenticatedContext('emp-1');
     await assertSucceeds(
       ctx.firestore().doc('attendances/att-1').update({
-        checkOutTime: '2026-08-26T16:00:00.000',
+        checkOutTime: new Date('2026-08-26T16:00:00.000Z'),
         status: 'completed',
         durationMinutes: 480,
+      }),
+    );
+  });
+
+  it('A1: un empleado NO puede completar una jornada sin fijar checkOutTime', async () => {
+    await seedUser('emp-1', { rol: 'employee', companyId: 'emp-1', isActive: true, isDeleted: false });
+    await seedAttendance('att-1', {
+      userId: 'emp-1',
+      companyId: 'emp-1',
+      checkInTime: new Date('2026-08-26T08:00:00.000Z'),
+      date: '2026-08-26',
+      isLate: false,
+      workplaceId: 'wp-1',
+      checkInLatitud: -34.6,
+      checkInLongitud: -58.4,
+      status: 'active',
+    });
+    const ctx = testEnv.authenticatedContext('emp-1');
+    await assertFails(
+      ctx.firestore().doc('attendances/att-1').update({
+        status: 'completed',
+      }),
+    );
+  });
+
+  it('A1: un empleado NO puede reabrir una jornada completada (completed -> active)', async () => {
+    await seedUser('emp-1', { rol: 'employee', companyId: 'emp-1', isActive: true, isDeleted: false });
+    await seedAttendance('att-1', {
+      userId: 'emp-1',
+      companyId: 'emp-1',
+      checkInTime: new Date('2026-08-26T08:00:00.000Z'),
+      checkOutTime: new Date('2026-08-26T16:00:00.000Z'),
+      durationMinutes: 480,
+      date: '2026-08-26',
+      isLate: false,
+      workplaceId: 'wp-1',
+      checkInLatitud: -34.6,
+      checkInLongitud: -58.4,
+      status: 'completed',
+    });
+    const ctx = testEnv.authenticatedContext('emp-1');
+    await assertFails(
+      ctx.firestore().doc('attendances/att-1').update({
+        status: 'active',
+      }),
+    );
+  });
+
+  it('A1: un empleado NO puede fijar durationMinutes arbitrarios', async () => {
+    await seedUser('emp-1', { rol: 'employee', companyId: 'emp-1', isActive: true, isDeleted: false });
+    await seedAttendance('att-1', {
+      userId: 'emp-1',
+      companyId: 'emp-1',
+      checkInTime: new Date('2026-08-26T08:00:00.000Z'),
+      date: '2026-08-26',
+      isLate: false,
+      workplaceId: 'wp-1',
+      checkInLatitud: -34.6,
+      checkInLongitud: -58.4,
+      status: 'active',
+    });
+    const ctx = testEnv.authenticatedContext('emp-1');
+    await assertFails(
+      ctx.firestore().doc('attendances/att-1').update({
+        checkOutTime: new Date('2026-08-26T16:00:00.000Z'),
+        status: 'completed',
+        durationMinutes: 999,
+      }),
+    );
+  });
+
+  it('A1: un empleado NO puede modificar un checkOutTime ya registrado', async () => {
+    await seedUser('emp-1', { rol: 'employee', companyId: 'emp-1', isActive: true, isDeleted: false });
+    await seedAttendance('att-1', {
+      userId: 'emp-1',
+      companyId: 'emp-1',
+      checkInTime: new Date('2026-08-26T08:00:00.000Z'),
+      checkOutTime: new Date('2026-08-26T16:00:00.000Z'),
+      durationMinutes: 480,
+      date: '2026-08-26',
+      isLate: false,
+      workplaceId: 'wp-1',
+      checkInLatitud: -34.6,
+      checkInLongitud: -58.4,
+      status: 'completed',
+    });
+    const ctx = testEnv.authenticatedContext('emp-1');
+    await assertFails(
+      ctx.firestore().doc('attendances/att-1').update({
+        checkOutTime: new Date('2026-08-26T09:00:00.000Z'),
       }),
     );
   });
@@ -423,5 +519,223 @@ describe('E1: companyId null (IDOR)', () => {
     });
     const ctx = testEnv.authenticatedContext('no-company');
     await assertFails(ctx.firestore().doc('attendances/att-1').get());
+  });
+});
+
+describe('C2: updates de users (campo de identidad id)', () => {
+  it('un admin SÍ puede editar los datos de un empleado (update parcial)', async () => {
+    await seedUser('admin-1', { rol: 'admin', companyId: 'emp-1', isActive: true, isDeleted: false });
+    await seedUser('emp-1', { rol: 'employee', companyId: 'emp-1', isActive: true, isDeleted: false });
+    const ctx = testEnv.authenticatedContext('admin-1');
+    await assertSucceeds(
+      ctx.firestore().doc('users/emp-1').update({
+        nombre: 'Nuevo',
+        apellido: 'Nombre',
+        updatedAt: '2026-08-30T12:00:00.000Z',
+      }),
+    );
+  });
+
+  it('un admin SÍ puede desactivar un empleado (isActive)', async () => {
+    await seedUser('admin-1', { rol: 'admin', companyId: 'emp-1', isActive: true, isDeleted: false });
+    await seedUser('emp-1', { rol: 'employee', companyId: 'emp-1', isActive: true, isDeleted: false });
+    const ctx = testEnv.authenticatedContext('admin-1');
+    await assertSucceeds(
+      ctx.firestore().doc('users/emp-1').update({
+        isActive: false,
+        updatedAt: '2026-08-30T12:00:00.000Z',
+      }),
+    );
+  });
+
+  it('un admin SÍ puede hacer soft-delete de un empleado', async () => {
+    await seedUser('admin-1', { rol: 'admin', companyId: 'emp-1', isActive: true, isDeleted: false });
+    await seedUser('emp-1', { rol: 'employee', companyId: 'emp-1', isActive: true, isDeleted: false });
+    const ctx = testEnv.authenticatedContext('admin-1');
+    await assertSucceeds(
+      ctx.firestore().doc('users/emp-1').update({
+        isDeleted: true,
+        updatedAt: '2026-08-30T12:00:00.000Z',
+      }),
+    );
+  });
+
+  it('un admin SÍ puede cambiar el rol de un empleado a supervisor', async () => {
+    await seedUser('admin-1', { rol: 'admin', companyId: 'emp-1', isActive: true, isDeleted: false });
+    await seedUser('emp-1', { rol: 'employee', companyId: 'emp-1', isActive: true, isDeleted: false });
+    const ctx = testEnv.authenticatedContext('admin-1');
+    await assertSucceeds(
+      ctx.firestore().doc('users/emp-1').update({
+        rol: 'supervisor',
+      }),
+    );
+  });
+
+  it('un empleado SÍ puede actualizar su propio perfil', async () => {
+    await seedUser('emp-1', {
+      rol: 'employee',
+      companyId: 'emp-1',
+      email: 'emp1@locustaf.com',
+      dni: '22222222',
+      isActive: true,
+      isDeleted: false,
+      lugarDeTrabajoId: null,
+      createdAt: '2026-08-01T00:00:00.000Z',
+    });
+    const ctx = testEnv.authenticatedContext('emp-1');
+    await assertSucceeds(
+      ctx.firestore().doc('users/emp-1').update({
+        nombre: 'Empleado',
+        apellido: 'Actualizado',
+        telefono: '+54 11 5555-0003',
+      }),
+    );
+  });
+
+  it('un empleado NO puede cambiar su propio rol', async () => {
+    await seedUser('emp-1', {
+      rol: 'employee',
+      companyId: 'emp-1',
+      email: 'emp1@locustaf.com',
+      dni: '22222222',
+      isActive: true,
+      isDeleted: false,
+      lugarDeTrabajoId: null,
+      createdAt: '2026-08-01T00:00:00.000Z',
+    });
+    const ctx = testEnv.authenticatedContext('emp-1');
+    await assertFails(
+      ctx.firestore().doc('users/emp-1').update({
+        rol: 'supervisor',
+      }),
+    );
+  });
+});
+
+describe('C1: escalada de rol (admin -> superadmin)', () => {
+  it('un admin NO puede escalar su propio rol a superadmin', async () => {
+    await seedUser('admin-1', {
+      rol: 'admin',
+      companyId: 'emp-1',
+      email: 'admin@locustaf.com',
+      dni: '00000000',
+      isActive: true,
+      isDeleted: false,
+      lugarDeTrabajoId: null,
+      createdAt: '2026-08-01T00:00:00.000Z',
+    });
+    const ctx = testEnv.authenticatedContext('admin-1');
+    await assertFails(
+      ctx.firestore().doc('users/admin-1').update({
+        rol: 'superadmin',
+      }),
+    );
+  });
+
+  it('un admin NO puede asignar rol superadmin a un empleado', async () => {
+    await seedUser('admin-1', { rol: 'admin', companyId: 'emp-1', isActive: true, isDeleted: false });
+    await seedUser('emp-1', { rol: 'employee', companyId: 'emp-1', isActive: true, isDeleted: false });
+    const ctx = testEnv.authenticatedContext('admin-1');
+    await assertFails(
+      ctx.firestore().doc('users/emp-1').update({
+        rol: 'superadmin',
+      }),
+    );
+  });
+
+  it('un admin NO puede asignar rol admin a un empleado', async () => {
+    await seedUser('admin-1', { rol: 'admin', companyId: 'emp-1', isActive: true, isDeleted: false });
+    await seedUser('emp-1', { rol: 'employee', companyId: 'emp-1', isActive: true, isDeleted: false });
+    const ctx = testEnv.authenticatedContext('admin-1');
+    await assertFails(
+      ctx.firestore().doc('users/emp-1').update({
+        rol: 'admin',
+      }),
+    );
+  });
+
+  it('un admin NO puede modificar el documento de otro admin', async () => {
+    await seedUser('admin-1', { rol: 'admin', companyId: 'emp-1', isActive: true, isDeleted: false });
+    await seedUser('admin-2', { rol: 'admin', companyId: 'emp-1', isActive: true, isDeleted: false });
+    const ctx = testEnv.authenticatedContext('admin-1');
+    await assertFails(
+      ctx.firestore().doc('users/admin-2').update({
+        nombre: 'Intruso',
+      }),
+    );
+  });
+
+  it('un superadmin SÍ puede cambiar el rol de un usuario', async () => {
+    await seedUser('superadmin-1', { rol: 'superadmin', companyId: null, isActive: true, isDeleted: false });
+    await seedUser('emp-1', { rol: 'employee', companyId: 'emp-1', isActive: true, isDeleted: false });
+    const ctx = testEnv.authenticatedContext('superadmin-1');
+    await assertSucceeds(
+      ctx.firestore().doc('users/emp-1').update({
+        rol: 'supervisor',
+      }),
+    );
+  });
+});
+
+describe('C2: updates de workplaces (campo de identidad id)', () => {
+  it('un admin SÍ puede editar un lugar de trabajo (update parcial)', async () => {
+    await seedUser('admin-1', { rol: 'admin', companyId: 'emp-1', isActive: true, isDeleted: false });
+    await seedWorkplace('wp-1', { nombre: 'Sucursal Central', companyId: 'emp-1', isActive: true });
+    const ctx = testEnv.authenticatedContext('admin-1');
+    await assertSucceeds(
+      ctx.firestore().doc('workplaces/wp-1').update({
+        nombre: 'Sucursal Norte',
+      }),
+    );
+  });
+
+  it('un admin SÍ puede desactivar un lugar de trabajo', async () => {
+    await seedUser('admin-1', { rol: 'admin', companyId: 'emp-1', isActive: true, isDeleted: false });
+    await seedWorkplace('wp-1', { nombre: 'Sucursal Central', companyId: 'emp-1', isActive: true });
+    const ctx = testEnv.authenticatedContext('admin-1');
+    await assertSucceeds(
+      ctx.firestore().doc('workplaces/wp-1').update({
+        isActive: false,
+        updatedAt: '2026-08-30T12:00:00.000Z',
+      }),
+    );
+  });
+});
+
+describe('C3: onboarding - alta secuencial de empresa y admin', () => {
+  it('un usuario en onboarding SÍ puede crear su empresa y luego su documento admin', async () => {
+    // Nota: se usa un contexto autenticado por escritura para evitar el error
+    // del SDK "Firestore has already been started" al reutilizar la instancia.
+    const ctx1 = testEnv.authenticatedContext('new-user');
+    await assertSucceeds(
+      ctx1.firestore().doc('companies/emp-9').set({
+        id: 'emp-9',
+        nombreComercial: 'Empresa Nueva',
+        createdBy: 'new-user',
+      }),
+    );
+    const ctx2 = testEnv.authenticatedContext('new-user');
+    await assertSucceeds(
+      ctx2.firestore().doc('users/new-user').set({
+        id: 'new-user',
+        rol: 'admin',
+        companyId: 'emp-9',
+        isActive: true,
+        isDeleted: false,
+        createdAt: '2026-08-30T00:00:00.000Z',
+      }),
+    );
+  });
+
+  it('un usuario en onboarding SÍ puede eliminar una empresa huérfana que creó', async () => {
+    await seedCompany('emp-9', { nombreComercial: 'Empresa Nueva', createdBy: 'new-user' });
+    const ctx = testEnv.authenticatedContext('new-user');
+    await assertSucceeds(ctx.firestore().doc('companies/emp-9').delete());
+  });
+
+  it('un usuario en onboarding NO puede eliminar una empresa que no creó', async () => {
+    await seedCompany('emp-9', { nombreComercial: 'Empresa A', createdBy: 'otro-user' });
+    const ctx = testEnv.authenticatedContext('new-user');
+    await assertFails(ctx.firestore().doc('companies/emp-9').delete());
   });
 });
