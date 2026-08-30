@@ -5,7 +5,7 @@
   "description": "Tests de seguridad de las Firestore Rules de LOCUSTAF usando el emulador",
   "type": "module",
   "scripts": {
-    "test": "mocha rules.test.js --timeout 30000"
+    "test": "mocha rules.test.js storage.test.js --timeout 30000"
   },
   "dependencies": {
     "@firebase/rules-unit-testing": "^3.0.1",
