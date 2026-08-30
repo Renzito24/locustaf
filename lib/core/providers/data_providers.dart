@@ -49,3 +49,17 @@ final allAttendancesStreamProvider = StreamProvider<List<AttendanceModel>>((ref)
     fromJson: AttendanceModel.fromJson,
   );
 });
+
+/// Asistencias activas de la empresa (filtradas en la consulta a Firestore).
+/// Usado por flujos que solo necesitan jornadas en curso (locks, huérfanas),
+/// evitando descargar el historial completo en cada cambio.
+final allActiveAttendancesStreamProvider = StreamProvider<List<AttendanceModel>>((ref) {
+  final companyId = ref.watch(currentCompanyIdProvider);
+  final svc = ref.read(firestoreServiceProvider);
+  if (companyId == null) return Stream.value(<AttendanceModel>[]);
+  return svc.queryStreamWithFilters<AttendanceModel>(
+    path: 'attendances',
+    filters: {'companyId': companyId, 'status': 'active'},
+    fromJson: AttendanceModel.fromJson,
+  );
+});

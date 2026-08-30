@@ -57,6 +57,19 @@ class AttendanceRepositoryImpl implements AttendanceRepository {
     );
   }
 
+  /// Asistencias activas de la empresa. Consulta acotada a `status == 'active'`
+  /// a nivel de base de datos para no descargar el historial completo en cada
+  /// cambio (locks y jornadas huérfanas solo necesitan las activas).
+  @override
+  Stream<List<AttendanceModel>> getAllActiveAttendances() {
+    if (_companyId == null) return Stream.value(<AttendanceModel>[]);
+    return _firestoreService.queryStreamWithFilters<AttendanceModel>(
+      path: 'attendances',
+      filters: {'companyId': _companyId, 'status': 'active'},
+      fromJson: AttendanceModel.fromJson,
+    );
+  }
+
   @override
   Future<AttendancePage> getAttendancePage({
     required int limit,

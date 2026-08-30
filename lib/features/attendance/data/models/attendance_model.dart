@@ -96,14 +96,14 @@ class AttendanceModel extends Equatable {
   factory AttendanceModel.fromJson(Map<String, dynamic> json) {
     return AttendanceModel(
       id: (json['id'] ?? json['uid'] ?? '') as String,
-      userId: json['userId'] as String,
+      userId: (json['userId'] ?? '') as String,
       checkInTime: _parseTimestamp(json['checkInTime']),
       checkOutTime: json['checkOutTime'] != null
           ? _parseTimestamp(json['checkOutTime'])
           : null,
       durationMinutes: json['durationMinutes'] as int?,
-      date: json['date'] as String,
-      status: AttendanceStatusExtension.fromString(json['status'] as String),
+      date: (json['date'] ?? '') as String,
+      status: _parseStatus(json['status']),
       checkInLatitud: (json['checkInLatitud'] as num?)?.toDouble(),
       checkInLongitud: (json['checkInLongitud'] as num?)?.toDouble(),
       checkOutLatitud: (json['checkOutLatitud'] as num?)?.toDouble(),
@@ -114,10 +114,31 @@ class AttendanceModel extends Equatable {
     );
   }
 
+  /// Parsea timestamps tolerando ausencia o formatos inválidos para no romper
+  /// el stream de asistencias con documentos corruptos. Ante datos inválidos
+  /// devuelve la época Unix como fallback predecible.
   static DateTime _parseTimestamp(dynamic value) {
     if (value is Timestamp) return value.toDate().toLocal();
     if (value is DateTime) return value;
-    return DateTime.parse(value as String).toLocal();
+    if (value is String) {
+      final parsed = DateTime.tryParse(value);
+      if (parsed != null) return parsed.toLocal();
+    }
+    return DateTime.fromMillisecondsSinceEpoch(0).toLocal();
+  }
+
+  /// Parsea el estado tolerando ausencia o valores desconocidos: ante datos
+  /// inválidos degrada a [AttendanceStatus.active] para mantener vivo el stream.
+  static AttendanceStatus _parseStatus(dynamic value) {
+    if (value is String) {
+      switch (value) {
+        case 'active':
+          return AttendanceStatus.active;
+        case 'completed':
+          return AttendanceStatus.completed;
+      }
+    }
+    return AttendanceStatus.active;
   }
 
   Map<String, dynamic> toJson() {

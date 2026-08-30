@@ -18,6 +18,7 @@ class AttendancePage {
 abstract class AttendanceRepository {
   Stream<List<AttendanceModel>> getAttendancesByUser(String userId);
   Stream<List<AttendanceModel>> getAllAttendances();
+  Stream<List<AttendanceModel>> getAllActiveAttendances();
   Stream<AttendanceModel?> getActiveAttendance(String userId);
   Future<void> checkIn(AttendanceModel attendance);
   Future<void> checkOut(

@@ -27,10 +27,12 @@ final activeAttendanceProvider = StreamProvider.family<AttendanceModel?, String>
   return repo.getActiveAttendance(userId);
 });
 
-/// Asistencias activas que superaron el fin de jornada de su lugar de trabajo
-/// sin registrar salida (jornadas huérfanas).
+/// Asistencias activas de la empresa que superaron el fin de jornada de su
+/// lugar de trabajo sin registrar salida (jornadas huérfanas).
+/// Solo consulta asistencias con `status == 'active'` a nivel de Firestore
+/// para no descargar el historial completo en cada cambio.
 final orphanedAttendancesProvider = Provider<List<AttendanceModel>>((ref) {
-  final attendancesAsync = ref.watch(allAttendancesStreamProvider);
+  final attendancesAsync = ref.watch(allActiveAttendancesStreamProvider);
   final workplacesAsync = ref.watch(allWorkplacesStreamProvider);
   final attendances = attendancesAsync.value ?? [];
   final workplaces = workplacesAsync.value ?? [];

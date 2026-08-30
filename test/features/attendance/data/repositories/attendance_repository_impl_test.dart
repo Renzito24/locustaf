@@ -417,6 +417,24 @@ void main() {
       expect(list, isEmpty);
     });
 
+    test('getAllActiveAttendances consulta solo asistencias activas de la empresa', () async {
+      await seedAttendance(buildAttendance(id: 'att-active-1'));
+      await seedAttendance(
+        buildAttendance(id: 'att-done', status: AttendanceStatus.completed),
+      );
+      await seedAttendance(
+        buildAttendance(id: 'att-other-company', company: 'company-2'),
+      );
+      await seedAttendance(buildAttendance(id: 'att-active-2'));
+
+      final list = await repo.getAllActiveAttendances().first;
+      final ids = list.map((a) => a.id).toList();
+      expect(ids, contains('att-active-1'));
+      expect(ids, contains('att-active-2'));
+      expect(ids, isNot(contains('att-done')));
+      expect(ids, isNot(contains('att-other-company')));
+    });
+
     test('getAttendancePage pagina y reporta hasMore', () async {
       for (var i = 0; i < 5; i++) {
         await seedAttendance(
