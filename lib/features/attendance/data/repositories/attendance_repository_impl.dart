@@ -183,9 +183,13 @@ class AttendanceRepositoryImpl implements AttendanceRepository {
       }
 
       final now = DateTime.now();
-      final checkInTime =
-          DateTime.parse(attendanceData['checkInTime'] as String);
-      final durationMinutes = now.difference(checkInTime).inMinutes;
+      final checkInTime = _parseLockTime(attendanceData['checkInTime']);
+      if (checkInTime == null && attendanceData['checkInTime'] != null) {
+        throw AttendanceException('Asistencia con fecha de ingreso inválida.');
+      }
+      final durationMinutes = checkInTime == null
+          ? 0
+          : now.difference(checkInTime).inMinutes;
 
       transaction.update(attendanceRef, {
         'checkOutTime': Timestamp.fromDate(now.toUtc()),
@@ -220,9 +224,13 @@ class AttendanceRepositoryImpl implements AttendanceRepository {
       }
 
       final now = DateTime.now();
-      final checkInTime =
-          DateTime.parse(attendanceData['checkInTime'] as String);
-      final durationMinutes = now.difference(checkInTime).inMinutes;
+      final checkInTime = _parseLockTime(attendanceData['checkInTime']);
+      if (checkInTime == null && attendanceData['checkInTime'] != null) {
+        throw AttendanceException('Asistencia con fecha de ingreso inválida.');
+      }
+      final durationMinutes = checkInTime == null
+          ? 0
+          : now.difference(checkInTime).inMinutes;
 
       transaction.update(attendanceRef, {
         'checkOutTime': Timestamp.fromDate(now.toUtc()),
