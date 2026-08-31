@@ -1,4 +1,5 @@
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:google_sign_in/google_sign_in.dart';
 
 class AuthService {
@@ -18,6 +19,11 @@ class AuthService {
   /// Inicia sesión con Google. Retorna el [UserCredential] o null si el
   /// usuario canceló el flujo.
   Future<UserCredential?> loginWithGoogle() async {
+    if (kIsWeb) {
+      final provider = GoogleAuthProvider();
+      return _firebaseAuth.signInWithPopup(provider);
+    }
+
     final googleUser = await _googleSignIn.signIn();
     if (googleUser == null) return null;
 
