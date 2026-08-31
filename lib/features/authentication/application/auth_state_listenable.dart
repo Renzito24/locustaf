@@ -75,11 +75,13 @@ class AuthStateListenable extends ChangeNotifier {
       fromJson: UserModel.fromJson,
     ).listen((userModel) {
       if (userModel == null) {
-        // El documento del usuario fue eliminado físicamente: se trata como
-        // cuenta eliminada para bloquear el acceso.
+        // El usuario aún no tiene documento en 'users' (p. ej. recién se
+        // registró con Google y debe completar el onboarding). Se deja sin
+        // datos para que el router lo derive a /onboarding en lugar de
+        // bloquearlo como cuenta eliminada.
         _role = null;
-        _isActive = false;
-        _isDeleted = true;
+        _isActive = null;
+        _isDeleted = null;
         _companyId = null;
         _startListeningCompanyDoc(svc, null);
         notifyListeners();
