@@ -60,7 +60,7 @@ class MedicalDocumentsScreen extends ConsumerWidget {
       );
     });
 
-    return SingleChildScrollView(
+    return Padding(
       padding: const EdgeInsets.all(24.0),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -91,7 +91,9 @@ class MedicalDocumentsScreen extends ConsumerWidget {
               ),
             ),
           const SizedBox(height: 16),
-          _buildContent(context, ref, docs, usersAsync, isAdmin),
+          Expanded(
+            child: _buildContent(context, ref, docs, usersAsync, isAdmin),
+          ),
         ],
       ),
     );
@@ -162,8 +164,6 @@ class MedicalDocumentsScreen extends ConsumerWidget {
           builder: (context, constraints) {
             if (constraints.maxWidth < 800) {
               return ListView.separated(
-                shrinkWrap: true,
-                physics: const NeverScrollableScrollPhysics(),
                 padding: const EdgeInsets.only(bottom: 24),
                 itemCount: docs.length,
                 separatorBuilder: (_, _) => const SizedBox(height: 8),
@@ -190,64 +190,64 @@ class MedicalDocumentsScreen extends ConsumerWidget {
             return SingleChildScrollView(
               scrollDirection: Axis.vertical,
               child: SingleChildScrollView(
-              scrollDirection: Axis.horizontal,
-              child: DataTable(
-                columnSpacing: 20,
-                headingRowColor: WidgetStateProperty.all(AppColors.gold.withValues(alpha: 0.1)),
-                columns: [
-                  const DataColumn(label: Text('Empleado', style: TextStyle(fontWeight: FontWeight.bold, color: AppColors.gold))),
-                  const DataColumn(label: Text('Tipo', style: TextStyle(fontWeight: FontWeight.bold, color: AppColors.gold))),
-                  const DataColumn(label: Text('Emisión', style: TextStyle(fontWeight: FontWeight.bold, color: AppColors.gold))),
-                  const DataColumn(label: Text('Vencimiento', style: TextStyle(fontWeight: FontWeight.bold, color: AppColors.gold))),
-                  const DataColumn(label: Text('Vigencia', style: TextStyle(fontWeight: FontWeight.bold, color: AppColors.gold))),
-                  const DataColumn(label: Text('Aprobación', style: TextStyle(fontWeight: FontWeight.bold, color: AppColors.gold))),
-                  if (isAdmin) const DataColumn(label: Text('Acciones', style: TextStyle(fontWeight: FontWeight.bold, color: AppColors.gold))),
-                ],
-                rows: docs.map((doc) {
-                  final user = userMap[doc.userId];
-                  final name = user?.nombreCompleto ?? 'Usuario ${doc.userId.substring(0, 6)}';
-                  return DataRow(
-                    onSelectChanged: (_) => MedicalDocumentDetailDialog.show(
-                      context,
-                      document: doc,
-                      employeeName: name,
-                      employeeEmail: user?.email ?? '',
-                    ),
-                    cells: [
-                      DataCell(Text(name, style: const TextStyle(color: AppColors.textWhite))),
-                      DataCell(Text(doc.tipo.label, style: const TextStyle(color: AppColors.textMuted))),
-                      DataCell(Text(_formatDate(doc.fechaInicio), style: const TextStyle(color: AppColors.textMuted))),
-                      DataCell(Text(_formatDate(doc.fechaFin), style: const TextStyle(color: AppColors.textMuted))),
-                      DataCell(_buildEstadoChip(doc.vigencia)),
-                      DataCell(_buildAprobacionChip(doc.estado)),
-                      if (isAdmin)
-                        DataCell(Row(
-                          children: [
-                            IconButton(
-                              icon: const Icon(Icons.edit, size: 18, color: AppColors.gold),
-                              onPressed: () => context.push(
-                                RoutePaths.editMedicalDocument,
-                                extra: doc,
+                scrollDirection: Axis.horizontal,
+                child: DataTable(
+                  columnSpacing: 20,
+                  headingRowColor: WidgetStateProperty.all(AppColors.gold.withValues(alpha: 0.1)),
+                  columns: [
+                    const DataColumn(label: Text('Empleado', style: TextStyle(fontWeight: FontWeight.bold, color: AppColors.gold))),
+                    const DataColumn(label: Text('Tipo', style: TextStyle(fontWeight: FontWeight.bold, color: AppColors.gold))),
+                    const DataColumn(label: Text('Emisión', style: TextStyle(fontWeight: FontWeight.bold, color: AppColors.gold))),
+                    const DataColumn(label: Text('Vencimiento', style: TextStyle(fontWeight: FontWeight.bold, color: AppColors.gold))),
+                    const DataColumn(label: Text('Vigencia', style: TextStyle(fontWeight: FontWeight.bold, color: AppColors.gold))),
+                    const DataColumn(label: Text('Aprobación', style: TextStyle(fontWeight: FontWeight.bold, color: AppColors.gold))),
+                    if (isAdmin) const DataColumn(label: Text('Acciones', style: TextStyle(fontWeight: FontWeight.bold, color: AppColors.gold))),
+                  ],
+                  rows: docs.map((doc) {
+                    final user = userMap[doc.userId];
+                    final name = user?.nombreCompleto ?? 'Usuario ${doc.userId.substring(0, 6)}';
+                    return DataRow(
+                      onSelectChanged: (_) => MedicalDocumentDetailDialog.show(
+                        context,
+                        document: doc,
+                        employeeName: name,
+                        employeeEmail: user?.email ?? '',
+                      ),
+                      cells: [
+                        DataCell(Text(name, style: const TextStyle(color: AppColors.textWhite))),
+                        DataCell(Text(doc.tipo.label, style: const TextStyle(color: AppColors.textMuted))),
+                        DataCell(Text(_formatDate(doc.fechaInicio), style: const TextStyle(color: AppColors.textMuted))),
+                        DataCell(Text(_formatDate(doc.fechaFin), style: const TextStyle(color: AppColors.textMuted))),
+                        DataCell(_buildEstadoChip(doc.vigencia)),
+                        DataCell(_buildAprobacionChip(doc.estado)),
+                        if (isAdmin)
+                          DataCell(Row(
+                            children: [
+                              IconButton(
+                                icon: const Icon(Icons.edit, size: 18, color: AppColors.gold),
+                                onPressed: () => context.push(
+                                  RoutePaths.editMedicalDocument,
+                                  extra: doc,
+                                ),
+                                tooltip: 'Editar',
+                                visualDensity: VisualDensity.compact,
                               ),
-                              tooltip: 'Editar',
-                              visualDensity: VisualDensity.compact,
-                            ),
-                            IconButton(
-                              icon: const Icon(Icons.delete_outline, size: 18, color: AppColors.error),
-                              onPressed: () => _confirmDelete(context, ref, doc),
-                              tooltip: 'Eliminar',
-                              visualDensity: VisualDensity.compact,
-                            ),
-                          ],
-                        )),
-                    ],
-                  );
-                }).toList(),
+                              IconButton(
+                                icon: const Icon(Icons.delete_outline, size: 18, color: AppColors.error),
+                                onPressed: () => _confirmDelete(context, ref, doc),
+                                tooltip: 'Eliminar',
+                                visualDensity: VisualDensity.compact,
+                              ),
+                            ],
+                          )),
+                      ],
+                    );
+                  }).toList(),
+                ),
               ),
-            ),
-          );
-        },
-      );
+            );
+          },
+        );
       },
       loading: () => AppTheme.loadingState(),
       error: (_, _) => AppTheme.errorState('No se pudieron obtener los datos de los empleados.'),

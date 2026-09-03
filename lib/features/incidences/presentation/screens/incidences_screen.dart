@@ -60,7 +60,7 @@ class IncidencesScreen extends ConsumerWidget {
       );
     });
 
-    return SingleChildScrollView(
+    return Padding(
       padding: const EdgeInsets.all(24.0),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -91,7 +91,9 @@ class IncidencesScreen extends ConsumerWidget {
               ),
             ),
           const SizedBox(height: 16),
-          _buildContent(context, ref, incidences, usersAsync, isAdmin),
+          Expanded(
+            child: _buildContent(context, ref, incidences, usersAsync, isAdmin),
+          ),
         ],
       ),
     );
@@ -142,8 +144,6 @@ class IncidencesScreen extends ConsumerWidget {
           builder: (context, constraints) {
             if (constraints.maxWidth < 800) {
               return ListView.separated(
-                shrinkWrap: true,
-                physics: const NeverScrollableScrollPhysics(),
                 padding: const EdgeInsets.only(bottom: 24),
                 itemCount: incidences.length,
                 separatorBuilder: (_, _) => const SizedBox(height: 8),
@@ -168,8 +168,8 @@ class IncidencesScreen extends ConsumerWidget {
             return SingleChildScrollView(
               scrollDirection: Axis.vertical,
               child: SingleChildScrollView(
-              scrollDirection: Axis.horizontal,
-              child: DataTable(
+                scrollDirection: Axis.horizontal,
+                child: DataTable(
                 columnSpacing: 20,
                 headingRowColor: WidgetStateProperty.all(AppColors.gold.withValues(alpha: 0.1)),
                 columns: [
