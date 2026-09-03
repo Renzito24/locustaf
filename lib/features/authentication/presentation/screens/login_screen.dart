@@ -181,6 +181,13 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
           errorMessage = _mensajeError(e);
         });
       }
+      // Si el correo ya existe con otro método (correo/contraseña), guiar al
+      // usuario para que use el formulario o recupere su contraseña en lugar
+      // de dejarlo en un estado confuso.
+      if (e is FirebaseAuthException &&
+          e.code == 'account-exists-with-different-credential') {
+        _showAccountExistsDialog();
+      }
     } finally {
       if (mounted) {
         setState(() {
@@ -188,6 +195,144 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
         });
       }
     }
+  }
+
+  Future<void> _showAccountExistsDialog() async {
+    await showDialog<void>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        backgroundColor: AppColors.cardDark,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(AppTheme.radiusXl),
+          side: BorderSide(color: AppColors.gold.withValues(alpha: 0.18)),
+        ),
+        title: const Text(
+          'Ya existe una cuenta con este correo',
+          style: TextStyle(color: AppColors.textWhite),
+        ),
+        content: const Text(
+          'Este correo ya está registrado con correo y contraseña. Usá el formulario de arriba para iniciar sesión, o recuperá tu contraseña si no la recordás.',
+          style: TextStyle(color: AppColors.textMuted, fontSize: 13),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(),
+            child: const Text('Entendido',
+                style: TextStyle(color: AppColors.gold)),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _showForgotPasswordDialog() async {
+    final resetController = TextEditingController();
+    final formKey = GlobalKey<FormState>();
+    var sending = false;
+
+    await showDialog<void>(
+      context: context,
+      builder: (dialogContext) => StatefulBuilder(
+        builder: (dialogContext, setDialogState) => AlertDialog(
+          backgroundColor: AppColors.cardDark,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(AppTheme.radiusXl),
+            side: BorderSide(color: AppColors.gold.withValues(alpha: 0.18)),
+          ),
+          title: const Text(
+            'Recuperar contraseña',
+            style: TextStyle(color: AppColors.textWhite),
+          ),
+          content: Form(
+            key: formKey,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'Ingresá el correo con el que te registraste y te enviaremos un enlace para restablecer tu contraseña.',
+                  style: TextStyle(color: AppColors.textMuted, fontSize: 13),
+                ),
+                const SizedBox(height: 16),
+                TextFormField(
+                  controller: resetController,
+                  keyboardType: TextInputType.emailAddress,
+                  style: const TextStyle(color: AppColors.textWhite),
+                  cursorColor: AppColors.gold,
+                  decoration: AppTheme.inputDecoration(
+                    label: 'Correo electrónico',
+                    icon: Icons.email_outlined,
+                  ),
+                  validator: (value) {
+                    if (value == null || value.trim().isEmpty) {
+                      return 'Ingrese su correo electrónico';
+                    }
+                    final emailRegex =
+                        RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$');
+                    if (!emailRegex.hasMatch(value.trim())) {
+                      return 'Ingrese un correo electrónico válido';
+                    }
+                    return null;
+                  },
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(dialogContext).pop(),
+              child: const Text('Cancelar',
+                  style: TextStyle(color: AppColors.textMuted)),
+            ),
+            TextButton(
+              onPressed: sending
+                  ? null
+                  : () async {
+                      if (!formKey.currentState!.validate()) return;
+                      setDialogState(() => sending = true);
+                      try {
+                        final authRepo =
+                            ref.read(authRepositoryProvider);
+                        await authRepo.sendPasswordReset(
+                          resetController.text.trim(),
+                        );
+                        if (!dialogContext.mounted) return;
+                        Navigator.of(dialogContext).pop();
+                        if (!mounted) return;
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          AppTheme.successSnackBar(
+                            'Si el correo existe, te enviamos un enlace para restablecer tu contraseña.',
+                          ),
+                        );
+                      } on Exception catch (e) {
+                        setDialogState(() => sending = false);
+                        if (!dialogContext.mounted) return;
+                        ScaffoldMessenger.of(dialogContext).showSnackBar(
+                          AppTheme.errorSnackBar(
+                            'Error al enviar el correo: ${_mensajeError(e)}',
+                          ),
+                        );
+                      }
+                    },
+              style: TextButton.styleFrom(
+                foregroundColor: AppColors.gold,
+              ),
+              child: sending
+                  ? const SizedBox(
+                      width: 18,
+                      height: 18,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: AppColors.gold,
+                      ),
+                    )
+                  : const Text('Enviar enlace'),
+            ),
+          ],
+        ),
+      ),
+    );
+    resetController.dispose();
   }
 
   @override
@@ -397,7 +542,23 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
                                   ),
                                 ),
                               ),
-                              const SizedBox(height: 24),
+                              const SizedBox(height: 12),
+                              Center(
+                                child: TextButton(
+                                  onPressed: isLoading
+                                      ? null
+                                      : _showForgotPasswordDialog,
+                                  child: const Text(
+                                    '¿Olvidaste tu contraseña?',
+                                    style: TextStyle(
+                                      color: AppColors.gold,
+                                      fontSize: 13,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(height: 12),
                               Row(
                                 children: [
                                   Expanded(child: Divider(color: AppColors.textMuted.withValues(alpha: 0.3))),
@@ -422,7 +583,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
                                   onPressed: isLoading ? null : loginWithGoogle,
                                   icon: const Icon(Icons.g_mobiledata, color: AppColors.textWhite, size: 26),
                                   label: const Text(
-                                    'Crear cuenta con Google',
+                                    'Iniciar sesión con Google',
                                     style: TextStyle(
                                       fontSize: 15,
                                       fontWeight: FontWeight.w600,
@@ -442,7 +603,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
                               const SizedBox(height: 10),
                               Center(
                                 child: Text(
-                                  'Si ya tenés una cuenta, usá tu correo y contraseña.',
+                                  'Si tu cuenta fue creada con Google, usá "Iniciar sesión con Google". Si fue creada con correo y contraseña, usá el formulario de arriba.',
                                   style: TextStyle(
                                     color: AppColors.textMuted.withValues(alpha: 0.7),
                                     fontSize: 12,

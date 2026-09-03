@@ -32,4 +32,9 @@ class AuthRepositoryImpl implements AuthRepository {
   Stream<User?> authStateChanges() {
     return _authService.authStateChanges;
   }
+
+  @override
+  Future<void> sendPasswordReset(String email) {
+    return _authService.sendPasswordReset(email);
+  }
 }
