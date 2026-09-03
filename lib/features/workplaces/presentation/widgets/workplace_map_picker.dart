@@ -248,7 +248,7 @@ class _WorkplaceMapPickerState extends State<WorkplaceMapPicker> {
                   initialZoom: _marker != null ? 15 : 4,
                   onTap: _onMapTap,
                   interactionOptions: const InteractionOptions(
-                    flags: InteractiveFlag.all,
+                    flags: InteractiveFlag.all & ~InteractiveFlag.drag,
                   ),
                 ),
                 children: [

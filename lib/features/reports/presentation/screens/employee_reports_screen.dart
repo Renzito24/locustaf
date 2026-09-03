@@ -39,7 +39,7 @@ class _EmployeeReportsScreenState extends ConsumerState<EmployeeReportsScreen> {
     final attendancesAsync = ref.watch(attendancesByUserProvider(userId));
     final allIncidencesAsync = ref.watch(incidencesStreamProvider);
 
-    return Padding(
+    return SingleChildScrollView(
       padding: const EdgeInsets.all(24),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -50,18 +50,16 @@ class _EmployeeReportsScreenState extends ConsumerState<EmployeeReportsScreen> {
           const SizedBox(height: 24),
           _buildFilterBar(),
           const SizedBox(height: 20),
-          Expanded(
-            child: attendancesAsync.when(
-              data: (allAttendances) {
-                final allIncidences = allIncidencesAsync.value ?? [];
-                final incidences = allIncidences.where((i) => i.userId == userId).toList();
-                final filtered = _filterByMonth(allAttendances);
-                final stats = _calculateStats(filtered, incidences);
-                return _buildContent(stats, filtered);
-              },
-              loading: () => AppTheme.loadingState(message: 'Cargando reportes...'),
-              error: (e, _) => AppTheme.errorState('Error al cargar reportes: $e'),
-            ),
+          attendancesAsync.when(
+            data: (allAttendances) {
+              final allIncidences = allIncidencesAsync.value ?? [];
+              final incidences = allIncidences.where((i) => i.userId == userId).toList();
+              final filtered = _filterByMonth(allAttendances);
+              final stats = _calculateStats(filtered, incidences);
+              return _buildContent(stats, filtered);
+            },
+            loading: () => AppTheme.loadingState(message: 'Cargando reportes...'),
+            error: (e, _) => AppTheme.errorState('Error al cargar reportes: $e'),
           ),
         ],
       ),

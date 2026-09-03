@@ -37,4 +37,12 @@ class AuthRepositoryImpl implements AuthRepository {
   Future<void> sendPasswordReset(String email) {
     return _authService.sendPasswordReset(email);
   }
+
+  @override
+  Future<void> linkPassword({
+    required String email,
+    required String password,
+  }) {
+    return _authService.linkPassword(email: email, password: password);
+  }
 }

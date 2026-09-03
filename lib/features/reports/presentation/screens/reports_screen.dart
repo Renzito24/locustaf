@@ -32,7 +32,7 @@ class ReportsScreen extends ConsumerWidget {
     final isLoading = !anyLoaded && (usersAsync.isLoading || workplacesAsync.isLoading || attendancesAsync.isLoading);
     final hasError = usersAsync.hasError || workplacesAsync.hasError || attendancesAsync.hasError;
 
-    return Padding(
+    return SingleChildScrollView(
       padding: const EdgeInsets.all(24.0),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -45,11 +45,9 @@ class ReportsScreen extends ConsumerWidget {
           ),
           const SizedBox(height: 24),
           if (hasError)
-            Expanded(
-              child: AppTheme.errorState('No se pudieron obtener los datos del sistema.'),
-            )
+            AppTheme.errorState('No se pudieron obtener los datos del sistema.')
           else if (isLoading)
-            Expanded(child: AppTheme.loadingState())
+            AppTheme.loadingState()
           else
             Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -88,7 +86,7 @@ class ReportsScreen extends ConsumerWidget {
                   ],
                 ),
                 const SizedBox(height: 12),
-                Expanded(child: _buildReportTable(reportRows)),
+                _buildReportTable(reportRows),
                 if (totalPages > 1) ...[
                   const SizedBox(height: 12),
                   _buildPagination(context, ref, currentPage, totalPages),
@@ -225,6 +223,8 @@ class ReportsScreen extends ConsumerWidget {
     }
 
     return SingleChildScrollView(
+      scrollDirection: Axis.vertical,
+      child: SingleChildScrollView(
       scrollDirection: Axis.horizontal,
       child: DataTable(
         columnSpacing: 24,
@@ -245,6 +245,7 @@ class ReportsScreen extends ConsumerWidget {
             DataCell(Text(row.durationMinutes != null ? '${row.durationMinutes} min' : '-', style: const TextStyle(color: AppColors.textMuted))),
           ]);
         }).toList(),
+      ),
       ),
     );
   }

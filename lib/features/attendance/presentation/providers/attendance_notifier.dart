@@ -178,6 +178,87 @@ class AttendanceNotifier extends Notifier<AttendanceActionState> {
     }
   }
 
+  /// Registra el ingreso de un empleado de forma manual (realizado por un
+  /// administrador), sin validar ubicación. Para empleados que no pueden
+  /// registrarse por sí mismos (p. ej. sin celular).
+  Future<void> manualCheckIn(String userId) async {
+    state = const AttendanceActionState.loading();
+
+    final repo = ref.read(attendanceRepositoryProvider);
+
+    try {
+      final user = await repo.getUser(userId);
+      if (user == null) {
+        state = const AttendanceActionState.error('Usuario no encontrado.');
+        return;
+      }
+
+      if (!user.isActive || user.isDeleted) {
+        state = const AttendanceActionState.error('La cuenta no está activa. No se puede registrar asistencia.');
+        return;
+      }
+
+      final workplaceId = user.lugarDeTrabajoId;
+      if (workplaceId == null || workplaceId.isEmpty) {
+        state = const AttendanceActionState.error('El empleado no tiene un lugar de trabajo asignado.');
+        return;
+      }
+
+      final workplace = await repo.getWorkplace(workplaceId);
+      if (workplace == null) {
+        state = const AttendanceActionState.error('El lugar de trabajo asignado no existe.');
+        return;
+      }
+
+      if (!workplace.isActive) {
+        state = const AttendanceActionState.error('El lugar de trabajo está desactivado.');
+        return;
+      }
+
+      final now = DateTime.now();
+      final today = '${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}';
+
+      final isLate = workplace.horaInicio != null
+          ? AttendanceCalculator.isLate(
+              checkInTime: now,
+              shiftStart: AttendanceCalculator.shiftTimeOn(now, workplace.horaInicio!),
+              toleranceMinutes: workplace.toleranciaMinutos,
+            )
+          : null;
+
+      final attendance = AttendanceModel(
+        id: '',
+        userId: userId,
+        checkInTime: now,
+        date: today,
+        status: AttendanceStatus.active,
+        isLate: isLate,
+        workplaceId: workplaceId,
+        companyId: ref.read(currentCompanyIdProvider),
+      );
+
+      await repo.manualCheckIn(attendance);
+      LoggingService.instance.info(
+        'Check-in manual registrado',
+        tag: 'attendance',
+      );
+      state = AttendanceActionState.success('Ingreso registrado manualmente.');
+    } on AttendanceException catch (e) {
+      LoggingService.instance.warning(
+        'Check-in manual rechazado: ${e.message}',
+        tag: 'attendance',
+      );
+      state = AttendanceActionState.error(e.message);
+    } catch (e) {
+      LoggingService.instance.error(
+        'Error al registrar check-in manual',
+        tag: 'attendance',
+        error: e,
+      );
+      state = AttendanceActionState.error('Error al registrar asistencia: $e');
+    }
+  }
+
   Future<void> checkOut(String attendanceId, String userId) async {
     state = const AttendanceActionState.loading();
 

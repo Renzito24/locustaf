@@ -118,6 +118,17 @@ class AttendanceRepositoryImpl implements AttendanceRepository {
 
   @override
   Future<void> checkIn(AttendanceModel attendance) async {
+    await _createAttendance(attendance);
+  }
+
+  @override
+  Future<void> manualCheckIn(AttendanceModel attendance) async {
+    await _createAttendance(attendance);
+  }
+
+  /// Crea un registro de asistencia activo y su lock, con protección
+  /// anti-duplicado. Usado tanto por el check-in normal como por el manual.
+  Future<void> _createAttendance(AttendanceModel attendance) async {
     final lockRef =
         _firestoreService.collection('_attendance_locks').doc(attendance.userId);
 

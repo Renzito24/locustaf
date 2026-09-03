@@ -74,7 +74,7 @@ class EmployeesScreen extends ConsumerWidget {
 
     return Container(
       decoration: const BoxDecoration(gradient: AppTheme.bgGradient),
-      child: Padding(
+      child: SingleChildScrollView(
         padding: EdgeInsets.all(AppTheme.isMobile(context) ? 16 : 24),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -138,68 +138,68 @@ class EmployeesScreen extends ConsumerWidget {
             ),
             const SizedBox(height: 20),
 
-            Expanded(
-              child: filteredEmployeesAsync.when(
-                data: (List<UserModel> employees) {
-                  if (employees.isEmpty) {
-                    return AppTheme.emptyState(
-                      icon: Icons.people_outline_rounded,
-                      title: 'No se encontraron usuarios',
-                      subtitle:
-                          'Intentá cambiar los términos de búsqueda o los filtros aplicados.',
-                    );
-                  }
-
-                  return ListView.separated(
-                    padding: const EdgeInsets.only(bottom: 24),
-                    itemCount: employees.length,
-                    separatorBuilder: (_, _) => const SizedBox(height: 12),
-                    itemBuilder: (context, index) {
-                      final employee = employees[index];
-                      return EmployeeCard(
-                        employee: employee,
-                        onEdit: isAdmin
-                            ? () => context.push(
-                                  RoutePaths.editEmployee,
-                                  extra: employee,
-                                )
-                            : null,
-                        onToggleActive: isAdmin
-                            ? () {
-                                ref
-                                    .read(updateEmployeeProvider.notifier)
-                                    .updateEmployee(employee.copyWith(
-                                      isActive: !employee.isActive,
-                                    ));
-                              }
-                            : null,
-                        onHistory: () => context.push(
-                          RoutePaths.history,
-                          extra: employee.id,
-                        ),
-                        onDelete: isAdmin
-                            ? () {
-                                ref
-                                    .read(deleteEmployeeProvider.notifier)
-                                    .deleteEmployee(employee.id);
-                              }
-                            : null,
-                        onPasswordReset: isAdmin
-                            ? () {
-                                ref
-                                    .read(resetPasswordProvider.notifier)
-                                    .resetPassword(employee.email);
-                              }
-                            : null,
-                      );
-                    },
+            filteredEmployeesAsync.when(
+              data: (List<UserModel> employees) {
+                if (employees.isEmpty) {
+                  return AppTheme.emptyState(
+                    icon: Icons.people_outline_rounded,
+                    title: 'No se encontraron usuarios',
+                    subtitle:
+                        'Intentá cambiar los términos de búsqueda o los filtros aplicados.',
                   );
-                },
-                loading: () => AppTheme.loadingState(
-                    message: 'Cargando usuarios...'),
-                error: (error, stackTrace) => AppTheme.errorState(
-                  'Ha ocurrido un error al cargar la información',
-                ),
+                }
+
+                return ListView.separated(
+                  shrinkWrap: true,
+                  physics: const NeverScrollableScrollPhysics(),
+                  padding: const EdgeInsets.only(bottom: 24),
+                  itemCount: employees.length,
+                  separatorBuilder: (_, _) => const SizedBox(height: 12),
+                  itemBuilder: (context, index) {
+                    final employee = employees[index];
+                    return EmployeeCard(
+                      employee: employee,
+                      onEdit: isAdmin
+                          ? () => context.push(
+                                RoutePaths.editEmployee,
+                                extra: employee,
+                              )
+                          : null,
+                      onToggleActive: isAdmin
+                          ? () {
+                              ref
+                                  .read(updateEmployeeProvider.notifier)
+                                  .updateEmployee(employee.copyWith(
+                                    isActive: !employee.isActive,
+                                  ));
+                            }
+                          : null,
+                      onHistory: () => context.push(
+                        RoutePaths.history,
+                        extra: employee.id,
+                      ),
+                      onDelete: isAdmin
+                          ? () {
+                              ref
+                                  .read(deleteEmployeeProvider.notifier)
+                                  .deleteEmployee(employee.id);
+                            }
+                          : null,
+                      onPasswordReset: isAdmin
+                          ? () {
+                              ref
+                                  .read(resetPasswordProvider.notifier)
+                                  .resetPassword(employee.email);
+                            }
+                          : null,
+                    );
+                  },
+                );
+              },
+              loading: () => AppTheme.loadingState(
+                  message: 'Cargando usuarios...'),
+              error: (error, stackTrace) => AppTheme.errorState(
+                'Ha ocurrido un error al cargar la información',
               ),
             ),
           ],

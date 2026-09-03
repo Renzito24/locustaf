@@ -93,7 +93,10 @@ class Sidebar extends ConsumerWidget {
                     icon: item.icon,
                     label: item.label,
                     isActive: currentRoute == item.route,
-                    onTap: () => context.go(item.route),
+                    onTap: () {
+                      _closeDrawerIfOpen(context);
+                      context.go(item.route);
+                    },
                   ),
               ],
             ),
@@ -117,6 +120,7 @@ class Sidebar extends ConsumerWidget {
             icon: Icons.logout_outlined,
             label: 'Cerrar sesión',
             onTap: () async {
+              _closeDrawerIfOpen(context);
               final container = ProviderScope.containerOf(context);
               final logout = container.read(logoutProvider);
               await logout();
@@ -126,6 +130,15 @@ class Sidebar extends ConsumerWidget {
         ],
       ),
     );
+  }
+
+  /// Cierra el drawer del Scaffold si está abierto (solo aplica en móvil).
+  /// En desktop no hay drawer, por lo que no hace nada.
+  void _closeDrawerIfOpen(BuildContext context) {
+    final scaffold = Scaffold.maybeOf(context);
+    if (scaffold != null && scaffold.isDrawerOpen) {
+      scaffold.closeDrawer();
+    }
   }
 }
 

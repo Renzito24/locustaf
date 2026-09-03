@@ -60,7 +60,7 @@ class IncidencesScreen extends ConsumerWidget {
       );
     });
 
-    return Padding(
+    return SingleChildScrollView(
       padding: const EdgeInsets.all(24.0),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -91,9 +91,7 @@ class IncidencesScreen extends ConsumerWidget {
               ),
             ),
           const SizedBox(height: 16),
-          Expanded(
-            child: _buildContent(context, ref, incidences, usersAsync, isAdmin),
-          ),
+          _buildContent(context, ref, incidences, usersAsync, isAdmin),
         ],
       ),
     );
@@ -144,6 +142,8 @@ class IncidencesScreen extends ConsumerWidget {
           builder: (context, constraints) {
             if (constraints.maxWidth < 800) {
               return ListView.separated(
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
                 padding: const EdgeInsets.only(bottom: 24),
                 itemCount: incidences.length,
                 separatorBuilder: (_, _) => const SizedBox(height: 8),
@@ -166,6 +166,8 @@ class IncidencesScreen extends ConsumerWidget {
             }
 
             return SingleChildScrollView(
+              scrollDirection: Axis.vertical,
+              child: SingleChildScrollView(
               scrollDirection: Axis.horizontal,
               child: DataTable(
                 columnSpacing: 20,
@@ -215,9 +217,10 @@ class IncidencesScreen extends ConsumerWidget {
                   );
                 }).toList(),
               ),
-            );
-          },
-        );
+            ),
+          );
+        },
+      );
       },
       loading: () => AppTheme.loadingState(),
       error: (_, _) => AppTheme.errorState('No se pudieron obtener los datos de los empleados.'),

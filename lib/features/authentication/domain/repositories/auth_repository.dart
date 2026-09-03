@@ -8,4 +8,8 @@ abstract class AuthRepository {
   User? getCurrentUser();
   Stream<User?> authStateChanges();
   Future<void> sendPasswordReset(String email);
+  Future<void> linkPassword({
+    required String email,
+    required String password,
+  });
 }

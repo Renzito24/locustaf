@@ -60,7 +60,7 @@ class MedicalDocumentsScreen extends ConsumerWidget {
       );
     });
 
-    return Padding(
+    return SingleChildScrollView(
       padding: const EdgeInsets.all(24.0),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -91,9 +91,7 @@ class MedicalDocumentsScreen extends ConsumerWidget {
               ),
             ),
           const SizedBox(height: 16),
-          Expanded(
-            child: _buildContent(context, ref, docs, usersAsync, isAdmin),
-          ),
+          _buildContent(context, ref, docs, usersAsync, isAdmin),
         ],
       ),
     );
@@ -164,6 +162,8 @@ class MedicalDocumentsScreen extends ConsumerWidget {
           builder: (context, constraints) {
             if (constraints.maxWidth < 800) {
               return ListView.separated(
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
                 padding: const EdgeInsets.only(bottom: 24),
                 itemCount: docs.length,
                 separatorBuilder: (_, _) => const SizedBox(height: 8),
@@ -188,6 +188,8 @@ class MedicalDocumentsScreen extends ConsumerWidget {
             }
 
             return SingleChildScrollView(
+              scrollDirection: Axis.vertical,
+              child: SingleChildScrollView(
               scrollDirection: Axis.horizontal,
               child: DataTable(
                 columnSpacing: 20,
@@ -242,9 +244,10 @@ class MedicalDocumentsScreen extends ConsumerWidget {
                   );
                 }).toList(),
               ),
-            );
-          },
-        );
+            ),
+          );
+        },
+      );
       },
       loading: () => AppTheme.loadingState(),
       error: (_, _) => AppTheme.errorState('No se pudieron obtener los datos de los empleados.'),

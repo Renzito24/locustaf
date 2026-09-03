@@ -31,7 +31,7 @@ class HomeScreen extends ConsumerWidget {
     final isLoading = !anyLoaded && (usersAsync.isLoading || workplacesAsync.isLoading || attendancesAsync.isLoading);
     final hasError = usersAsync.hasError || workplacesAsync.hasError || attendancesAsync.hasError;
 
-    return Padding(
+    return SingleChildScrollView(
       padding: EdgeInsets.all(AppTheme.isMobile(context) ? 16 : 24),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -53,9 +53,7 @@ class HomeScreen extends ConsumerWidget {
           const SizedBox(height: 4),
           const Text('Resumen general del estado del sistema.', style: AppTheme.bodyLg),
           const SizedBox(height: 24),
-          Expanded(
-            child: _buildBody(isLoading, hasError, totalEmployees, presentToday, absentToday, activeWorkplaces, context),
-          ),
+          _buildBody(isLoading, hasError, totalEmployees, presentToday, absentToday, activeWorkplaces, context),
         ],
       ),
     );

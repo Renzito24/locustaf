@@ -60,4 +60,26 @@ class AuthService {
   Future<void> sendPasswordReset(String email) async {
     await _firebaseAuth.sendPasswordResetEmail(email: email);
   }
+
+  /// Vincula una contraseña a la cuenta autenticada actual, de modo que el
+  /// usuario pueda iniciar sesión luego con su correo y esta contraseña.
+  /// No hace nada si la cuenta ya tiene una contraseña vinculada.
+  Future<void> linkPassword({
+    required String email,
+    required String password,
+  }) async {
+    final user = _firebaseAuth.currentUser;
+    if (user == null) return;
+
+    final hasPassword = user.providerData.any(
+      (info) => info.providerId == 'password',
+    );
+    if (hasPassword) return;
+
+    final credential = EmailAuthProvider.credential(
+      email: email,
+      password: password,
+    );
+    await user.linkWithCredential(credential);
+  }
 }

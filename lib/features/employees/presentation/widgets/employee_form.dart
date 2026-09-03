@@ -251,6 +251,7 @@ class _EmployeeFormState extends ConsumerState<EmployeeForm> {
               Expanded(
                 child: TextFormField(
                   controller: _dniController,
+                  keyboardType: TextInputType.number,
                   style: const TextStyle(
                       color: AppColors.textWhite, fontSize: 14),
                   decoration: _inputDeco('DNI *',

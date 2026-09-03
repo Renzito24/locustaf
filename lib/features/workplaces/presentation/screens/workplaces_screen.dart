@@ -38,7 +38,7 @@ class WorkplacesScreen extends ConsumerWidget {
       );
     });
 
-    return Padding(
+    return SingleChildScrollView(
       padding: EdgeInsets.all(isMobile ? 16.0 : 24.0),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -144,34 +144,34 @@ class WorkplacesScreen extends ConsumerWidget {
             ),
           ),
           const SizedBox(height: 16),
-          Expanded(
-            child: workplacesAsync.when(
-              data: (workplaces) {
-                if (workplaces.isEmpty) {
-                  final hasFiltersOrSearch =
-                      searchQuery.isNotEmpty || statusFilter != WorkplaceStatusFilter.all;
-                  return AppTheme.emptyState(
-                    icon: hasFiltersOrSearch
-                        ? Icons.search_off
-                        : Icons.business_outlined,
-                    title: hasFiltersOrSearch
-                        ? 'Sin resultados'
-                        : 'No hay lugares de trabajo',
-                    subtitle: hasFiltersOrSearch
-                        ? 'Intenta con otros filtros o términos de búsqueda.'
-                        : 'Crea el primer lugar de trabajo para comenzar.',
-                  );
-                }
-                return ListView.separated(
-                  itemCount: workplaces.length,
-                  separatorBuilder: (_, _) => const SizedBox(height: 12),
-                  itemBuilder: (context, index) =>
-                      _WorkplaceCard(workplace: workplaces[index], isAdmin: isAdmin),
+          workplacesAsync.when(
+            data: (workplaces) {
+              if (workplaces.isEmpty) {
+                final hasFiltersOrSearch =
+                    searchQuery.isNotEmpty || statusFilter != WorkplaceStatusFilter.all;
+                return AppTheme.emptyState(
+                  icon: hasFiltersOrSearch
+                      ? Icons.search_off
+                      : Icons.business_outlined,
+                  title: hasFiltersOrSearch
+                      ? 'Sin resultados'
+                      : 'No hay lugares de trabajo',
+                  subtitle: hasFiltersOrSearch
+                      ? 'Intenta con otros filtros o términos de búsqueda.'
+                      : 'Crea el primer lugar de trabajo para comenzar.',
                 );
-              },
-              loading: () => AppTheme.loadingState(message: 'Cargando lugares...'),
-              error: (e, _) => AppTheme.errorState(e.toString()),
-            ),
+              }
+              return ListView.separated(
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                itemCount: workplaces.length,
+                separatorBuilder: (_, _) => const SizedBox(height: 12),
+                itemBuilder: (context, index) =>
+                    _WorkplaceCard(workplace: workplaces[index], isAdmin: isAdmin),
+              );
+            },
+            loading: () => AppTheme.loadingState(message: 'Cargando lugares...'),
+            error: (e, _) => AppTheme.errorState(e.toString()),
           ),
         ],
       ),

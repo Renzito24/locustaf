@@ -46,7 +46,7 @@ class EmployeeJustificativosScreen extends ConsumerWidget {
         .toList()
       ..sort((a, b) => b.fechaInicio.compareTo(a.fechaInicio));
 
-    return Padding(
+    return SingleChildScrollView(
       padding: const EdgeInsets.all(24),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -58,9 +58,8 @@ class EmployeeJustificativosScreen extends ConsumerWidget {
             style: AppTheme.bodyLg,
           ),
           const SizedBox(height: 24),
-          Expanded(
-            child: ListView(
-              children: [
+          Column(
+            children: [
                 _SectionHeader(
                   icon: Icons.warning_amber_outlined,
                   title: 'Incidencias',
@@ -110,7 +109,6 @@ class EmployeeJustificativosScreen extends ConsumerWidget {
                   ),
               ],
             ),
-          ),
         ],
       ),
     );

@@ -25,6 +25,13 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
   final _dniController = TextEditingController();
   final _telefonoController = TextEditingController();
   final _direccionController = TextEditingController();
+  final _localidadController = TextEditingController();
+  final _provinciaController = TextEditingController();
+  final _codigoPostalController = TextEditingController();
+
+  // Credenciales
+  final _passwordController = TextEditingController();
+  final _confirmPasswordController = TextEditingController();
 
   // Datos de la empresa
   final _empresaController = TextEditingController();
@@ -39,6 +46,11 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
     _dniController.dispose();
     _telefonoController.dispose();
     _direccionController.dispose();
+    _localidadController.dispose();
+    _provinciaController.dispose();
+    _codigoPostalController.dispose();
+    _passwordController.dispose();
+    _confirmPasswordController.dispose();
     _empresaController.dispose();
     _razonSocialController.dispose();
     _cuitController.dispose();
@@ -61,6 +73,15 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
       telefono: _telefonoController.text.trim().isEmpty
           ? null
           : _telefonoController.text.trim(),
+      localidad: _localidadController.text.trim().isEmpty
+          ? null
+          : _localidadController.text.trim(),
+      provincia: _provinciaController.text.trim().isEmpty
+          ? null
+          : _provinciaController.text.trim(),
+      codigoPostal: _codigoPostalController.text.trim().isEmpty
+          ? null
+          : _codigoPostalController.text.trim(),
       rol: UserRole.admin,
       createdAt: DateTime.now(),
     );
@@ -81,6 +102,16 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
           profile: profile,
           company: company,
         );
+
+    // Vincula la contraseña elegida a la cuenta para que el usuario pueda
+    // iniciar sesión luego con su correo y esta contraseña.
+    final password = _passwordController.text;
+    if (password.isNotEmpty) {
+      await ref.read(authRepositoryProvider).linkPassword(
+            email: authUser.email ?? '',
+            password: password,
+          );
+    }
   }
 
   @override
@@ -170,6 +201,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                     const SizedBox(height: 12),
                     TextFormField(
                       controller: _dniController,
+                      keyboardType: TextInputType.number,
                       style: const TextStyle(color: AppColors.textWhite),
                       decoration: AppTheme.inputDecoration(
                         label: 'DNI *',
@@ -181,6 +213,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                     const SizedBox(height: 12),
                     TextFormField(
                       controller: _telefonoController,
+                      keyboardType: TextInputType.phone,
                       style: const TextStyle(color: AppColors.textWhite),
                       decoration: AppTheme.inputDecoration(
                         label: 'Teléfono',
@@ -195,6 +228,92 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                         label: 'Domicilio',
                         icon: Icons.home_outlined,
                       ),
+                    ),
+                    const SizedBox(height: 12),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: TextFormField(
+                            controller: _localidadController,
+                            style: const TextStyle(color: AppColors.textWhite),
+                            decoration: AppTheme.inputDecoration(
+                              label: 'Localidad *',
+                              icon: Icons.location_city_outlined,
+                            ),
+                            validator: (v) => (v == null || v.trim().isEmpty)
+                                ? 'Requerido'
+                                : null,
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: TextFormField(
+                            controller: _provinciaController,
+                            style: const TextStyle(color: AppColors.textWhite),
+                            decoration: AppTheme.inputDecoration(
+                              label: 'Provincia *',
+                              icon: Icons.map_outlined,
+                            ),
+                            validator: (v) => (v == null || v.trim().isEmpty)
+                                ? 'Requerido'
+                                : null,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+                    TextFormField(
+                      controller: _codigoPostalController,
+                      keyboardType: TextInputType.number,
+                      style: const TextStyle(color: AppColors.textWhite),
+                      decoration: AppTheme.inputDecoration(
+                        label: 'Código postal *',
+                        icon: Icons.numbers_outlined,
+                      ),
+                      validator: (v) => (v == null || v.trim().isEmpty)
+                          ? 'Requerido'
+                          : null,
+                    ),
+                    const SizedBox(height: 24),
+                    Text('Credenciales de acceso', style: AppTheme.headingMd),
+                    const SizedBox(height: 4),
+                    Text(
+                      'Elegí una contraseña para poder ingresar con tu correo y contraseña.',
+                      style: AppTheme.bodyMd,
+                    ),
+                    const SizedBox(height: 12),
+                    TextFormField(
+                      controller: _passwordController,
+                      obscureText: true,
+                      style: const TextStyle(color: AppColors.textWhite),
+                      decoration: AppTheme.inputDecoration(
+                        label: 'Contraseña *',
+                        icon: Icons.lock_outline,
+                      ),
+                      validator: (v) {
+                        if (v == null || v.isEmpty) return 'Requerido';
+                        if (v.length < 6) {
+                          return 'Mínimo 6 caracteres';
+                        }
+                        return null;
+                      },
+                    ),
+                    const SizedBox(height: 12),
+                    TextFormField(
+                      controller: _confirmPasswordController,
+                      obscureText: true,
+                      style: const TextStyle(color: AppColors.textWhite),
+                      decoration: AppTheme.inputDecoration(
+                        label: 'Confirmar contraseña *',
+                        icon: Icons.lock_outline,
+                      ),
+                      validator: (v) {
+                        if (v == null || v.isEmpty) return 'Requerido';
+                        if (v != _passwordController.text) {
+                          return 'Las contraseñas no coinciden';
+                        }
+                        return null;
+                      },
                     ),
                     const SizedBox(height: 24),
                     Text('Datos de la empresa', style: AppTheme.headingMd),

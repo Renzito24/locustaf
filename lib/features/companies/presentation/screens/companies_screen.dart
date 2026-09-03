@@ -34,7 +34,7 @@ class CompaniesScreen extends ConsumerWidget {
       );
     });
 
-    return Padding(
+    return SingleChildScrollView(
       padding: EdgeInsets.all(isMobile ? 16.0 : 24.0),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -76,40 +76,38 @@ class CompaniesScreen extends ConsumerWidget {
           ),
           const SizedBox(height: 24),
           if (!isSuperadmin)
-            const Expanded(
-              child: Center(
-                child: Text(
-                  'Solo el super administrador puede ver esta sección.',
-                  style: TextStyle(color: AppColors.textMuted),
-                ),
+            const Center(
+              child: Text(
+                'Solo el super administrador puede ver esta sección.',
+                style: TextStyle(color: AppColors.textMuted),
               ),
             )
           else
-            Expanded(
-              child: companiesAsync.when(
-                loading: () => const Center(child: CircularProgressIndicator()),
-                error: (e, _) => Center(
-                  child: Text('Error al cargar empresas: $e',
-                      style: const TextStyle(color: AppColors.error)),
-                ),
-                data: (companies) {
-                  if (companies.isEmpty) {
-                    return AppTheme.emptyState(
-                      icon: Icons.business_outlined,
-                      title: 'No hay empresas registradas',
-                      subtitle: 'Creá la primera empresa para comenzar.',
-                    );
-                  }
-                  return ListView.separated(
-                    itemCount: companies.length,
-                    separatorBuilder: (_, _) => const SizedBox(height: 12),
-                    itemBuilder: (context, index) {
-                      final company = companies[index];
-                      return _CompanyCard(company: company);
-                    },
-                  );
-                },
+            companiesAsync.when(
+              loading: () => const Center(child: CircularProgressIndicator()),
+              error: (e, _) => Center(
+                child: Text('Error al cargar empresas: $e',
+                    style: const TextStyle(color: AppColors.error)),
               ),
+              data: (companies) {
+                if (companies.isEmpty) {
+                  return AppTheme.emptyState(
+                    icon: Icons.business_outlined,
+                    title: 'No hay empresas registradas',
+                    subtitle: 'Creá la primera empresa para comenzar.',
+                  );
+                }
+                return ListView.separated(
+                  shrinkWrap: true,
+                  physics: const NeverScrollableScrollPhysics(),
+                  itemCount: companies.length,
+                  separatorBuilder: (_, _) => const SizedBox(height: 12),
+                  itemBuilder: (context, index) {
+                    final company = companies[index];
+                    return _CompanyCard(company: company);
+                  },
+                );
+              },
             ),
         ],
       ),

@@ -39,6 +39,9 @@ class UserModel extends Equatable {
   final String email;
   final String dni;
   final String? telefono;
+  final String? localidad;
+  final String? provincia;
+  final String? codigoPostal;
   final UserRole rol;
   final bool isActive;
   final bool isDeleted;
@@ -54,6 +57,9 @@ class UserModel extends Equatable {
     required this.email,
     required this.dni,
     this.telefono,
+    this.localidad,
+    this.provincia,
+    this.codigoPostal,
     required this.rol,
     this.isActive = true,
     this.isDeleted = false,
@@ -72,6 +78,9 @@ class UserModel extends Equatable {
     String? email,
     String? dni,
     String? telefono,
+    String? localidad,
+    String? provincia,
+    String? codigoPostal,
     UserRole? rol,
     bool? isActive,
     bool? isDeleted,
@@ -87,6 +96,9 @@ class UserModel extends Equatable {
       email: email ?? this.email,
       dni: dni ?? this.dni,
       telefono: telefono ?? this.telefono,
+      localidad: localidad ?? this.localidad,
+      provincia: provincia ?? this.provincia,
+      codigoPostal: codigoPostal ?? this.codigoPostal,
       rol: rol ?? this.rol,
       isActive: isActive ?? this.isActive,
       isDeleted: isDeleted ?? this.isDeleted,
@@ -105,6 +117,9 @@ class UserModel extends Equatable {
       email: json['email'] as String,
       dni: json['dni'] as String,
       telefono: json['telefono'] as String?,
+      localidad: json['localidad'] as String?,
+      provincia: json['provincia'] as String?,
+      codigoPostal: json['codigoPostal'] as String?,
       rol: UserRoleExtension.fromString(json['rol'] as String),
       isActive: json['isActive'] as bool? ?? true,
       isDeleted: json['isDeleted'] as bool? ?? false,
@@ -125,6 +140,9 @@ class UserModel extends Equatable {
       'email': email,
       'dni': dni,
       'telefono': telefono,
+      'localidad': localidad,
+      'provincia': provincia,
+      'codigoPostal': codigoPostal,
       'rol': rol.name,
       'isActive': isActive,
       'isDeleted': isDeleted,
@@ -143,6 +161,9 @@ class UserModel extends Equatable {
         email,
         dni,
         telefono,
+        localidad,
+        provincia,
+        codigoPostal,
         rol,
         isActive,
         isDeleted,

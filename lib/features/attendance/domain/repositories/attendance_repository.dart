@@ -21,6 +21,10 @@ abstract class AttendanceRepository {
   Stream<List<AttendanceModel>> getAllActiveAttendances();
   Stream<AttendanceModel?> getActiveAttendance(String userId);
   Future<void> checkIn(AttendanceModel attendance);
+
+  /// Registra un ingreso manual (realizado por un administrador) sin validar
+  /// ubicación, para empleados que no pueden registrarse por sí mismos.
+  Future<void> manualCheckIn(AttendanceModel attendance);
   Future<void> checkOut(
     String attendanceId,
     String userId, {

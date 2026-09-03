@@ -21,7 +21,7 @@ class HistoryScreen extends ConsumerWidget {
     final completed = ref.watch(completedRecordsProvider);
     final pageState = ref.watch(historyPaginationProvider);
 
-    return Padding(
+    return SingleChildScrollView(
       padding: const EdgeInsets.all(24.0),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -37,7 +37,7 @@ class HistoryScreen extends ConsumerWidget {
           const SizedBox(height: 24),
           const HistoryFilterBar(),
           const SizedBox(height: 20),
-          Expanded(child: _buildContent(context, records, pageState)),
+          _buildContent(context, records, pageState),
         ],
       ),
     );
@@ -148,6 +148,8 @@ class HistoryScreen extends ConsumerWidget {
       builder: (context, constraints) {
         if (constraints.maxWidth < 800) {
           return ListView.separated(
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
             padding: const EdgeInsets.only(bottom: 24),
             itemCount: records.length + (hasMore ? 1 : 0),
             separatorBuilder: (_, _) => const SizedBox(height: 8),
@@ -163,11 +165,13 @@ class HistoryScreen extends ConsumerWidget {
         }
 
         return SingleChildScrollView(
-          scrollDirection: Axis.horizontal,
-          child: Container(
-            decoration: AppTheme.cardDecoration(),
-            padding: const EdgeInsets.all(2),
-            child: DataTable(
+          scrollDirection: Axis.vertical,
+          child: SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            child: Container(
+              decoration: AppTheme.cardDecoration(),
+              padding: const EdgeInsets.all(2),
+              child: DataTable(
               columnSpacing: 20,
               headingRowColor: WidgetStateProperty.all(
                 AppColors.gold.withValues(alpha: 0.08),
@@ -255,6 +259,7 @@ class HistoryScreen extends ConsumerWidget {
                     const DataCell(Text('')),
                   ]),
               ],
+            ),
             ),
           ),
         );
