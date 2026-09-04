@@ -213,7 +213,7 @@ Future<String?> _createFirestoreDocument(
     final uri = documentId != null
         ? Uri.parse(
             '$_firestoreBaseUrl/$collection?documentId=$documentId')
-        : Uri.parse(_firestoreBaseUrl);
+        : Uri.parse('$_firestoreBaseUrl/$collection');
     final request = await client.postUrl(uri);
     request.headers.contentType = ContentType.json;
     request.headers.set('Authorization', 'Bearer $idToken');

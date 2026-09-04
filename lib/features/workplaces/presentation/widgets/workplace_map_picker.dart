@@ -55,7 +55,6 @@ class _WorkplaceMapPickerState extends State<WorkplaceMapPicker> {
   void dispose() {
     _mapController.dispose();
     _searchController.dispose();
-    _geocodingService.dispose();
     super.dispose();
   }
 

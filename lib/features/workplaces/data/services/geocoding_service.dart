@@ -1,5 +1,6 @@
 import 'dart:convert';
-import 'dart:io';
+
+import 'package:http/http.dart' as http;
 
 class GeocodingResult {
   final double lat;
@@ -14,10 +15,6 @@ class GeocodingResult {
 }
 
 class GeocodingService {
-  final HttpClient _client;
-
-  GeocodingService() : _client = HttpClient();
-
   static const _baseUrl = 'https://nominatim.openstreetmap.org';
 
   Future<List<GeocodingResult>> search(String query) async {
@@ -28,14 +25,13 @@ class GeocodingService {
     );
 
     try {
-      final request = await _client.getUrl(uri);
-      request.headers.set('User-Agent', 'LocustafApp/1.0');
-      final response = await request.close();
+      final response = await http
+          .get(uri, headers: const {'User-Agent': 'LocustafApp/1.0'})
+          .timeout(const Duration(seconds: 10));
 
       if (response.statusCode != 200) return [];
 
-      final body = await response.transform(utf8.decoder).join();
-      final List<dynamic> data = json.decode(body) as List<dynamic>;
+      final List<dynamic> data = json.decode(response.body) as List<dynamic>;
 
       return data.map((item) {
         return GeocodingResult(
@@ -50,27 +46,21 @@ class GeocodingService {
   }
 
   Future<String?> reverse(double lat, double lng) async {
-    final uri = Uri.parse(
-      '$_baseUrl/reverse?lat=$lat&lon=$lng&format=json',
-    );
+    final uri = Uri.parse('$_baseUrl/reverse?lat=$lat&lon=$lng&format=json');
 
     try {
-      final request = await _client.getUrl(uri);
-      request.headers.set('User-Agent', 'LocustafApp/1.0');
-      final response = await request.close();
+      final response = await http
+          .get(uri, headers: const {'User-Agent': 'LocustafApp/1.0'})
+          .timeout(const Duration(seconds: 10));
 
       if (response.statusCode != 200) return null;
 
-      final body = await response.transform(utf8.decoder).join();
-      final Map<String, dynamic> data = json.decode(body) as Map<String, dynamic>;
+      final Map<String, dynamic> data =
+          json.decode(response.body) as Map<String, dynamic>;
 
       return data['display_name'] as String?;
     } catch (_) {
       return null;
     }
-  }
-
-  void dispose() {
-    _client.close();
   }
 }
