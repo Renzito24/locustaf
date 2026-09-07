@@ -25,8 +25,15 @@
 - `firestore.rules` — Production (admin full, supervisor read-mostly, employee own-data only)
 - `seed/firestore.rules.seed` — Permissive (all authenticated users read/write)
 - Supervisor has read access to: users, workplaces, attendances, incidences (not medical_documents)
-- Attendance `create`: employee-self requires valid active workplace of own company + coords in range (AUI-02); admin may manual-check-in an employee without coords but never self (AUI-06)
+- Attendance `create`: only superadmin or admin manual check-in of another employee (AUI-06). Employee self check-in is fully blocked client-side — the app calls the `checkInGeo` callable (AUI-02, Fase 2). `attendances.create` by employee-self is always denied by rules.
 - `companies.update` by admin freezes `createdBy` (AUI-05)
+
+## Cloud Functions
+- `functions/` — Node.js, `firebase-functions/v2`, region `southamerica-east1`
+- `checkInGeo` (callable): server-side geocerca (AUI-02 Fase 2). Receives only `{ latitud, longitud }`; resolves workplace from `user.lugarDeTrabajoId` (never from client); validates Haversine distance vs workplace radio; creates attendance + `_attendance_locks/{uid}` in a transaction (lock stale TTL 24h). Derived server-side: `date`, `checkInTime`, `isLate`. On failure throws `HttpsError` (`unauthenticated`|`failed-precondition`|`internal`) with Spanish messages.
+- `syncUserAuthStatus` (firestore trigger): disables/enables Auth account from user doc `isActive`/`isDeleted`
+- Pure logic in `functions/geoCheckIn.js` + `functions/userStatus.js` (unit-tested under `functions/test/`)
+- Client: `AttendanceRepositoryImpl.checkIn()` sends only coords via `httpsCallable('checkInGeo')`; client-side geo pre-check is UX-only (server is authority). App uses `cloud_functions` (`functionsProvider` in `lib/core/providers/firebase_providers.dart`).
 
 ## Seed Data
 - `seed/seed_data.json` contains: 1 admin, 1 supervisor, 1 employee, 1 workplace

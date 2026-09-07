@@ -78,15 +78,17 @@ service cloud.firestore {
               : 15) * 60000;
     }
 
-    // VUL-3: en el alta de una asistencia el cliente no puede fijar una hora
-    // de entrada arbitraria. checkInTime debe ser un timestamp dentro de la
-    // tolerancia configurada vs el tiempo del servidor, y la asistencia debe
-    // crearse siempre como 'active' sin campos de cierre.
-    // AUI-02: además, el lugar de trabajo debe existir en la misma empresa y
-    // estar activo, y (para el check-in del propio empleado) las coordenadas
-    // deben ser numéricas dentro de rangos plausibles. El control de geocerca
-    // (distancia/radio) sigue siendo client-side; esto evita valores absurdos
-    // o un workplace de otra empresa escritos directo en la base.
+    // VUL-3: en el alta de una asistencia directa escrita en Firestore, el
+    // cliente no puede fijar una hora de entrada arbitraria. checkInTime debe
+    // ser un timestamp dentro de la tolerancia configurada vs el tiempo del
+    // servidor, y la asistencia debe crearse siempre como 'active' sin campos
+    // de cierre.
+    // AUI-02 (Fase 2): la geocerca YA NO se valida en rules (Firestore Rules
+    // no soporta trigonometría). El self check-in pasa obligatoriamente por la
+    // callable `checkInGeo` (Cloud Function) que calcula la distancia Haversine
+    // en el servidor. Por eso el alta directa del empleado quedó bloqueada:
+    // solo se permiten aquí el alta del superadmin y la manual del admin
+    // (AUI-06, que no exige ubicación).
     function validAttendanceConstraints(companyId, checkInTime) {
       let diff = checkInTime.toMillis() - request.time.toMillis();
       let toleranceMillis = getCheckInToleranceMillis(companyId);
@@ -103,28 +105,8 @@ service cloud.firestore {
         && get(/databases/$(database)/documents/workplaces/$(workplaceId)).data.isActive == true;
     }
 
-    function validAttendanceCoordinates() {
-      return ('checkInLatitud' in request.resource.data)
-        && ('checkInLongitud' in request.resource.data)
-        && request.resource.data.checkInLatitud is number
-        && request.resource.data.checkInLatitud >= -90
-        && request.resource.data.checkInLatitud <= 90
-        && request.resource.data.checkInLongitud is number
-        && request.resource.data.checkInLongitud >= -180
-        && request.resource.data.checkInLongitud <= 180;
-    }
-
-    // Alta por el propio empleado: exige ubicación registrada.
-    function validEmployeeAttendanceCreate() {
-      return validAttendanceConstraints(
-          request.resource.data.companyId, request.resource.data.checkInTime)
-        && validWorkplace(
-          request.resource.data.companyId, request.resource.data.workplaceId)
-        && validAttendanceCoordinates();
-    }
-
-    // Alta manual (admin en nombre de un empleado, AUI-06): mismo control de
-    // lugar de trabajo y tolerancia, sin exigir ubicación (el empleado puede
+    // Alta manual (admin en nombre de un empleado, AUI-06): control de lugar de
+    // trabajo y tolerancia, sin exigir ubicación ni geocerca (el empleado puede
     // no estar presente físicamente).
     function validManualAttendanceCreate() {
       return validAttendanceConstraints(
@@ -300,11 +282,11 @@ service cloud.firestore {
             || (isEmployee() && isOwner(resource.data.userId)));
       allow create: if isAuthenticated()
         && (isSuperadmin()
-            || (isEmployee() && request.resource.data.userId == request.auth.uid
-                && request.resource.data.companyId == getCompanyId()
-                && validEmployeeAttendanceCreate())
             // AUI-06: alta manual de un ingreso (admin en nombre de un
             // empleado), sin exigir ubicación.
+            // AUI-02 (Fase 2): el self check-in ya NO se puede crear directo
+            // desde el cliente; pasa por la callable `checkInGeo` que valida
+            // la geocerca (Haversine) en el servidor.
             || (isAdmin() && inCompany(request.resource.data.companyId)
                 && request.resource.data.userId != request.auth.uid
                 && validManualAttendanceCreate()));

@@ -399,84 +399,76 @@ describe('VUL-2: locks con ownership', () => {
 });
 
 describe('VUL-3: create de asistencias con tolerancia', () => {
-  it('un empleado SÍ puede crear su asistencia con checkInTime cerca de request.time', async () => {
+  async function seedBase(tol = 60) {
+    await seedUser('admin-1', { rol: 'admin', companyId: 'emp-1', isActive: true, isDeleted: false });
     await seedUser('emp-1', { rol: 'employee', companyId: 'emp-1', isActive: true, isDeleted: false });
-    await seedCompany('emp-1', { nombreComercial: 'Empresa A', toleranciaCheckIn: 60 });
+    await seedCompany('emp-1', { nombreComercial: 'Empresa A', toleranciaCheckIn: tol });
     await seedWorkplace('wp-1', { nombre: 'Sucursal Central', companyId: 'emp-1', isActive: true });
-    const ctx = testEnv.authenticatedContext('emp-1');
-    await assertSucceeds(
-      ctx.firestore().doc('attendances/att-ok').set({
-        userId: 'emp-1',
-        companyId: 'emp-1',
-        date: '2026-08-27',
-        status: 'active',
-        isLate: false,
-        workplaceId: 'wp-1',
-        checkInLatitud: -34.6,
-        checkInLongitud: -58.4,
-        checkInTime: new Date(Date.now() - 1000),
-      }),
+  }
+
+  // Alta directa del empleado: bloqueada en Fase 2 (geocerca server-side).
+  function employeeDirectSet(docId, extra = {}) {
+    return testEnv.authenticatedContext('emp-1').firestore().doc(`attendances/${docId}`).set({
+      userId: 'emp-1',
+      companyId: 'emp-1',
+      date: '2026-08-27',
+      status: 'active',
+      isLate: false,
+      workplaceId: 'wp-1',
+      checkInLatitud: -34.6,
+      checkInLongitud: -58.4,
+      checkInTime: new Date(Date.now() - 1000),
+      ...extra,
+    });
+  }
+
+  // La tolerancia de checkInTime se sigue validando en la vía que permanece
+  // abierta: el alta manual del admin (AUI-06).
+  function manualSet(docId, extra = {}) {
+    return testEnv.authenticatedContext('admin-1').firestore().doc(`attendances/${docId}`).set({
+      userId: 'emp-1',
+      companyId: 'emp-1',
+      date: '2026-08-27',
+      status: 'active',
+      isLate: false,
+      workplaceId: 'wp-1',
+      checkInTime: new Date(Date.now() - 1000),
+      ...extra,
+    });
+  }
+
+  it('un empleado YA NO puede crear su asistencia directamente (debe usar la callable checkInGeo)', async () => {
+    await seedBase();
+    await assertFails(employeeDirectSet('att-direct'));
+  });
+
+  it('un admin SÍ puede hacer un alta manual con checkInTime cerca de request.time', async () => {
+    await seedBase(60);
+    await assertSucceeds(manualSet('att-ok'));
+  });
+
+  it('un admin NO puede hacer un alta manual con checkInTime muy pasado (fuerza tolerancia)', async () => {
+    await seedBase(15);
+    await assertFails(
+      manualSet('att-rig', { checkInTime: new Date(Date.now() - 60 * 60 * 1000) }),
     );
   });
 
-  it('un empleado NO puede crear una asistencia con checkInTime muy pasado (fuerza tolerancia)', async () => {
-    await seedUser('emp-1', { rol: 'employee', companyId: 'emp-1', isActive: true, isDeleted: false });
-    await seedCompany('emp-1', { nombreComercial: 'Empresa A', toleranciaCheckIn: 15 });
-    const ctx = testEnv.authenticatedContext('emp-1');
+  it('un admin NO puede hacer un alta manual con checkInTime en el futuro', async () => {
+    await seedBase(15);
     await assertFails(
-      ctx.firestore().doc('attendances/att-rig').set({
-        userId: 'emp-1',
-        companyId: 'emp-1',
-        date: '2026-08-27',
-        status: 'active',
-        checkInTime: new Date(Date.now() - 60 * 60 * 1000),
-      }),
+      manualSet('att-future', { checkInTime: new Date(Date.now() + 60 * 60 * 1000) }),
     );
   });
 
-  it('un empleado NO puede crear una asistencia con checkInTime en el futuro', async () => {
-    await seedUser('emp-1', { rol: 'employee', companyId: 'emp-1', isActive: true, isDeleted: false });
-    await seedCompany('emp-1', { nombreComercial: 'Empresa A', toleranciaCheckIn: 15 });
-    const ctx = testEnv.authenticatedContext('emp-1');
-    await assertFails(
-      ctx.firestore().doc('attendances/att-future').set({
-        userId: 'emp-1',
-        companyId: 'emp-1',
-        date: '2026-08-27',
-        status: 'active',
-        checkInTime: new Date(Date.now() + 60 * 60 * 1000),
-      }),
-    );
+  it('un admin NO puede hacer un alta manual ya completada', async () => {
+    await seedBase(15);
+    await assertFails(manualSet('att-completed', { status: 'completed' }));
   });
 
-  it('un empleado NO puede crear una asistencia ya completada', async () => {
-    await seedUser('emp-1', { rol: 'employee', companyId: 'emp-1', isActive: true, isDeleted: false });
-    const ctx = testEnv.authenticatedContext('emp-1');
-    await assertFails(
-      ctx.firestore().doc('attendances/att-completed').set({
-        userId: 'emp-1',
-        companyId: 'emp-1',
-        date: '2026-08-27',
-        status: 'completed',
-        checkInTime: new Date(Date.now() - 1000),
-      }),
-    );
-  });
-
-  it('un empleado NO puede crear una asistencia con durationMinutes predefinido', async () => {
-    await seedUser('emp-1', { rol: 'employee', companyId: 'emp-1', isActive: true, isDeleted: false });
-    await seedCompany('emp-1', { nombreComercial: 'Empresa A', toleranciaCheckIn: 60 });
-    const ctx = testEnv.authenticatedContext('emp-1');
-    await assertFails(
-      ctx.firestore().doc('attendances/att-dur').set({
-        userId: 'emp-1',
-        companyId: 'emp-1',
-        date: '2026-08-27',
-        status: 'active',
-        durationMinutes: 480,
-        checkInTime: new Date(Date.now() - 1000),
-      }),
-    );
+  it('un admin NO puede hacer un alta manual con durationMinutes predefinido', async () => {
+    await seedBase(60);
+    await assertFails(manualSet('att-dur', { durationMinutes: 480 }));
   });
 });
 
@@ -741,10 +733,11 @@ describe('C3: onboarding - alta secuencial de empresa y admin', () => {
   });
 });
 
-describe('AUI-02: validación de lugar de trabajo y coordenadas en el alta', () => {
+describe('AUI-02 (Fase 2): el alta directa del empleado queda bloqueada', () => {
   async function seedBase() {
     await seedUser('emp-1', { rol: 'employee', companyId: 'emp-1', isActive: true, isDeleted: false });
     await seedCompany('emp-1', { nombreComercial: 'Empresa A', toleranciaCheckIn: 60 });
+    await seedWorkplace('wp-1', { nombre: 'Sucursal Central', companyId: 'emp-1', isActive: true });
   }
 
   async function validAttendance(ctx, extra = {}) {
@@ -762,58 +755,43 @@ describe('AUI-02: validación de lugar de trabajo y coordenadas en el alta', () 
     });
   }
 
-  it('un empleado NO puede crear su asistencia sin coordenadas', async () => {
+  it('un empleado NO puede crear su asistencia directamente (debe usar la callable checkInGeo)', async () => {
     await seedBase();
     const ctx = testEnv.authenticatedContext('emp-1');
-    await assertFails(
-      ctx.firestore().doc('attendances/att-nocoords').set({
-        userId: 'emp-1',
-        companyId: 'emp-1',
-        date: '2026-09-07',
-        status: 'active',
-        isLate: false,
-        workplaceId: 'wp-1',
-        checkInTime: new Date(Date.now() - 1000),
-      }),
-    );
+    await assertFails(validAttendance(ctx));
   });
 
-  it('un empleado NO puede crear su asistencia con latitud fuera de rango', async () => {
+  it('un empleado sigue sin poder crear su asistencia con coordenadas fuera de rango', async () => {
     await seedBase();
     const ctx = testEnv.authenticatedContext('emp-1');
     await assertFails(validAttendance(ctx, { checkInLatitud: 91, checkInLongitud: -58.4 }));
   });
 
-  it('un empleado NO puede crear su asistencia con longitud fuera de rango', async () => {
+  it('un empleado no puede usar un workplace inexistente ni de otra empresa', async () => {
     await seedBase();
-    const ctx = testEnv.authenticatedContext('emp-1');
-    await assertFails(validAttendance(ctx, { checkInLatitud: -34.6, checkInLongitud: 181 }));
-  });
-
-  it('un empleado NO puede usar un workplace inexistente', async () => {
-    await seedBase();
+    await seedWorkplace('wp-otra', { nombre: 'Sucursal AJena', companyId: 'emp-2', isActive: true });
     const ctx = testEnv.authenticatedContext('emp-1');
     await assertFails(validAttendance(ctx, { workplaceId: 'wp-noexiste' }));
   });
 
-  it('un empleado NO puede usar un workplace de otra empresa', async () => {
+  it('un empleado no puede usar un workplace de otra empresa', async () => {
     await seedBase();
     await seedWorkplace('wp-otra', { nombre: 'Sucursal AJena', companyId: 'emp-2', isActive: true });
     const ctx = testEnv.authenticatedContext('emp-1');
     await assertFails(validAttendance(ctx, { workplaceId: 'wp-otra' }));
   });
 
-  it('un empleado NO puede usar un workplace desactivado', async () => {
+  it('un empleado no puede usar un workplace desactivado', async () => {
     await seedBase();
     await seedWorkplace('wp-1', { nombre: 'Sucursal Central', companyId: 'emp-1', isActive: false });
     const ctx = testEnv.authenticatedContext('emp-1');
     await assertFails(validAttendance(ctx));
   });
 
-  it('un empleado SÍ puede crear su asistencia con su workplace activo y de su empresa', async () => {
+  it('un superadmin SÍ puede crear una asistencia (herramienta interna de gestión)', async () => {
     await seedBase();
-    await seedWorkplace('wp-1', { nombre: 'Sucursal Central', companyId: 'emp-1', isActive: true });
-    const ctx = testEnv.authenticatedContext('emp-1');
+    await seedUser('superadmin-1', { rol: 'superadmin', companyId: null, isActive: true, isDeleted: false });
+    const ctx = testEnv.authenticatedContext('superadmin-1');
     await assertSucceeds(validAttendance(ctx));
   });
 });

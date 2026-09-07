@@ -122,9 +122,9 @@ void main() {
 
   /* ------------------------------- check-in -------------------------------- */
 
-  group('checkIn', () {
+  group('manualCheckIn (alta, lock anti-duplicado)', () {
     test('crea una asistencia activa y un lock válido para el usuario', () async {
-      await repo.checkIn(buildAttendance());
+      await repo.manualCheckIn(buildAttendance());
 
       final attendances = await fake
           .collection('attendances')
@@ -142,10 +142,10 @@ void main() {
     });
 
     test('rechaza un nuevo check-in si hay un lock activo y vigente', () async {
-      await repo.checkIn(buildAttendance());
+      await repo.manualCheckIn(buildAttendance());
 
       expect(
-        () => repo.checkIn(buildAttendance(checkInTime: DateTime.now().add(const Duration(minutes: 5)))),
+        () => repo.manualCheckIn(buildAttendance(checkInTime: DateTime.now().add(const Duration(minutes: 5)))),
         throwsA(
           isA<AttendanceException>().having(
             (e) => e.message,
@@ -157,7 +157,7 @@ void main() {
     });
 
     test('reclama un lock huérfano cuando la asistencia asociada se finalizó', () async {
-      await repo.checkIn(buildAttendance(id: 'att-completed'));
+      await repo.manualCheckIn(buildAttendance(id: 'att-completed'));
       final attendanceId = (await fake
               .collection('attendances')
               .where('userId', isEqualTo: userId)
@@ -173,7 +173,7 @@ void main() {
       await seedLock(user: userId, attendanceId: attendanceId, lockedAt: DateTime.now().toUtc());
 
       // El lock apunta a una asistencia ya completada → es reclamable.
-      await repo.checkIn(buildAttendance(checkInTime: DateTime.now().add(const Duration(minutes: 10))));
+      await repo.manualCheckIn(buildAttendance(checkInTime: DateTime.now().add(const Duration(minutes: 10))));
 
       final locks = await fake.collection('_attendance_locks').doc(userId).get();
       expect(locks.exists, isTrue);
@@ -181,7 +181,7 @@ void main() {
     });
 
     test('reclama un lock vencido por TTL (más de 24h) aunque la asistencia siga activa', () async {
-      await repo.checkIn(buildAttendance(id: 'att-stale'));
+      await repo.manualCheckIn(buildAttendance(id: 'att-stale'));
       final attendanceId = (await fake
               .collection('attendances')
               .where('userId', isEqualTo: userId)
@@ -197,7 +197,7 @@ void main() {
         checkInTime: DateTime.now().subtract(const Duration(hours: 25)),
       );
 
-      await repo.checkIn(buildAttendance(checkInTime: DateTime.now()));
+      await repo.manualCheckIn(buildAttendance(checkInTime: DateTime.now()));
 
       final locks = await fake.collection('_attendance_locks').doc(userId).get();
       expect(locks.exists, isTrue);
@@ -205,7 +205,7 @@ void main() {
     });
 
     test('no reclama un lock vigente con asistencia aún activa', () async {
-      await repo.checkIn(buildAttendance(id: 'att-active'));
+      await repo.manualCheckIn(buildAttendance(id: 'att-active'));
       final attendanceId = (await fake
               .collection('attendances')
               .where('userId', isEqualTo: userId)
@@ -217,7 +217,7 @@ void main() {
       await seedLock(user: userId, attendanceId: attendanceId, lockedAt: DateTime.now().toUtc());
 
       expect(
-        () => repo.checkIn(buildAttendance(checkInTime: DateTime.now().add(const Duration(minutes: 2)))),
+        () => repo.manualCheckIn(buildAttendance(checkInTime: DateTime.now().add(const Duration(minutes: 2)))),
         throwsA(isA<AttendanceException>()),
       );
     });
@@ -228,7 +228,7 @@ void main() {
   group('checkOut', () {
     test('finaliza la asistencia, guarda duración y limpia el lock', () async {
       final checkInTime = DateTime.now().subtract(const Duration(hours: 4));
-      await repo.checkIn(buildAttendance(checkInTime: checkInTime));
+      await repo.manualCheckIn(buildAttendance(checkInTime: checkInTime));
       final attendanceId = (await fake
               .collection('attendances')
               .where('userId', isEqualTo: userId)
@@ -255,7 +255,7 @@ void main() {
     });
 
     test('lanza error si el registro no pertenece al usuario', () async {
-      await repo.checkIn(buildAttendance());
+      await repo.manualCheckIn(buildAttendance());
       final attendanceId = (await fake
               .collection('attendances')
               .where('userId', isEqualTo: userId)
@@ -277,7 +277,7 @@ void main() {
     });
 
     test('lanza error si la asistencia ya fue finalizada', () async {
-      await repo.checkIn(buildAttendance(id: 'att-done'));
+      await repo.manualCheckIn(buildAttendance(id: 'att-done'));
       final attendanceId = (await fake
               .collection('attendances')
               .where('userId', isEqualTo: userId)
@@ -336,7 +336,7 @@ void main() {
   group('finalizeOrphaned', () {
     test('finaliza una jornada huérfana, marca isOrphaned y limpia el lock', () async {
       final checkInTime = DateTime.now().subtract(const Duration(hours: 9));
-      await repo.checkIn(buildAttendance(id: 'att-orphan', checkInTime: checkInTime));
+      await repo.manualCheckIn(buildAttendance(id: 'att-orphan', checkInTime: checkInTime));
       final attendanceId = (await fake
               .collection('attendances')
               .where('userId', isEqualTo: userId)
@@ -357,7 +357,7 @@ void main() {
     });
 
     test('lanza error si no pertenece al usuario', () async {
-      await repo.checkIn(buildAttendance());
+      await repo.manualCheckIn(buildAttendance());
       final attendanceId = (await fake
               .collection('attendances')
               .where('userId', isEqualTo: userId)

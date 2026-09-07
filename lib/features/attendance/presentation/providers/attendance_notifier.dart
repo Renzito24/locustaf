@@ -14,7 +14,8 @@ import '../../../workplaces/data/models/workplace_model.dart';
 final attendanceRepositoryProvider = Provider<AttendanceRepository>((ref) {
   final svc = ref.read(firestoreServiceProvider);
   final companyId = ref.watch(currentCompanyIdProvider);
-  return AttendanceRepositoryImpl(svc, companyId: companyId);
+  final functions = ref.read(functionsProvider);
+  return AttendanceRepositoryImpl(svc, companyId: companyId, functions: functions);
 });
 
 final attendancesByUserProvider = StreamProvider.family<List<AttendanceModel>, String>((ref, userId) {
@@ -132,31 +133,7 @@ class AttendanceNotifier extends Notifier<AttendanceActionState> {
       }
       final location = locationResult.location!;
 
-      final now = DateTime.now();
-      final today = '${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}';
-
-      final isLate = workplace.horaInicio != null
-          ? AttendanceCalculator.isLate(
-              checkInTime: now,
-              shiftStart: AttendanceCalculator.shiftTimeOn(now, workplace.horaInicio!),
-              toleranceMinutes: workplace.toleranciaMinutos,
-            )
-          : null;
-
-      final attendance = AttendanceModel(
-        id: '',
-        userId: userId,
-        checkInTime: now,
-        date: today,
-        status: AttendanceStatus.active,
-        checkInLatitud: location.latitude,
-        checkInLongitud: location.longitude,
-        isLate: isLate,
-        workplaceId: workplaceId,
-        companyId: ref.read(currentCompanyIdProvider),
-      );
-
-      await repo.checkIn(attendance);
+      await repo.checkIn(latitud: location.latitude, longitud: location.longitude);
       LoggingService.instance.info(
         'Check-in registrado',
         tag: 'attendance',

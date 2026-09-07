@@ -20,7 +20,11 @@ abstract class AttendanceRepository {
   Stream<List<AttendanceModel>> getAllAttendances();
   Stream<List<AttendanceModel>> getAllActiveAttendances();
   Stream<AttendanceModel?> getActiveAttendance(String userId);
-  Future<void> checkIn(AttendanceModel attendance);
+
+  /// Registra el ingreso por GPS del propio empleado. La geocerca se valida en
+  /// el servidor (callable `checkInGeo`): solo se envían las coordenadas y el
+  /// lugar de trabajo se resuelve desde el documento del usuario (AUI-02).
+  Future<void> checkIn({required double latitud, required double longitud});
 
   /// Registra un ingreso manual (realizado por un administrador) sin validar
   /// ubicación, para empleados que no pueden registrarse por sí mismos.

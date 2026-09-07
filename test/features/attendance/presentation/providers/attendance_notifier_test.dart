@@ -1,11 +1,57 @@
 import 'package:app_locustaf/core/providers/firebase_providers.dart';
 import 'package:app_locustaf/core/providers/data_providers.dart';
 import 'package:app_locustaf/core/services/firestore_service.dart';
+import 'package:app_locustaf/features/attendance/data/models/attendance_model.dart';
+import 'package:app_locustaf/features/attendance/data/repositories/attendance_repository_impl.dart';
+import 'package:app_locustaf/features/attendance/domain/services/attendance_calculator.dart';
 import 'package:app_locustaf/features/attendance/presentation/providers/attendance_notifier.dart';
 import 'package:fake_cloud_firestore/fake_cloud_firestore.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:geolocator_platform_interface/geolocator_platform_interface.dart';
+
+/// Emula la callable `checkInGeo` (Fase 2): el servidor recibe solo las
+/// coordenadas, resuelve al usuario/workplace y crea la asistencia + lock.
+/// Reproduce la decisión server-side (isLate) y la escritura transaccional.
+class _ServerEmulatorRepository extends AttendanceRepositoryImpl {
+  _ServerEmulatorRepository(super.firestoreService, {super.companyId});
+
+  @override
+  Future<void> checkIn({
+    required double latitud,
+    required double longitud,
+  }) async {
+    final user = await getUser('user-1');
+    final workplaceId = user?.lugarDeTrabajoId;
+    final workplace = workplaceId == null ? null : await getWorkplace(workplaceId);
+
+    final now = DateTime.now();
+    final today =
+        '${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}';
+    final isLate = workplace?.horaInicio != null
+        ? AttendanceCalculator.isLate(
+            checkInTime: now,
+            shiftStart: AttendanceCalculator.shiftTimeOn(now, workplace!.horaInicio!),
+            toleranceMinutes: workplace.toleranciaMinutos,
+          )
+        : null;
+
+    await manualCheckIn(
+      AttendanceModel(
+        id: '',
+        userId: 'user-1',
+        checkInTime: now,
+        date: today,
+        status: AttendanceStatus.active,
+        isLate: isLate,
+        workplaceId: workplaceId,
+        companyId: 'company-1',
+        checkInLatitud: latitud,
+        checkInLongitud: longitud,
+      ),
+    );
+  }
+}
 
 /// Fake de la plataforma geolocator para simular el GPS sin invocar plugins.
 /// Extiende [GeolocatorPlatform] (token heredado vía `super`), y solo
@@ -107,6 +153,11 @@ void main() {
       overrides: [
         firestoreServiceProvider.overrideWithValue(FirestoreService(fake)),
         currentCompanyIdProvider.overrideWithValue(companyId),
+        // La geocerca y el alta se resuelven en el "servidor": emulamos la
+        // callable `checkInGeo` con un repositorio que escribe en el fake.
+        attendanceRepositoryProvider.overrideWithValue(
+          _ServerEmulatorRepository(FirestoreService(fake), companyId: companyId),
+        ),
       ],
     );
   });

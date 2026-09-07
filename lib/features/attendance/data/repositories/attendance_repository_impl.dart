@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:cloud_functions/cloud_functions.dart';
 
 import '../../../../core/services/firestore_service.dart';
 import '../../../../core/models/user_model.dart';
@@ -10,13 +11,18 @@ import '../models/attendance_model.dart';
 class AttendanceRepositoryImpl implements AttendanceRepository {
   final FirestoreService _firestoreService;
   final String? _companyId;
+  final FirebaseFunctions? _functions;
 
   /// Un lock se considera huérfano/abandonado tras este tiempo sin check-out,
   /// y puede ser reclamado en un nuevo check-in (TTL de recuperación).
   static const Duration lockStaleTimeout = Duration(hours: 24);
 
-  AttendanceRepositoryImpl(this._firestoreService, {String? companyId})
-      : _companyId = companyId;
+  AttendanceRepositoryImpl(
+    this._firestoreService, {
+    String? companyId,
+    FirebaseFunctions? functions,
+  })  : _functions = functions,
+        _companyId = companyId;
 
   DateTime? _parseLockTime(dynamic value) {
     if (value is Timestamp) return value.toDate();
@@ -117,8 +123,23 @@ class AttendanceRepositoryImpl implements AttendanceRepository {
   }
 
   @override
-  Future<void> checkIn(AttendanceModel attendance) async {
-    await _createAttendance(attendance);
+  Future<void> checkIn({
+    required double latitud,
+    required double longitud,
+  }) async {
+    final functions = _functions;
+    if (functions == null) {
+      throw AttendanceException('El servicio de Cloud Functions no está configurado.');
+    }
+    try {
+      final callable = functions.httpsCallable('checkInGeo');
+      await callable<Map<String, dynamic>>({
+        'latitud': latitud,
+        'longitud': longitud,
+      });
+    } on FirebaseFunctionsException catch (e) {
+      throw AttendanceException(e.message ?? 'No se pudo registrar la asistencia.');
+    }
   }
 
   @override
@@ -167,7 +188,7 @@ class AttendanceRepositoryImpl implements AttendanceRepository {
       transaction.set(attendanceRef, data);
       transaction.set(lockRef, {
         'attendanceId': attendanceRef.id,
-        'checkInTime': attendance.checkInTime.toIso8601String(),
+        'checkInTime': attendance.checkInTime.toUtc().toIso8601String(),
         'lockedAt': Timestamp.fromDate(DateTime.now().toUtc()),
         'status': 'active',
       });
