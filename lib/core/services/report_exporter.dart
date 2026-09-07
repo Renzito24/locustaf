@@ -1,6 +1,6 @@
-import 'dart:convert';
 import 'dart:typed_data';
 
+import 'package:excel/excel.dart';
 import 'package:file_saver/file_saver.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:pdf/pdf.dart';
@@ -11,42 +11,57 @@ import '../../../features/reports/presentation/providers/reports_provider.dart';
 
 /// Servicio de exportación de reportes.
 ///
-/// Genera archivos CSV (compatible con Excel) y PDF a partir de las filas del
+/// Genera archivos Excel (`.xlsx`, AUI-03) y PDF a partir de las filas del
 /// reporte de asistencia y los descarga en la plataforma actual.
 class ReportExporter {
   ReportExporter._();
 
-  static Future<void> exportAttendanceCsv(
+  static Future<void> exportAttendanceExcel(
     List<AttendanceReportRow> rows, {
     required String fileName,
   }) async {
-    final buffer = StringBuffer();
-
-    // Encabezados
-    buffer.writeln(
-      'Empleado,Lugar de trabajo,Entrada,Salida,Duración (min)',
-    );
-
-    // Filas
-    for (final row in rows) {
-      final name = _escapeCsv(row.employeeName);
-      final workplace = _escapeCsv(row.workplaceName ?? '');
-      final checkIn = _formatDateTime(row.checkInTime);
-      final checkOut = row.checkOutTime != null
-          ? _formatDateTime(row.checkOutTime!)
-          : '';
-      final duration = row.durationMinutes?.toString() ?? '';
-      buffer.writeln('$name,$workplace,$checkIn,$checkOut,$duration');
+    final bytes = buildAttendanceExcelBytes(rows);
+    if (bytes == null) {
+      throw StateError('No se pudo generar el archivo .xlsx');
     }
-
-    final bytes = utf8.encode(buffer.toString());
 
     await FileSaver.instance.saveFile(
       name: fileName,
       bytes: bytes,
-      ext: 'csv',
-      mimeType: MimeType.csv,
+      ext: 'xlsx',
+      mimeType: MimeType.microsoftExcel,
     );
+  }
+
+  /// Genera los bytes del `.xlsx`; separado de la descarga para poder testear
+  /// la construcción del archivo sin depender de la plataforma.
+  static Uint8List? buildAttendanceExcelBytes(List<AttendanceReportRow> rows) {
+    final excelFile = Excel.createExcel();
+
+    excelFile.appendRow('Sheet1', [
+      TextCellValue('Empleado'),
+      TextCellValue('Lugar de trabajo'),
+      TextCellValue('Entrada'),
+      TextCellValue('Salida'),
+      TextCellValue('Duración (min)'),
+    ]);
+
+    for (final row in rows) {
+      excelFile.appendRow('Sheet1', [
+        TextCellValue(row.employeeName),
+        TextCellValue(row.workplaceName ?? ''),
+        TextCellValue(_formatDateTime(row.checkInTime)),
+        TextCellValue(
+          row.checkOutTime != null
+              ? _formatDateTime(row.checkOutTime!)
+              : '',
+        ),
+        TextCellValue(row.durationMinutes?.toString() ?? ''),
+      ]);
+    }
+
+    final bytes = excelFile.encode();
+    return bytes == null ? null : Uint8List.fromList(bytes);
   }
 
   static Future<void> exportAttendancePdf(
@@ -142,13 +157,6 @@ class ReportExporter {
         mimeType: MimeType.pdf,
       );
     }
-  }
-
-  static String _escapeCsv(String value) {
-    if (value.contains(',') || value.contains('"') || value.contains('\n')) {
-      return '"${value.replaceAll('"', '""')}"';
-    }
-    return value;
   }
 
   static String _formatDateTime(DateTime dt) {

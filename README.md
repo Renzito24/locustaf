@@ -27,7 +27,7 @@ El proyecto fue desarrollado desde cero utilizando una arquitectura limpia y esc
 * Historial de asistencias con filtros múltiples
 * Justificativos: incidencias y certificados médicos (con carga de archivos)
 * Aprobación/rechazo de justificativos por admin
-* Reportes con exportación CSV y PDF
+* Reportes con exportación Excel (.xlsx) y PDF
 * Dashboard con KPIs
 * Roles de usuario: superadmin / admin / supervisor / employee
 * Protección de rutas por rol (GoRouter + Riverpod)

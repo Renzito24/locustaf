@@ -16,7 +16,7 @@
 | Reglas Firestore | 🟢 70/70 tests aprobados (include escalada de rol, IDOR, mass assignment, geocerca server-side, alta manual) |
 | Reglas Storage | 🟢 10/10 tests aprobados (tamaño, tipo MIME, aislamiento empresa/usuario) |
 | Cloud Functions | 🟢 5/5 tests unitarios aprobados |
-| Tests Flutter | 🟢 118/118 aprobados |
+| Tests Flutter | 🟢 121/121 aprobados |
 | `flutter analyze` | 🟢 0 issues |
 | Índices compuestos Firestore | 🟠 **1 hallazgo real de producción encontrado y CORREGIDO en esta auditoría** (3 índices faltantes) |
 | Secretos | 🟢 No expuestos en el informe; configuración estándar de Firebase Web |
@@ -27,7 +27,7 @@
 |----|-----------|-------------|--------|
 | AUI-01 | 🟠 Alta | 3 índices compuestos faltantes (`attendances (companyId,status)`, `incidences (companyId,userId)`, `medical_documents (companyId,userId)`). En producción las consultas fallan con "The query requires an index"; el emulador los crea automáticamente y **enmascara** la falla. | **CORREGIDO** (este informe) + test de cobertura |
 | AUI-02 | 🟡 Media | Modelo de confianza de geolocalización: el control de geocerca es client-side; un cliente malicioso puede fijar coordenadas arbitrarias. | **PARCIAL** (implementado en rules: workplace existente/activo de la empresa + coordenadas numéricas en rango; el cálculo de distancia Haversine sigue client-side) |
-| AUI-03 | 🟡 Baja | Exportación de reportes en CSV, la spec pide Excel (`.xlsx`). | Documentado |
+| AUI-03 | 🟡 Baja | Exportación de reportes en CSV, la spec pide Excel (`.xlsx`). | **CORREGIDO** (paquete `excel`; botón Excel genera `.xlsx` nativo) |
 | AUI-04 | 🟡 Baja | Supervisor sin acceso a `/reports` (decisión de diseño: la spec solo otorga reportes al admin). | Documentado |
 | AUI-05 | 🟢 Info | Update de `companies` por admin no protege `createdBy` (sin escalación real derivada). | **CORREGIDO** (rules: `createdBy` fijado en update salvo superadmin) |
 | AUI-06 | 🟠 Alta | El "ingreso manual" del admin (alta de asistencia de un empleado sin ubicación) era rechazado por las reglas productivas (`allow create` solo permitía employee-self o superadmin): funcionalidad prometida rota en producción. | **CORREGIDO** (rules: alta manual por admin de su empresa, sin coords, `userId != auth.uid`) |
@@ -101,7 +101,7 @@ Fuente: `LOCUSTAF_MASTER_SPEC.md` (v2.0).
 | Justificativos (incidencias y documentos médicos) con revisión por admin | Estados `pendiente/aprobado/rechazado` + `reviewedBy/reviewedAt` fijados por `validServiceCreate` | `firestore.rules:107-111`, `incidence_repository_impl.dart:60-77` | ✅ |
 | Reportes y dashboard | `reports_screen.dart`, `home_screen.dart` (dashboard) | `lib/features/reports`, `lib/features/dashboard` | ✅ |
 | Exportar **PDF** | `report_exporter.dart` (PDF) + `reports_screen.dart:310` | `lib/core/services/report_exporter.dart` | ✅ |
-| Exportar **Excel** | Exporta **CSV** (no `.xlsx`) | `report_exporter.dart:47` | ⚠️ AUI-03 |
+| Exportar **Excel** | `.xlsx` nativo (paquete `excel`) + `reports_screen.dart:63` | `lib/core/services/report_exporter.dart` | ✅ (AUI-03 corregido) |
 | Feriados / días laborables | `diasLaborables` soportado en reportes de ausencias del mes | especulado en spec 11.2; feature de feriados no presente (fuera de alcance Fase 2) | ⚠️ parcial |
 
 ---
@@ -228,7 +228,7 @@ El check-in manual del admin (`attendance_screen.dart:659-730`) escribe `userId 
 | Auditoría previa | Fecha | Reclamo | Verificación hoy |
 |------------------|-------|---------|------------------|
 | `AUDITORIA_SEGURIDAD_FIRESTORE.md` | 2026-08-28 | 🔴 8 críticos + 12 altos en reglas | **INVALIDADO**: redactada contra reglas de Fase 2. Cada caso está corregido y cubierto por tests (mapeo abajo) |
-| `AUDITORIA_INTEGRAL_LOCUSTAF_FINAL.md` | 2026-08-28 | 🔴 24 vulnerabilidades, tests "0" | **INVALIDADO parcialmente**: testing ahora = 118 (Flutter) + 70 (reglas/storage) + 5 (functions) |
+| `AUDITORIA_INTEGRAL_LOCUSTAF_FINAL.md` | 2026-08-28 | 🔴 24 vulnerabilidades, tests "0" | **INVALIDADO parcialmente**: testing ahora = 121 (Flutter) + 70 (reglas/storage) + 5 (functions) |
 | `docs/qa/AUDITORIA_FINAL_POST_HARDENING.md` | (post-C1/C2/C3/M) | 🟢 con reservas menores | Vigente; esta auditoría ejecuta y confirma |
 
 Mapeo de los 8 críticos de `AUDITORIA_SEGURIDAD_FIRESTORE.md` → estado actual:
@@ -253,7 +253,7 @@ Mapeo de los 8 críticos de `AUDITORIA_SEGURIDAD_FIRESTORE.md` → estado actual
 | Reglas Firestore | `npm test` (rules.test.js) en `test/security` | 60/60 ✅ |
 | Reglas Storage | `npm test` (storage.test.js) en `test/security` | 10/10 ✅ |
 | Cloud Functions | `npm test` en `functions` | 5/5 ✅ |
-| Flutter unit/widget | `flutter test --no-pub` | 118/118 ✅ |
+| Flutter unit/widget | `flutter test --no-pub` | 121/121 ✅ |
 | Static analysis | `flutter analyze` | 0 issues ✅ |
 | JSON de índices | parseado por el test de cobertura | ✅ |
 
@@ -314,8 +314,8 @@ Mapeo de los 8 críticos de `AUDITORIA_SEGURIDAD_FIRESTORE.md` → estado actual
 ## 16. REPORTES Y EXPORTACIÓN
 
 - Reportes por rango de fechas/empleado/estado + dashboard con KPIs.
-- Export **PDF** (printing/pdf) y **CSV**.
-- AUI-03: la spec pide Excel (.xlsx) y se exporta CSV. CSV es abrible por Excel, pero no es formato nativo `.xlsx`. Propuesto como mejora futura (librería `excel`) — impacto bajo.
+- Export **PDF** (printing/pdf) y **Excel (.xlsx)**.
+- AUI-03: la spec pide Excel (.xlsx); antes se exportaba CSV. **CORREGIDO**: `report_exporter.dart` genera `.xlsx` nativo con el paquete `excel` (bitácora en `buildAttendanceExcelBytes`) y el botón CSV fue reemplazado por Excel en `reports_screen.dart`; 3 tests unitarios validan encabezados y celdas.
 - Total de registros vía `count()` nativo (sin descargar historial completo).
 
 ---
@@ -345,7 +345,7 @@ Mapeo de los 8 críticos de `AUDITORIA_SEGURIDAD_FIRESTORE.md` → estado actual
 | `npm test` (test/security) | 70/70 |
 | `npm test` (functions) | 5/5 |
 | `flutter analyze` | 0 issues |
-| `flutter test --no-pub` | 118/118 |
+| `flutter test --no-pub` | 121/121 |
 | Emulador `firebase emulators:start --only firestore,storage --project locustaf-test` | Arranca y compila rules Firestore + Storage |
 | Parseo `firestore.indexes.json` | Válido (usado por el test de cobertura) |
 
@@ -370,7 +370,7 @@ Mapeo de los 8 críticos de `AUDITORIA_SEGURIDAD_FIRESTORE.md` → estado actual
 |----|------|-------------|--------|-----------|
 | AUI-01 | 🟠 | 3 índices compuestos faltantes → fallo en producción | ✅ CORREGIDO | `firestore.indexes.json` + `test/core/firestore_index_coverage_test.dart` |
 | AUI-02 | 🟡 | Geocerca client-side: coordenadas arbitrarias | ✅ PARCIAL (rules: workplace activo de la empresa + coords en rango; Haversine client-side) | sección 6.8 + suite AUI-02 |
-| AUI-03 | 🟡 | CSV en lugar de `.xlsx` | Documentado | `report_exporter.dart:47` |
+| AUI-03 | 🟡 | CSV en lugar de `.xlsx` | ✅ CORREGIDO | `report_exporter.dart:19-74` + `test/core/services/report_exporter_test.dart` |
 | AUI-04 | 🟡 | Supervisor sin `/reports` (diseño) | Documentado | `sidebar.dart:25`, `app_router.dart:94` |
 | AUI-05 | 🟢 | `companies.createdBy` editable por admin | ✅ CORREGIDO | `firestore.rules:266` (`companyNoOwnerChange`) + suite AUI-05 |
 | AUI-06 | 🟠 | Alta manual de asistencia por admin rota en reglas de producción | ✅ CORREGIDO | `firestore.rules:301-312` + suite AUI-06 |
@@ -400,10 +400,10 @@ Mapeo de los 8 críticos de `AUDITORIA_SEGURIDAD_FIRESTORE.md` → estado actual
 # 🟡 LISTO PARA DESPLIEGUE CONTROLADO
 
 **Justificación** (adversarial, con evidencia ejecutada):
-- Todas las suites reales pasan (70 reglas/storage + 5 functions + 118 Flutter + 0 analyze).
+- Todas las suites reales pasan (70 reglas/storage + 5 functions + 121 Flutter + 0 analyze).
 - Los hallazgos de las auditorías previas (8 críticos/12 altos) se verificaron como **no vigentes** o **ya corregidos y testeados**.
 - Se encontraron y corrigieron **fallos reales de producción** que ninguna suite contra el emulador detectaba: índices compuestos (AUI-01, con test de contrato), alta manual del admin rota en reglas (AUI-06), y se endureció el alta de asistencias (AUI-02, workplace + coordenadas server-side) y `companies.createdBy` (AUI-05).
-- Quedan reservas de baja/media severidad **documentadas, no bloqueantes** (geocerca radio client-side, CSV vs `.xlsx`, supervisor sin reportes).
+- Quedan reservas de baja/media severidad **documentadas, no bloqueantes** (geocerca radio client-side, supervisor sin reportes).
 - No se ejecutó despliegue real ni smoke test en la nube (pendiente de autorización); el despliegue controlado debe completar el checklist de la sección 19 antes de usuarios reales.
 
 Con esa ejecución post-deploy superada, el proyecto queda en condiciones de 🟢 LISTO PARA PRODUCCIÓN.

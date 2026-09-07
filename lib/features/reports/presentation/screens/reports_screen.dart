@@ -63,9 +63,9 @@ class ReportsScreen extends ConsumerWidget {
                     OutlinedButton.icon(
                       onPressed: reportRows.isEmpty
                           ? null
-                          : () => _exportCsv(context, reportRows),
-                      icon: const Icon(Icons.table_chart, size: 18),
-                      label: const Text('CSV'),
+                          : () => _exportExcel(context, reportRows),
+                      icon: const Icon(Icons.grid_on, size: 18),
+                      label: const Text('Excel'),
                       style: OutlinedButton.styleFrom(
                         foregroundColor: AppColors.gold,
                         side: const BorderSide(color: AppColors.gold),
@@ -285,23 +285,23 @@ class ReportsScreen extends ConsumerWidget {
     );
   }
 
-  Future<void> _exportCsv(BuildContext context, List<AttendanceReportRow> rows) async {
+  Future<void> _exportExcel(BuildContext context, List<AttendanceReportRow> rows) async {
     final now = DateTime.now();
     final dateStr = '${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}';
     try {
-      await ReportExporter.exportAttendanceCsv(
+      await ReportExporter.exportAttendanceExcel(
         rows,
         fileName: 'reporte_asistencia_$dateStr',
       );
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          AppTheme.successSnackBar('Reporte exportado correctamente'),
+          AppTheme.successSnackBar('Reporte Excel exportado correctamente'),
         );
       }
     } catch (e) {
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          AppTheme.errorSnackBar('Error al exportar: $e'),
+          AppTheme.errorSnackBar('Error al exportar Excel: $e'),
         );
       }
     }
