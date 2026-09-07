@@ -402,6 +402,7 @@ describe('VUL-3: create de asistencias con tolerancia', () => {
   it('un empleado SÍ puede crear su asistencia con checkInTime cerca de request.time', async () => {
     await seedUser('emp-1', { rol: 'employee', companyId: 'emp-1', isActive: true, isDeleted: false });
     await seedCompany('emp-1', { nombreComercial: 'Empresa A', toleranciaCheckIn: 60 });
+    await seedWorkplace('wp-1', { nombre: 'Sucursal Central', companyId: 'emp-1', isActive: true });
     const ctx = testEnv.authenticatedContext('emp-1');
     await assertSucceeds(
       ctx.firestore().doc('attendances/att-ok').set({
@@ -737,5 +738,159 @@ describe('C3: onboarding - alta secuencial de empresa y admin', () => {
     await seedCompany('emp-9', { nombreComercial: 'Empresa A', createdBy: 'otro-user' });
     const ctx = testEnv.authenticatedContext('new-user');
     await assertFails(ctx.firestore().doc('companies/emp-9').delete());
+  });
+});
+
+describe('AUI-02: validación de lugar de trabajo y coordenadas en el alta', () => {
+  async function seedBase() {
+    await seedUser('emp-1', { rol: 'employee', companyId: 'emp-1', isActive: true, isDeleted: false });
+    await seedCompany('emp-1', { nombreComercial: 'Empresa A', toleranciaCheckIn: 60 });
+  }
+
+  async function validAttendance(ctx, extra = {}) {
+    return ctx.firestore().doc('attendances/att-1').set({
+      userId: 'emp-1',
+      companyId: 'emp-1',
+      date: '2026-09-07',
+      status: 'active',
+      isLate: false,
+      workplaceId: 'wp-1',
+      checkInLatitud: -34.6,
+      checkInLongitud: -58.4,
+      checkInTime: new Date(Date.now() - 1000),
+      ...extra,
+    });
+  }
+
+  it('un empleado NO puede crear su asistencia sin coordenadas', async () => {
+    await seedBase();
+    const ctx = testEnv.authenticatedContext('emp-1');
+    await assertFails(
+      ctx.firestore().doc('attendances/att-nocoords').set({
+        userId: 'emp-1',
+        companyId: 'emp-1',
+        date: '2026-09-07',
+        status: 'active',
+        isLate: false,
+        workplaceId: 'wp-1',
+        checkInTime: new Date(Date.now() - 1000),
+      }),
+    );
+  });
+
+  it('un empleado NO puede crear su asistencia con latitud fuera de rango', async () => {
+    await seedBase();
+    const ctx = testEnv.authenticatedContext('emp-1');
+    await assertFails(validAttendance(ctx, { checkInLatitud: 91, checkInLongitud: -58.4 }));
+  });
+
+  it('un empleado NO puede crear su asistencia con longitud fuera de rango', async () => {
+    await seedBase();
+    const ctx = testEnv.authenticatedContext('emp-1');
+    await assertFails(validAttendance(ctx, { checkInLatitud: -34.6, checkInLongitud: 181 }));
+  });
+
+  it('un empleado NO puede usar un workplace inexistente', async () => {
+    await seedBase();
+    const ctx = testEnv.authenticatedContext('emp-1');
+    await assertFails(validAttendance(ctx, { workplaceId: 'wp-noexiste' }));
+  });
+
+  it('un empleado NO puede usar un workplace de otra empresa', async () => {
+    await seedBase();
+    await seedWorkplace('wp-otra', { nombre: 'Sucursal AJena', companyId: 'emp-2', isActive: true });
+    const ctx = testEnv.authenticatedContext('emp-1');
+    await assertFails(validAttendance(ctx, { workplaceId: 'wp-otra' }));
+  });
+
+  it('un empleado NO puede usar un workplace desactivado', async () => {
+    await seedBase();
+    await seedWorkplace('wp-1', { nombre: 'Sucursal Central', companyId: 'emp-1', isActive: false });
+    const ctx = testEnv.authenticatedContext('emp-1');
+    await assertFails(validAttendance(ctx));
+  });
+
+  it('un empleado SÍ puede crear su asistencia con su workplace activo y de su empresa', async () => {
+    await seedBase();
+    await seedWorkplace('wp-1', { nombre: 'Sucursal Central', companyId: 'emp-1', isActive: true });
+    const ctx = testEnv.authenticatedContext('emp-1');
+    await assertSucceeds(validAttendance(ctx));
+  });
+});
+
+describe('AUI-06: alta manual de asistencia por admin', () => {
+  async function seedBase() {
+    await seedUser('admin-1', { rol: 'admin', companyId: 'emp-1', isActive: true, isDeleted: false });
+    await seedUser('emp-1', { rol: 'employee', companyId: 'emp-1', isActive: true, isDeleted: false });
+    await seedCompany('emp-1', { nombreComercial: 'Empresa A', toleranciaCheckIn: 60 });
+    await seedWorkplace('wp-1', { nombre: 'Sucursal Central', companyId: 'emp-1', isActive: true });
+  }
+
+  function manualAttendance(ctx, overrides = {}) {
+    return ctx.firestore().doc('attendances/att-manual-1').set({
+      userId: 'emp-1',
+      companyId: 'emp-1',
+      date: '2026-09-07',
+      status: 'active',
+      isLate: false,
+      workplaceId: 'wp-1',
+      checkInTime: new Date(Date.now() - 1000),
+      ...overrides,
+    });
+  }
+
+  it('un admin SÍ puede registrar un ingreso manual de un empleado', async () => {
+    await seedBase();
+    const ctx = testEnv.authenticatedContext('admin-1');
+    await assertSucceeds(manualAttendance(ctx));
+  });
+
+  it('un admin NO puede registrarse un ingreso manual a sí mismo', async () => {
+    await seedBase();
+    const ctx = testEnv.authenticatedContext('admin-1');
+    await assertFails(manualAttendance(ctx, { userId: 'admin-1' }));
+  });
+
+  it('un admin NO puede registrar un ingreso manual con un workplace de otra empresa', async () => {
+    await seedBase();
+    await seedWorkplace('wp-otra', { nombre: 'Sucursal AJena', companyId: 'emp-2', isActive: true });
+    const ctx = testEnv.authenticatedContext('admin-1');
+    await assertFails(manualAttendance(ctx, { workplaceId: 'wp-otra' }));
+  });
+});
+
+describe('AUI-05: update de companies (createdBy fijado)', () => {
+  it('un admin SÍ puede editar la configuración de su empresa', async () => {
+    await seedUser('admin-1', { rol: 'admin', companyId: 'emp-1', isActive: true, isDeleted: false });
+    await seedCompany('emp-1', { nombreComercial: 'Empresa A', createdBy: 'admin-1', toleranciaCheckIn: 15 });
+    const ctx = testEnv.authenticatedContext('admin-1');
+    await assertSucceeds(
+      ctx.firestore().doc('companies/emp-1').update({
+        toleranciaCheckIn: 30,
+        updatedAt: '2026-09-07T12:00:00.000Z',
+      }),
+    );
+  });
+
+  it('un admin NO puede reasignar el createdBy de su empresa', async () => {
+    await seedUser('admin-1', { rol: 'admin', companyId: 'emp-1', isActive: true, isDeleted: false });
+    await seedCompany('emp-1', { nombreComercial: 'Empresa A', createdBy: 'admin-1', toleranciaCheckIn: 15 });
+    const ctx = testEnv.authenticatedContext('admin-1');
+    await assertFails(
+      ctx.firestore().doc('companies/emp-1').update({
+        createdBy: 'otro-admin',
+      }),
+    );
+  });
+
+  it('un superadmin SÍ puede reasignar el createdBy de una empresa', async () => {
+    await seedUser('superadmin-1', { rol: 'superadmin', companyId: null, isActive: true, isDeleted: false });
+    await seedCompany('emp-1', { nombreComercial: 'Empresa A', createdBy: 'admin-1', toleranciaCheckIn: 15 });
+    const ctx = testEnv.authenticatedContext('superadmin-1');
+    await assertSucceeds(
+      ctx.firestore().doc('companies/emp-1').update({
+        createdBy: 'otro-admin',
+      }),
+    );
   });
 });

@@ -82,15 +82,55 @@ service cloud.firestore {
     // de entrada arbitraria. checkInTime debe ser un timestamp dentro de la
     // tolerancia configurada vs el tiempo del servidor, y la asistencia debe
     // crearse siempre como 'active' sin campos de cierre.
-    function validAttendanceCreate() {
-      let companyId = request.resource.data.companyId;
-      let diff = request.resource.data.checkInTime.toMillis() - request.time.toMillis();
+    // AUI-02: además, el lugar de trabajo debe existir en la misma empresa y
+    // estar activo, y (para el check-in del propio empleado) las coordenadas
+    // deben ser numéricas dentro de rangos plausibles. El control de geocerca
+    // (distancia/radio) sigue siendo client-side; esto evita valores absurdos
+    // o un workplace de otra empresa escritos directo en la base.
+    function validAttendanceConstraints(companyId, checkInTime) {
+      let diff = checkInTime.toMillis() - request.time.toMillis();
       let toleranceMillis = getCheckInToleranceMillis(companyId);
       return request.resource.data.status == 'active'
         && !('checkOutTime' in request.resource.data)
         && !('durationMinutes' in request.resource.data)
         && diff >= -toleranceMillis
         && diff <= toleranceMillis;
+    }
+
+    function validWorkplace(companyId, workplaceId) {
+      return exists(/databases/$(database)/documents/workplaces/$(workplaceId))
+        && get(/databases/$(database)/documents/workplaces/$(workplaceId)).data.companyId == companyId
+        && get(/databases/$(database)/documents/workplaces/$(workplaceId)).data.isActive == true;
+    }
+
+    function validAttendanceCoordinates() {
+      return ('checkInLatitud' in request.resource.data)
+        && ('checkInLongitud' in request.resource.data)
+        && request.resource.data.checkInLatitud is number
+        && request.resource.data.checkInLatitud >= -90
+        && request.resource.data.checkInLatitud <= 90
+        && request.resource.data.checkInLongitud is number
+        && request.resource.data.checkInLongitud >= -180
+        && request.resource.data.checkInLongitud <= 180;
+    }
+
+    // Alta por el propio empleado: exige ubicación registrada.
+    function validEmployeeAttendanceCreate() {
+      return validAttendanceConstraints(
+          request.resource.data.companyId, request.resource.data.checkInTime)
+        && validWorkplace(
+          request.resource.data.companyId, request.resource.data.workplaceId)
+        && validAttendanceCoordinates();
+    }
+
+    // Alta manual (admin en nombre de un empleado, AUI-06): mismo control de
+    // lugar de trabajo y tolerancia, sin exigir ubicación (el empleado puede
+    // no estar presente físicamente).
+    function validManualAttendanceCreate() {
+      return validAttendanceConstraints(
+          request.resource.data.companyId, request.resource.data.checkInTime)
+        && validWorkplace(
+          request.resource.data.companyId, request.resource.data.workplaceId);
     }
 
     // En updates, los campos sensibles no pueden cambiar. Compara la identidad
@@ -221,6 +261,12 @@ service cloud.firestore {
       allow delete: if isSuperadmin();
     }
 
+    // AUI-05: el admin puede editar la configuración de su empresa pero no
+    // reasignar la propiedad (createdBy), que queda fijada en el onboarding.
+    function companyNoOwnerChange() {
+      return request.resource.data.createdBy == resource.data.createdBy;
+    }
+
     // ====================================================================
     // COMPANIES
     // Superadmin : full access
@@ -232,7 +278,7 @@ service cloud.firestore {
       allow create: if isSuperadmin()
         || (isOnboardingUser() && request.resource.data.createdBy == request.auth.uid);
       allow update: if isSuperadmin()
-        || (isAdmin() && inCompany(companyId));
+        || (isAdmin() && inCompany(companyId) && companyNoOwnerChange());
       // El delete solo lo permite el superadmin. Excepción: el usuario en
       // onboarding puede eliminar una empresa que acaba de crear si falló el
       // alta de su documento de admin (limpieza de empresa huérfana), siempre
@@ -256,7 +302,12 @@ service cloud.firestore {
         && (isSuperadmin()
             || (isEmployee() && request.resource.data.userId == request.auth.uid
                 && request.resource.data.companyId == getCompanyId()
-                && validAttendanceCreate()));
+                && validEmployeeAttendanceCreate())
+            // AUI-06: alta manual de un ingreso (admin en nombre de un
+            // empleado), sin exigir ubicación.
+            || (isAdmin() && inCompany(request.resource.data.companyId)
+                && request.resource.data.userId != request.auth.uid
+                && validManualAttendanceCreate()));
       allow update: if isAuthenticated()
         && (isSuperadmin()
             || (isEmployee() && resource.data.userId == request.auth.uid

@@ -13,7 +13,7 @@
 | Área | Estado |
 |------|--------|
 | Arquitectura | 🟢 Sólida (Feature-First + Clean Architecture) |
-| Reglas Firestore | 🟢 57/57 tests aprobados (include escalada de rol, IDOR, mass assignment) |
+| Reglas Firestore | 🟢 70/70 tests aprobados (include escalada de rol, IDOR, mass assignment, geocerca server-side, alta manual) |
 | Reglas Storage | 🟢 10/10 tests aprobados (tamaño, tipo MIME, aislamiento empresa/usuario) |
 | Cloud Functions | 🟢 5/5 tests unitarios aprobados |
 | Tests Flutter | 🟢 118/118 aprobados |
@@ -26,10 +26,11 @@
 | ID | Severidad | Descripción | Estado |
 |----|-----------|-------------|--------|
 | AUI-01 | 🟠 Alta | 3 índices compuestos faltantes (`attendances (companyId,status)`, `incidences (companyId,userId)`, `medical_documents (companyId,userId)`). En producción las consultas fallan con "The query requires an index"; el emulador los crea automáticamente y **enmascara** la falla. | **CORREGIDO** (este informe) + test de cobertura |
-| AUI-02 | 🟡 Media | Modelo de confianza de geolocalización: el control de geocerca es client-side; un cliente malicioso puede fijar coordenadas arbitrarias. Riesgo aceptado/diseño, documentado. | Aceptado (documentado) |
+| AUI-02 | 🟡 Media | Modelo de confianza de geolocalización: el control de geocerca es client-side; un cliente malicioso puede fijar coordenadas arbitrarias. | **PARCIAL** (implementado en rules: workplace existente/activo de la empresa + coordenadas numéricas en rango; el cálculo de distancia Haversine sigue client-side) |
 | AUI-03 | 🟡 Baja | Exportación de reportes en CSV, la spec pide Excel (`.xlsx`). | Documentado |
 | AUI-04 | 🟡 Baja | Supervisor sin acceso a `/reports` (decisión de diseño: la spec solo otorga reportes al admin). | Documentado |
-| AUI-05 | 🟢 Info | Update de `companies` por admin no protege `createdBy` (sin escalación real derivada). | Documentado |
+| AUI-05 | 🟢 Info | Update de `companies` por admin no protege `createdBy` (sin escalación real derivada). | **CORREGIDO** (rules: `createdBy` fijado en update salvo superadmin) |
+| AUI-06 | 🟠 Alta | El "ingreso manual" del admin (alta de asistencia de un empleado sin ubicación) era rechazado por las reglas productivas (`allow create` solo permitía employee-self o superadmin): funcionalidad prometida rota en producción. | **CORREGIDO** (rules: alta manual por admin de su empresa, sin coords, `userId != auth.uid`) |
 
 ### Veredicto
 
@@ -124,13 +125,13 @@ Fuente: `LOCUSTAF_MASTER_SPEC.md` (v2.0).
 
 ### 5.4 Geolocalización
 - `LocationService.calculateDistance` (Haversine) + `isWithinRadius`, testeados.
-- **AUI-02**: la geocerca se aplica en el cliente; las reglas no pueden calcular distancia esférica. Un cliente manipulado puede registrar coordenadas arbitrarias. Riesgo documentado (ver 6.8).
+- **AUI-02**: la geocerca se aplica en el cliente; las reglas no pueden calcular distancia esférica. Un cliente manipulado puede registrar coordenadas arbitrarias. **Mitigación en rules implementada**: el alta exige un `workplaceId` existente, activo y de la misma empresa, y coordenadas numéricas dentro de rangos plausibles; el cálculo Haversine (radio) sigue client-side (ver 6.8).
 
 ---
 
 ## 6. AUDITORÍA DE REGLAS FIRESTORE
 
-### 6.1 users (`firestore.rules:201-222`)
+### 6.1 users (`firestore.rules:241-262`)
 | Ataque probado | Resultado | Test |
 |----------------|-----------|------|
 | Onboarding: auto-alta con rol superadmin | 🔴 DENEGADO | VUL-1 |
@@ -144,12 +145,12 @@ Fuente: `LOCUSTAF_MASTER_SPEC.md` (v2.0).
 | Empleado cambia su propio rol/estado | 🔴 DENEGADO | C2 |
 | Admin edita/deactiva/soft-delete empleado | 🟢 PERMITIDO | C2 |
 
-### 6.2 companies (`firestore.rules:229-243`)
+### 6.2 companies (`firestore.rules:275-293`)
 - Admin solo lee/actualiza su propia empresa (`inCompany`); superadmin full.
 - Onboarding puede crear su empresa y, en fallo de alta, eliminar **solo** la que creó (`createdBy`), nunca otra (C3 tests).
-- AUI-05: admin puede reescribir cualquier campo de `companies` (incl. `createdBy`). Sin privilegio derivado (el delete de empresa huérfana exige `companyId == null` y rol onboarding). **Info**.
+- **AUI-05 CORREGIDO**: el update del admin no puede reasignar `createdBy` (`companyNoOwnerChange`); el superadmin conserva bypass. Sin escalación derivada en el caso base.
 
-### 6.3 attendances (`firestore.rules:251-266`)
+### 6.3 attendances (`firestore.rules:297-324`)
 | Ataque probado | Resultado | Test |
 |----------------|-----------|------|
 | Fijar `checkInTime` arbitrario (±tolerancia) | 🔴 Max ±15 min vs `request.time` | VUL-3 |
@@ -160,13 +161,16 @@ Fuente: `LOCUSTAF_MASTER_SPEC.md` (v2.0).
 | Modificar/borrar `checkOutTime` ya registrado | 🔴 DENEGADO | A1 |
 | Modificar `workplaceId`/coordenadas de ingreso | 🔴 DENEGADO (checkInFrozen) | A1 |
 | Falsificar `userId` o `companyId` de otra empresa | 🔴 DENEGADO | A1/E1 |
+| Crear con workplace inexistente / de otra empresa / desactivado | 🔴 DENEGADO | AUI-02 |
+| Crear sin coordenadas o con coords fuera de rango (empleado) | 🔴 DENEGADO | AUI-02 |
+| Alta manual por admin (sin ubicación) | 🟢 PERMITIDO (empleado de su empresa, `userId != auth.uid`) | AUI-06 |
 | Usuario sin empresa lee asistencias ajenas (`companyId: null`) | 🔴 DENEGADO (`inCompany(null)` false) | E1 |
 
 ### 6.4 incidences / medical_documents
-- Alta solo `estado == 'pendiente'`, sin `reviewedBy`/`reviewedAt` (`validServiceCreate`, L107-111).
-- Empleado crea/lee solo lo propio; supervisor lee incidences pero **no** medical_documents (privacidad, por diseño); admin full de su empresa (`L296-342`).
+- Alta solo `estado == 'pendiente'`, sin `reviewedBy`/`reviewedAt` (`validServiceCreate`, L147-151).
+- Empleado crea/lee solo lo propio; supervisor lee incidences pero **no** medical_documents (privacidad, por diseño); admin full de su empresa (`L347-394`).
 
-### 6.5 _attendance_locks (`firestore.rules:347-352`)
+### 6.5 _attendance_locks (`firestore.rules:357-362`)
 - Lectura/escritura solo del lock propio (`lockId == auth.uid`) o superadmin. Cross-user DENEGADO (VUL-2).
 
 ### 6.6 Uso de `Math.floor`
@@ -189,8 +193,14 @@ Consultas reales con múltiples filtros y su índice requerido:
 
 **Corrección aplicada**: 3 índices añadidos en `firestore.indexes.json` + test estático `test/core/firestore_index_coverage_test.dart` (7 tests) que declara el contrato consultas↔índices y falla si se eliminan regresiones. **Este test no puede ser satisfecho solo con el emulador; prueba la config de producción.**
 
-### 6.8 Modelo de confianza de geolocalización (AUI-02)
-Las reglas no validan que `workplaceId` pertenezca a la empresa ni las coordenadas contra el radio del workplace: la geocerca vive en el cliente. Mitigado parcialmente porque `isLate`/`durationMinutes` se derivan de `request.time`/`checkOutTime-checkInTime`. Recomendado para Fase 3: validación de geocerca en Cloud Function o `workplaceId` ∈ company via rules. **Riesgo aceptado y documentado.**
+### 6.8 Modelo de confianza de geolocalización (AUI-02) — mitigación parcial implementada
+Las reglas no pueden calcular distancia esférica (Haversine): la geocerca (radio) vive en el cliente. **Mitigación server-side implementada en rules**:
+- El alta exige `workplaceId` que exista, esté **activo** y pertenezca a la misma empresa que la asistencia (`validWorkplace`, L100-104).
+- El alta del **empleado** exige además `checkInLatitud`/`checkInLongitud` numéricas dentro de rangos plausibles (`validAttendanceCoordinates`, L106-115): -90..90 / -180..180, fallo cerrado si no son números.
+- Esto elimina: workplaces de otra empresa, workplaces inexistentes/desactivados y coordenadas absurdas escritas directo en la BD. Lo que sigue client-side: la **distancia al radio** del workplace. Cubierto por la suite `AUI-02` (6 tests). Opción Fase 3: misma validación en Cloud Function con Haversine.
+
+### 6.9 Alta manual de asistencia (AUI-06) — hallazgo real, CORREGIDO
+El check-in manual del admin (`attendance_screen.dart:659-730`) escribe `userId = empleado` **sin coordenadas** (el empleado puede no estar presente). Las reglas productivas previas a este informe solo permitían `create` de `attendances` para `isEmployee` (con coords) o superadmin → **el ingreso manual fallaba PERMISSION_DENIED en producción**. Corrección en rules (L301-312): un admin de la empresa puede dar alta manual (`validManualAttendanceCreate`: misma tolerancia + workplace válido, sin exigir ubicación) siempre que `userId != auth.uid` (no se auto-rechaza/auto-registra). Cubierto por la suite `AUI-06` (3 tests).
 
 ---
 
@@ -218,7 +228,7 @@ Las reglas no validan que `workplaceId` pertenezca a la empresa ni las coordenad
 | Auditoría previa | Fecha | Reclamo | Verificación hoy |
 |------------------|-------|---------|------------------|
 | `AUDITORIA_SEGURIDAD_FIRESTORE.md` | 2026-08-28 | 🔴 8 críticos + 12 altos en reglas | **INVALIDADO**: redactada contra reglas de Fase 2. Cada caso está corregido y cubierto por tests (mapeo abajo) |
-| `AUDITORIA_INTEGRAL_LOCUSTAF_FINAL.md` | 2026-08-28 | 🔴 24 vulnerabilidades, tests "0" | **INVALIDADO parcialmente**: testing ahora = 118 (Flutter) + 57 (reglas) + 5 (functions) |
+| `AUDITORIA_INTEGRAL_LOCUSTAF_FINAL.md` | 2026-08-28 | 🔴 24 vulnerabilidades, tests "0" | **INVALIDADO parcialmente**: testing ahora = 118 (Flutter) + 70 (reglas/storage) + 5 (functions) |
 | `docs/qa/AUDITORIA_FINAL_POST_HARDENING.md` | (post-C1/C2/C3/M) | 🟢 con reservas menores | Vigente; esta auditoría ejecuta y confirma |
 
 Mapeo de los 8 críticos de `AUDITORIA_SEGURIDAD_FIRESTORE.md` → estado actual:
@@ -240,7 +250,7 @@ Mapeo de los 8 críticos de `AUDITORIA_SEGURIDAD_FIRESTORE.md` → estado actual
 
 | Suite | Comando | Resultado |
 |-------|---------|-----------|
-| Reglas Firestore | `npm test` (rules.test.js) en `test/security` | 47/47 ✅ |
+| Reglas Firestore | `npm test` (rules.test.js) en `test/security` | 60/60 ✅ |
 | Reglas Storage | `npm test` (storage.test.js) en `test/security` | 10/10 ✅ |
 | Cloud Functions | `npm test` en `functions` | 5/5 ✅ |
 | Flutter unit/widget | `flutter test --no-pub` | 118/118 ✅ |
@@ -248,7 +258,7 @@ Mapeo de los 8 críticos de `AUDITORIA_SEGURIDAD_FIRESTORE.md` → estado actual
 | JSON de índices | parseado por el test de cobertura | ✅ |
 
 ### 10.1 Cobertura de seguridad (adversarial)
-- VUL-1 (auto-alta rol arbitrario) · VUL-2 (locks ownership) · VUL-3 (checkInTime/tolerancia/duration) · VUL-4 (lecturas por rol) · VUL-4b (incidencias auto-aprobadas) · A1 (campos server-only, transiciones, falsificar userId) · C1 (escalada admin→superadmin) · C2 (rol empleado/supervisor, soft delete, workplaces) · C3 (onboarding secuencial, empresa huérfana) · E1 (IDOR companyId null) · M1 (storage: tamaño/MIME/aislamiento).
+- VUL-1 (auto-alta rol arbitrario) · VUL-2 (locks ownership) · VUL-3 (checkInTime/tolerancia/duration) · VUL-4 (lecturas por rol) · VUL-4b (incidencias auto-aprobadas) · A1 (campos server-only, transiciones, falsificar userId) · C1 (escalada admin→superadmin) · C2 (rol empleado/supervisor, soft delete, workplaces) · C3 (onboarding secuencial, empresa huérfana) · E1 (IDOR companyId null) · **AUI-02 (workplace + coordenadas server-side)** · **AUI-05 (createdBy fijado)** · **AUI-06 (alta manual admin)** · M1 (storage: tamaño/MIME/aislamiento).
 
 ### 10.2 Tests faltantes (brechas documentadas, no bloqueantes)
 - UI/widget tests: solo splash screen + flujo E2E de asistencia. Sin widgets tests de employees/history/reports/incidences/medical.
@@ -289,7 +299,7 @@ Mapeo de los 8 críticos de `AUDITORIA_SEGURIDAD_FIRESTORE.md` → estado actual
 - Soft delete de empleado purga su lock (`users_repository_impl.dart:83-87`).
 - `durationMinutes` derivado por reglas de `checkOutTime - checkInTime` dentro de rango; el cliente no lo inventa (A1).
 - Backfill futuro: `id`/`uid` conviven en `attendances` (compatibilidad documentada en `firestore_service.dart:217-224`).
-- Inconsistencia menor: admin puede editar `companies.createdBy` (AUI-05, ver 6.2).
+- Inconsistencia menor: admin puede editar `companies.createdBy` — **CORREGIDO** (AUI-05, ver 6.2; rules `companyNoOwnerChange`).
 
 ---
 
@@ -332,7 +342,7 @@ Mapeo de los 8 críticos de `AUDITORIA_SEGURIDAD_FIRESTORE.md` → estado actual
 
 | Comando | Resultado |
 |---------|-----------|
-| `npm test` (test/security) | 57/57 |
+| `npm test` (test/security) | 70/70 |
 | `npm test` (functions) | 5/5 |
 | `flutter analyze` | 0 issues |
 | `flutter test --no-pub` | 118/118 |
@@ -347,6 +357,8 @@ Mapeo de los 8 críticos de `AUDITORIA_SEGURIDAD_FIRESTORE.md` → estado actual
 3. Login como empleado → ver incidencias (índice `(companyId,userId)`) y documentos médicos (idem).
 4. Subir un PDF y un `.exe` (validación storage en la nube, no emulador).
 5. Marcar un empleado `isActive=false` → confirmar que pierde la sesión (función en la nube).
+6. Como admin, registrar un **ingreso manual** de un empleado (AUI-06) y editar la configuración de su empresa sin poder modificar `createdBy` (AUI-05).
+7. Como empleado, hacer check-in desde dentro del radio del workplace (AUI-02) y verificar que el alta exige workplace activo + coordenadas.
 
 ---
 
@@ -357,10 +369,11 @@ Mapeo de los 8 críticos de `AUDITORIA_SEGURIDAD_FIRESTORE.md` → estado actual
 | ID | Sev. | Descripción | Estado | Evidencia |
 |----|------|-------------|--------|-----------|
 | AUI-01 | 🟠 | 3 índices compuestos faltantes → fallo en producción | ✅ CORREGIDO | `firestore.indexes.json` + `test/core/firestore_index_coverage_test.dart` |
-| AUI-02 | 🟡 | Geocerca client-side (riesgo aceptado) | Documentado | sección 6.8 |
+| AUI-02 | 🟡 | Geocerca client-side: coordenadas arbitrarias | ✅ PARCIAL (rules: workplace activo de la empresa + coords en rango; Haversine client-side) | sección 6.8 + suite AUI-02 |
 | AUI-03 | 🟡 | CSV en lugar de `.xlsx` | Documentado | `report_exporter.dart:47` |
 | AUI-04 | 🟡 | Supervisor sin `/reports` (diseño) | Documentado | `sidebar.dart:25`, `app_router.dart:94` |
-| AUI-05 | 🟢 | `companies.createdBy` editable por admin | Documentado | `firestore.rules:234-235` |
+| AUI-05 | 🟢 | `companies.createdBy` editable por admin | ✅ CORREGIDO | `firestore.rules:266` (`companyNoOwnerChange`) + suite AUI-05 |
+| AUI-06 | 🟠 | Alta manual de asistencia por admin rota en reglas de producción | ✅ CORREGIDO | `firestore.rules:301-312` + suite AUI-06 |
 
 ### 20.2 Matriz de seguridad consolidada
 
@@ -387,10 +400,10 @@ Mapeo de los 8 críticos de `AUDITORIA_SEGURIDAD_FIRESTORE.md` → estado actual
 # 🟡 LISTO PARA DESPLIEGUE CONTROLADO
 
 **Justificación** (adversarial, con evidencia ejecutada):
-- Todas las suites reales pasan (57 reglas + 10 storage + 5 functions + 118 Flutter + 0 analyze).
+- Todas las suites reales pasan (70 reglas/storage + 5 functions + 118 Flutter + 0 analyze).
 - Los hallazgos de las auditorías previas (8 críticos/12 altos) se verificaron como **no vigentes** o **ya corregidos y testeados**.
-- Se encontró y corrigió **1 fallo real de producción** (índices compuestos) que ninguna suite contra el emulador detectaba, con test de contrato incluido.
-- Quedan reservas de baja/media severidad **documentadas, no bloqueantes** (geocerca client-side, CSV vs `.xlsx`, supervisor sin reportes).
+- Se encontraron y corrigieron **fallos reales de producción** que ninguna suite contra el emulador detectaba: índices compuestos (AUI-01, con test de contrato), alta manual del admin rota en reglas (AUI-06), y se endureció el alta de asistencias (AUI-02, workplace + coordenadas server-side) y `companies.createdBy` (AUI-05).
+- Quedan reservas de baja/media severidad **documentadas, no bloqueantes** (geocerca radio client-side, CSV vs `.xlsx`, supervisor sin reportes).
 - No se ejecutó despliegue real ni smoke test en la nube (pendiente de autorización); el despliegue controlado debe completar el checklist de la sección 19 antes de usuarios reales.
 
 Con esa ejecución post-deploy superada, el proyecto queda en condiciones de 🟢 LISTO PARA PRODUCCIÓN.
