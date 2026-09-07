@@ -25,6 +25,8 @@
 - `firestore.rules` — Production (admin full, supervisor read-mostly, employee own-data only)
 - `seed/firestore.rules.seed` — Permissive (all authenticated users read/write)
 - Supervisor has read access to: users, workplaces, attendances, incidences (not medical_documents)
+- Attendance `create`: employee-self requires valid active workplace of own company + coords in range (AUI-02); admin may manual-check-in an employee without coords but never self (AUI-06)
+- `companies.update` by admin freezes `createdBy` (AUI-05)
 
 ## Seed Data
 - `seed/seed_data.json` contains: 1 admin, 1 supervisor, 1 employee, 1 workplace
