@@ -7,6 +7,21 @@ import '../../../core/models/user_model.dart';
 import '../../../core/models/company_model.dart';
 import '../../../../core/services/firestore_service.dart';
 
+/// Regla de bloqueo por empresa inactiva (TASK-016).
+///
+/// Un superadmin de plataforma NUNCA queda bloqueado por el estado de una
+/// empresa, aunque su documento tenga un `companyId` heredado: no tiene empresa
+/// propia y gestiona todas desde la pantalla Empresas. El bloqueo solo aplica a
+/// usuarios con empresa (admin, supervisor y employee).
+bool isCompanyInactiveFor(
+  UserRole? role,
+  String? companyId,
+  CompanyEstado? companyEstado,
+) {
+  if (role == UserRole.superadmin) return false;
+  return companyId != null && companyEstado == CompanyEstado.inactiva;
+}
+
 class AuthStateListenable extends ChangeNotifier {
   AuthStateListenable() {
     _authSub = FirebaseAuth.instance.authStateChanges().listen((user) {
@@ -42,9 +57,10 @@ class AuthStateListenable extends ChangeNotifier {
   bool get isUserDeleted => _isDeleted == true;
   bool get isUserBlocked => _isActive == false || _isDeleted == true;
 
-  /// La empresa del usuario está inactiva (solo aplica a usuarios con empresa).
+  /// La empresa del usuario está inactiva (solo aplica a usuarios con empresa;
+  /// el superadmin de plataforma nunca se bloquea, TASK-016).
   bool get isCompanyInactive =>
-      _companyId != null && _companyEstado == CompanyEstado.inactiva;
+      isCompanyInactiveFor(_role, _companyId, _companyEstado);
 
   /// El usuario está autenticado pero aún no tiene empresa asignada
   /// (debe completar el onboarding). El superadmin queda excluido: no tiene
