@@ -22,6 +22,7 @@ class EmployeesScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final filteredEmployeesAsync = ref.watch(filteredEmployeesProvider);
     final isAdmin = ref.watch(isAdminProvider);
+    final currentUserId = ref.watch(currentUserProvider)?.uid;
 
     ref.listen<AsyncValue<void>>(deleteEmployeeProvider, (prev, next) {
       next.whenOrNull(
@@ -157,6 +158,8 @@ class EmployeesScreen extends ConsumerWidget {
                   separatorBuilder: (_, _) => const SizedBox(height: 12),
                   itemBuilder: (context, index) {
                     final employee = employees[index];
+                    final isSelf = currentUserId != null &&
+                        employee.id == currentUserId;
                     return EmployeeCard(
                       employee: employee,
                       onEdit: isAdmin
@@ -165,7 +168,7 @@ class EmployeesScreen extends ConsumerWidget {
                                 extra: employee,
                               )
                           : null,
-                      onToggleActive: isAdmin
+                      onToggleActive: isAdmin && !isSelf
                           ? () {
                               ref
                                   .read(updateEmployeeProvider.notifier)
@@ -178,7 +181,7 @@ class EmployeesScreen extends ConsumerWidget {
                         RoutePaths.history,
                         extra: employee.id,
                       ),
-                      onDelete: isAdmin
+                      onDelete: isAdmin && !isSelf
                           ? () {
                               ref
                                   .read(deleteEmployeeProvider.notifier)

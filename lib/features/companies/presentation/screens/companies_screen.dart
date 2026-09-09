@@ -254,6 +254,48 @@ class _CompanyCard extends ConsumerWidget {
 
   const _CompanyCard({required this.company});
 
+  Future<void> _confirmToggleCompany(
+    BuildContext context,
+    WidgetRef ref,
+  ) async {
+    final isActive = company.estado == CompanyEstado.activa;
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: AppColors.cardDark,
+        title: Text(isActive ? 'Desactivar empresa' : 'Activar empresa',
+            style: const TextStyle(color: AppColors.textWhite)),
+        content: Text(
+          isActive
+              ? 'Todos los usuarios de esta empresa no podrán iniciar sesión mientras esté inactiva. ¿Deseas continuar?'
+              : 'Los usuarios de esta empresa podrán volver a iniciar sesión. ¿Deseas continuar?',
+          style: const TextStyle(color: AppColors.textMuted),
+        ),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(AppTheme.radiusXl),
+          side: BorderSide(color: AppColors.gold.withValues(alpha: 0.18)),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: const Text('Cancelar',
+                style: TextStyle(color: AppColors.textMuted)),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(true),
+            style: TextButton.styleFrom(
+                foregroundColor:
+                    isActive ? AppColors.error : AppColors.success),
+            child: Text(isActive ? 'Desactivar' : 'Activar'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed != true) return;
+    await ref.read(toggleCompanyStateProvider.notifier).toggle(company);
+  }
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final isActive = company.estado == CompanyEstado.activa;
@@ -345,7 +387,7 @@ class _CompanyCard extends ConsumerWidget {
                   IconButton(
                     onPressed: isToggling
                         ? null
-                        : () => ref.read(toggleCompanyStateProvider.notifier).toggle(company),
+                        : () => _confirmToggleCompany(context, ref),
                     icon: Icon(
                       isActive ? Icons.block_outlined : Icons.check_circle_outlined,
                       size: 18,

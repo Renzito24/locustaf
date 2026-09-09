@@ -137,7 +137,7 @@ class _EmployeeCardState extends State<EmployeeCard> {
                       widget.onEdit?.call();
                       break;
                     case 'toggleActive':
-                      widget.onToggleActive?.call();
+                      _confirmToggleActive(context);
                       break;
                     case 'history':
                       widget.onHistory?.call();
@@ -269,6 +269,47 @@ class _EmployeeCardState extends State<EmployeeCard> {
         ),
       ),
     );
+  }
+
+  Future<void> _confirmToggleActive(BuildContext context) async {
+    final deactivating = widget.employee.isActive;
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: AppColors.cardDark,
+        title: Text(deactivating ? 'Desactivar usuario' : 'Activar usuario',
+            style: const TextStyle(color: AppColors.textWhite)),
+        content: Text(
+          deactivating
+              ? '${widget.employee.nombreCompleto} no podrá iniciar sesión hasta que lo reactives. ¿Deseas continuar?'
+              : '${widget.employee.nombreCompleto} podrá volver a iniciar sesión. ¿Deseas continuar?',
+          style: const TextStyle(color: AppColors.textMuted),
+        ),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(AppTheme.radiusXl),
+          side: BorderSide(
+              color: AppColors.gold.withValues(alpha: 0.18)),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: const Text('Cancelar',
+                style: TextStyle(color: AppColors.textMuted)),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(true),
+            style: TextButton.styleFrom(
+                foregroundColor:
+                    deactivating ? AppColors.error : AppColors.success),
+            child: Text(deactivating ? 'Desactivar' : 'Activar'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true) {
+      widget.onToggleActive?.call();
+    }
   }
 
   Future<void> _confirmDelete(BuildContext context) async {
