@@ -25,6 +25,8 @@ Este documento describe el modelo de permisos implementado en `firestore.rules` 
 | `noAttendanceServerFieldChanges()` | En asistencias, los campos fijados en el check-in no pueden cambiar (userId, companyId, checkInTime, date, isLate, workplaceId, checkInLatitud, checkInLongitud). |
 | `noUserSensitiveChanges()` | En users, el rol no puede cambiar salvo admin/superadmin. |
 | `isOwnProfileUpdate()` | Un empleado solo puede actualizar campos no sensibles de su propio perfil. |
+| `companyNoOwnerChange()` | En companies, `createdBy` no puede cambiar (AUI-05). |
+| `companyNoBillingFieldChanges()` | En companies, los campos de facturación `plan`, `paidUntil` y `lastPaymentAt` no pueden cambiar salvo superadmin (TASK-012).
 
 ## Permisos por colección
 
@@ -43,8 +45,10 @@ Este documento describe el modelo de permisos implementado en `firestore.rules` 
 |-----------|-------------|
 | read | superadmin, o admin de la empresa |
 | create | superadmin, o usuario en onboarding (con `createdBy == uid`) |
-| update | superadmin, o admin de la empresa |
+| update | superadmin, o admin de la empresa (sin tocar `createdBy` ni los campos de facturación `plan`/`paidUntil`/`lastPaymentAt`) |
 | delete | superadmin |
+
+> Los campos de facturación (`plan`, `paidUntil`, `lastPaymentAt`) solo los modifica el superadmin (registro manual de pagos desde el dashboard de plataforma, TASK-011).
 
 ### `attendances/{docId}`
 

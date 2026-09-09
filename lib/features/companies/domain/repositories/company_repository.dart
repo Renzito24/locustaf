@@ -7,4 +7,12 @@ abstract class CompanyRepository {
   Future<String> createCompany(CompanyModel company);
   Future<void> updateCompany(CompanyModel company);
   Future<void> setEstado(String companyId, CompanyEstado estado);
+
+  /// Registra un pago manual (solo superadmin): fija hasta cuándo queda
+  /// habilitada la empresa y la modalidad del plan (TASK-011).
+  Future<void> registerPayment(
+    String companyId, {
+    required DateTime paidUntil,
+    CompanyPlan plan = CompanyPlan.mensual,
+  });
 }

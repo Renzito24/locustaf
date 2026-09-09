@@ -920,3 +920,91 @@ describe('AUI-05: update de companies (createdBy fijado)', () => {
     );
   });
 });
+
+describe('TASK-012: billing fields solo superadmin', () => {
+  it('un admin NO puede modificar plan de su empresa', async () => {
+    await seedUser('admin-1', { rol: 'admin', companyId: 'emp-1', isActive: true, isDeleted: false });
+    await seedCompany('emp-1', { nombreComercial: 'Empresa A', createdBy: 'admin-1', plan: 'mensual' });
+    const ctx = testEnv.authenticatedContext('admin-1');
+    await assertFails(
+      ctx.firestore().doc('companies/emp-1').update({
+        plan: 'anual',
+        updatedAt: '2026-09-09T12:00:00.000Z',
+      }),
+    );
+  });
+
+  it('un admin NO puede modificar paidUntil de su empresa', async () => {
+    await seedUser('admin-1', { rol: 'admin', companyId: 'emp-1', isActive: true, isDeleted: false });
+    await seedCompany('emp-1', { nombreComercial: 'Empresa A', createdBy: 'admin-1', paidUntil: '2026-10-01T00:00:00.000Z' });
+    const ctx = testEnv.authenticatedContext('admin-1');
+    await assertFails(
+      ctx.firestore().doc('companies/emp-1').update({
+        paidUntil: '2027-01-01T00:00:00.000Z',
+        updatedAt: '2026-09-09T12:00:00.000Z',
+      }),
+    );
+  });
+
+  it('un admin NO puede modificar lastPaymentAt de su empresa', async () => {
+    await seedUser('admin-1', { rol: 'admin', companyId: 'emp-1', isActive: true, isDeleted: false });
+    await seedCompany('emp-1', { nombreComercial: 'Empresa A', createdBy: 'admin-1', lastPaymentAt: null });
+    const ctx = testEnv.authenticatedContext('admin-1');
+    await assertFails(
+      ctx.firestore().doc('companies/emp-1').update({
+        lastPaymentAt: '2026-09-09T12:00:00.000Z',
+        updatedAt: '2026-09-09T12:00:00.000Z',
+      }),
+    );
+  });
+
+  it('un admin SÍ puede editar configuración sin tocar billing', async () => {
+    await seedUser('admin-1', { rol: 'admin', companyId: 'emp-1', isActive: true, isDeleted: false });
+    await seedCompany('emp-1', { nombreComercial: 'Empresa A', createdBy: 'admin-1', toleranciaCheckIn: 15 });
+    const ctx = testEnv.authenticatedContext('admin-1');
+    await assertSucceeds(
+      ctx.firestore().doc('companies/emp-1').update({
+        toleranciaCheckIn: 30,
+        updatedAt: '2026-09-09T12:00:00.000Z',
+      }),
+    );
+  });
+
+  it('un admin NO puede modificar plan aunque también cambie config válida', async () => {
+    await seedUser('admin-1', { rol: 'admin', companyId: 'emp-1', isActive: true, isDeleted: false });
+    await seedCompany('emp-1', { nombreComercial: 'Empresa A', createdBy: 'admin-1', toleranciaCheckIn: 15, plan: 'mensual' });
+    const ctx = testEnv.authenticatedContext('admin-1');
+    await assertFails(
+      ctx.firestore().doc('companies/emp-1').update({
+        toleranciaCheckIn: 30,
+        plan: 'anual',
+        updatedAt: '2026-09-09T12:00:00.000Z',
+      }),
+    );
+  });
+
+  it('un superadmin SÍ puede modificar plan, paidUntil y lastPaymentAt', async () => {
+    await seedUser('superadmin-1', { rol: 'superadmin', companyId: null, isActive: true, isDeleted: false });
+    await seedCompany('emp-1', { nombreComercial: 'Empresa A', createdBy: 'admin-1', plan: 'mensual' });
+    const ctx = testEnv.authenticatedContext('superadmin-1');
+    await assertSucceeds(
+      ctx.firestore().doc('companies/emp-1').update({
+        plan: 'anual',
+        paidUntil: '2027-09-09T00:00:00.000Z',
+        lastPaymentAt: '2026-09-09T12:00:00.000Z',
+        updatedAt: '2026-09-09T12:00:00.000Z',
+      }),
+    );
+  });
+
+  it('un superadmin SÍ puede modificar createdBy (bypass total)', async () => {
+    await seedUser('superadmin-1', { rol: 'superadmin', companyId: null, isActive: true, isDeleted: false });
+    await seedCompany('emp-1', { nombreComercial: 'Empresa A', createdBy: 'admin-1', plan: 'mensual' });
+    const ctx = testEnv.authenticatedContext('superadmin-1');
+    await assertSucceeds(
+      ctx.firestore().doc('companies/emp-1').update({
+        createdBy: 'nuevo-admin',
+      }),
+    );
+  });
+});

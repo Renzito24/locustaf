@@ -7,6 +7,7 @@ import '../../../../core/providers/firebase_providers.dart';
 import '../../../authentication/presentation/providers/auth_provider.dart';
 import '../../data/repositories/company_repository_impl.dart';
 import '../../domain/repositories/company_repository.dart';
+import '../../domain/services/platform_metrics.dart';
 
 final companyRepositoryProvider = Provider<CompanyRepository>((ref) {
   final svc = ref.read(firestoreServiceProvider);
@@ -30,4 +31,10 @@ final isSuperadminProvider = Provider<bool>((ref) {
 final allCompaniesProvider = StreamProvider<List<CompanyModel>>((ref) {
   final repo = ref.read(companyRepositoryProvider);
   return repo.getAllCompanies();
+});
+
+/// Métricas de la plataforma derivadas de [allCompaniesProvider].
+final platformMetricsProvider = Provider<PlatformMetrics>((ref) {
+  final companies = ref.watch(allCompaniesProvider).value ?? const [];
+  return computePlatformMetrics(companies, DateTime.now());
 });

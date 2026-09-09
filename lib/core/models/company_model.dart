@@ -24,6 +24,32 @@ extension CompanyEstadoExtension on CompanyEstado {
   }
 }
 
+/// Plan comercial de la empresa (TASK-010). Un solo plan con modalidad
+/// mensual o anual; el superadmin registra los pagos manualmente.
+enum CompanyPlan { mensual, anual }
+
+extension CompanyPlanExtension on CompanyPlan {
+  String get label {
+    switch (this) {
+      case CompanyPlan.mensual:
+        return 'Mensual';
+      case CompanyPlan.anual:
+        return 'Anual';
+    }
+  }
+
+  static CompanyPlan fromString(String value) {
+    switch (value) {
+      case 'mensual':
+        return CompanyPlan.mensual;
+      case 'anual':
+        return CompanyPlan.anual;
+      default:
+        throw ArgumentError('Invalid CompanyPlan: $value');
+    }
+  }
+}
+
 class CompanyModel extends Equatable {
   final String id;
   final String nombreComercial;
@@ -45,6 +71,16 @@ class CompanyModel extends Equatable {
   /// laborables no se contabilizan ausencias. Configurable por el admin (D2).
   final List<int> diasLaborables;
 
+  /// Plan comercial de la empresa. Solo el superadmin puede modificarlo.
+  final CompanyPlan plan;
+
+  /// Fecha hasta la que la empresa tiene uso pagado (o trial). Si es null la
+  /// empresa se trata como trial hasta el primer pago registrado.
+  final DateTime? paidUntil;
+
+  /// Último pago registrado por el superadmin. null durante el trial.
+  final DateTime? lastPaymentAt;
+
   const CompanyModel({
     required this.id,
     required this.nombreComercial,
@@ -59,7 +95,28 @@ class CompanyModel extends Equatable {
     this.updatedAt,
     this.toleranciaCheckIn = 15,
     this.diasLaborables = const [1, 2, 3, 4, 5],
+    this.plan = CompanyPlan.mensual,
+    this.paidUntil,
+    this.lastPaymentAt,
   });
+
+  /// La empresa está operativa si está activa y, si tiene una fecha tope
+  /// registrada, esa fecha todavía no venció. Las empresas sin `paidUntil`
+  /// (legacy o trial) se consideran utilizables hasta el primer vencimiento.
+  bool isUsableAt(DateTime now) {
+    if (estado != CompanyEstado.activa) return false;
+    if (paidUntil == null) return true;
+    return paidUntil!.isAfter(now);
+  }
+
+  bool get isUsable => isUsableAt(DateTime.now());
+
+  /// Días completos de uso restantes (0 si ya venció o no tiene tope).
+  int daysRemainingAt(DateTime now) {
+    if (paidUntil == null) return 0;
+    final diff = paidUntil!.difference(now).inDays;
+    return diff < 0 ? 0 : diff;
+  }
 
   CompanyModel copyWith({
     String? id,
@@ -75,6 +132,9 @@ class CompanyModel extends Equatable {
     DateTime? updatedAt,
     int? toleranciaCheckIn,
     List<int>? diasLaborables,
+    CompanyPlan? plan,
+    DateTime? paidUntil,
+    DateTime? lastPaymentAt,
   }) {
     return CompanyModel(
       id: id ?? this.id,
@@ -90,6 +150,9 @@ class CompanyModel extends Equatable {
       updatedAt: updatedAt ?? this.updatedAt,
       toleranciaCheckIn: toleranciaCheckIn ?? this.toleranciaCheckIn,
       diasLaborables: diasLaborables ?? this.diasLaborables,
+      plan: plan ?? this.plan,
+      paidUntil: paidUntil ?? this.paidUntil,
+      lastPaymentAt: lastPaymentAt ?? this.lastPaymentAt,
     );
   }
 
@@ -113,6 +176,15 @@ class CompanyModel extends Equatable {
               ?.map((e) => (e as num).toInt())
               .toList() ??
           const [1, 2, 3, 4, 5],
+      plan: json['plan'] != null
+          ? CompanyPlanExtension.fromString(json['plan'] as String)
+          : CompanyPlan.mensual,
+      paidUntil: json['paidUntil'] != null
+          ? DateTime.parse(json['paidUntil'] as String).toLocal()
+          : null,
+      lastPaymentAt: json['lastPaymentAt'] != null
+          ? DateTime.parse(json['lastPaymentAt'] as String).toLocal()
+          : null,
     );
   }
 
@@ -131,6 +203,9 @@ class CompanyModel extends Equatable {
       'updatedAt': updatedAt?.toUtc().toIso8601String(),
       'toleranciaCheckIn': toleranciaCheckIn,
       'diasLaborables': diasLaborables,
+      'plan': plan.name,
+      'paidUntil': paidUntil?.toUtc().toIso8601String(),
+      'lastPaymentAt': lastPaymentAt?.toUtc().toIso8601String(),
     };
   }
 
@@ -149,5 +224,8 @@ class CompanyModel extends Equatable {
         updatedAt,
         toleranciaCheckIn,
         diasLaborables,
+        plan,
+        paidUntil,
+        lastPaymentAt,
       ];
 }

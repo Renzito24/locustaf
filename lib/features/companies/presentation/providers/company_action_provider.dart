@@ -115,6 +115,36 @@ class ToggleCompanyStateNotifier extends AsyncNotifier<void> {
   }
 }
 
+class RegisterPaymentNotifier extends AsyncNotifier<void> {
+  @override
+  Future<void> build() => Future.value();
+
+  /// Registra un pago manual y extiende el uso de la empresa hasta [paidUntil]
+  /// (TASK-011). Solo el superadmin invoca esta acción desde la UI.
+  Future<void> registerPayment(
+    String companyId, {
+    required DateTime paidUntil,
+    CompanyPlan plan = CompanyPlan.mensual,
+  }) async {
+    state = const AsyncLoading();
+    final repo = ref.read(companyRepositoryProvider);
+    try {
+      await repo.registerPayment(
+        companyId,
+        paidUntil: paidUntil,
+        plan: plan,
+      );
+      state = const AsyncData(null);
+    } catch (e, st) {
+      state = AsyncError(e, st);
+    }
+  }
+
+  void reset() {
+    state = const AsyncData(null);
+  }
+}
+
 final createCompanyProvider = AsyncNotifierProvider<CreateCompanyNotifier, void>(
   CreateCompanyNotifier.new,
 );
@@ -125,4 +155,8 @@ final updateCompanyProvider = AsyncNotifierProvider<UpdateCompanyNotifier, void>
 
 final toggleCompanyStateProvider = AsyncNotifierProvider<ToggleCompanyStateNotifier, void>(
   ToggleCompanyStateNotifier.new,
+);
+
+final registerPaymentProvider = AsyncNotifierProvider<RegisterPaymentNotifier, void>(
+  RegisterPaymentNotifier.new,
 );

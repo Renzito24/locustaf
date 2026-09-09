@@ -66,4 +66,22 @@ class CompanyRepositoryImpl implements CompanyRepository {
       },
     );
   }
+
+  @override
+  Future<void> registerPayment(
+    String companyId, {
+    required DateTime paidUntil,
+    CompanyPlan plan = CompanyPlan.mensual,
+  }) async {
+    await _firestoreService.updateDocument(
+      path: 'companies',
+      documentId: companyId,
+      data: {
+        'paidUntil': paidUntil.toUtc().toIso8601String(),
+        'lastPaymentAt': DateTime.now().toUtc().toIso8601String(),
+        'plan': plan.name,
+        'updatedAt': DateTime.now().toUtc().toIso8601String(),
+      },
+    );
+  }
 }

@@ -261,6 +261,21 @@ service cloud.firestore {
       return request.resource.data.createdBy == resource.data.createdBy;
     }
 
+    // TASK-012: los campos de facturación (plan, paidUntil, lastPaymentAt)
+    // solo pueden ser modificados por el superadmin. El admin no puede
+    // alterar el estado de suscripción ni registrar pagos desde el cliente.
+    // Los accesos usan `in` + fallback null para tolerar docs legacy que aún
+    // no tienen campos de suscripción.
+    function companyNoBillingFieldChanges() {
+      let old = resource.data;
+      let next = request.resource.data;
+      return (('plan' in next) ? next.plan : null) == (('plan' in old) ? old.plan : null)
+        && (('paidUntil' in next) ? next.paidUntil : null)
+            == (('paidUntil' in old) ? old.paidUntil : null)
+        && (('lastPaymentAt' in next) ? next.lastPaymentAt : null)
+            == (('lastPaymentAt' in old) ? old.lastPaymentAt : null);
+    }
+
     // ====================================================================
     // COMPANIES
     // Superadmin : full access
@@ -272,7 +287,9 @@ service cloud.firestore {
       allow create: if isSuperadmin()
         || (isOnboardingUser() && request.resource.data.createdBy == request.auth.uid);
       allow update: if isSuperadmin()
-        || (isAdmin() && inCompany(companyId) && companyNoOwnerChange());
+        || (isAdmin() && inCompany(companyId)
+            && companyNoOwnerChange()
+            && companyNoBillingFieldChanges());
       // El delete solo lo permite el superadmin. Excepción: el usuario en
       // onboarding puede eliminar una empresa que acaba de crear si falló el
       // alta de su documento de admin (limpieza de empresa huérfana), siempre
