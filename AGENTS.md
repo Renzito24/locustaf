@@ -3,6 +3,8 @@
 ## Commands
 - `flutter analyze` — MUST run after any changes (0 issues required)
 - `dart run seed/seed.dart` — Standalone seed script (no Flutter dep), reads `seed/seed_data.json`
+- `cd functions && npm test` — unit tests (node:test)
+- `cd functions && npm run test:integration` — orchestration tests via Firestore emulator (`emulators:exec --only firestore`); skipped on plain `npm test` without emulator
 
 ## Seed Deployment Order
 1. Deploy permissive rules: `firebase deploy --only firestore:rules firestore.rules.seed`
@@ -33,11 +35,15 @@
 - `checkInGeo` (callable): server-side geocerca (AUI-02 Fase 2). Receives only `{ latitud, longitud }`; resolves workplace from `user.lugarDeTrabajoId` (never from client); validates Haversine distance vs workplace radio; creates attendance + `_attendance_locks/{uid}` in a transaction (lock stale TTL 24h). Derived server-side: `date`, `checkInTime`, `isLate`. On failure throws `HttpsError` (`unauthenticated`|`failed-precondition`|`internal`) with Spanish messages.
 - `syncUserAuthStatus` (firestore trigger): disables/enables Auth account from user doc `isActive`/`isDeleted`
 - Pure logic in `functions/geoCheckIn.js` + `functions/userStatus.js` (unit-tested under `functions/test/`)
+- Orchestration of `checkInGeo` (transaction, lock reclaim, error mapping) is integration-tested in `functions/test/checkInGeo.integration.test.js` (node:test). Runs only with the Firestore emulator; auto-skipped on `npm test` without emulator.
 - Client: `AttendanceRepositoryImpl.checkIn()` sends only coords via `httpsCallable('checkInGeo')`; client-side geo pre-check is UX-only (server is authority). App uses `cloud_functions` (`functionsProvider` in `lib/core/providers/firebase_providers.dart`).
 
 ## Seed Data
-- `seed/seed_data.json` contains: 1 admin, 1 supervisor, 1 employee, 1 workplace
-- Admin default: admin@locustaf.com / Admin123!
+- `seed/seed_data.json` contains: 1 superadmin, 1 admin, 1 supervisor, 1 employee, 1 workplace
+- Passwords are NOT stored in the repo. `dart run seed/seed.dart` resolves them at runtime:
+  - CLI (repetible): `--password=email=valor`
+  - or env: `LOCUSTAF_SEED_PASSWORDS` (JSON `{email: password}`); may fall back to a `password` field if re-added to `seed_data.json`
+  - Missing password for any user → script exits with error
 - Uses Firebase REST API (dart:io HttpClient, no external deps)
 - API key from `lib/firebase_options.dart`
 

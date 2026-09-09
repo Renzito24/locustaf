@@ -13,11 +13,13 @@ const String _firestoreBaseUrl =
 Future<void> main(List<String> args) async {
   print('=== LOCUSTAF Seed Script ===\n');
 
-  print('⚠  AVISO: este script usa credenciales de USO EXCLUSIVO para DEMO');
-  print('  (admin@locustaf.com / Admin123!, supervisor@locustaf.com / Super123!,');
-  print('  employee@locustaf.com / Empl123! y superadmin@locustaf.com / SuperAdmin123!).');
-  print('  NO lo ejecutes contra el proyecto de PRODUCCIÓN. Ejecútalo solo en un');
-  print('  proyecto de pruebas/desarrollo que puedas descartar.\n');
+  print('⚠  AVISO: NO ejecutes este script contra el proyecto de PRODUCCIÓN.');
+  print('  Ejecútalo solo en un proyecto de pruebas/desarrollo que puedas descartar.');
+  print('  Las contraseñas se toman en tiempo de ejecución (nunca del repositorio):');
+  print('    --password=email=valor (repetible, por usuario)');
+  print('  o por la variable de entorno LOCUSTAF_SEED_PASSWORDS (JSON email->password).\n');
+
+  final passwords = _parseUserPasswords(args);
 
   final seedFile = File('${Directory.current.path}/seed/seed_data.json');
   if (!seedFile.existsSync()) {
@@ -33,7 +35,12 @@ Future<void> main(List<String> args) async {
 
   // Step 1: Ensure admin user exists in Auth -> get idToken for Firestore writes
   final adminEmail = 'admin@locustaf.com';
-  final adminPassword = 'Admin123!';
+  final adminPassword = _resolvePassword(passwords, 'admin@locustaf.com', const {});
+  if (adminPassword == null) {
+    stderr.writeln('FATAL: no se pudo resolver la contraseña de $adminEmail');
+    exitCode = 1;
+    return;
+  }
   final adminAuth = await _ensureUserExists(adminEmail, adminPassword);
   if (adminAuth == null) {
     stderr.writeln('FATAL: Could not create or sign in admin user');
@@ -81,8 +88,16 @@ Future<void> main(List<String> args) async {
   print('\n--- Creating users ---');
   for (final u in users) {
     final data = (u as Map<String, dynamic>);
-    final email = data['email'] as String;
-    final password = data['password'] as String;
+    final email = (data['email'] as String).toLowerCase();
+
+    final password = _resolvePassword(passwords, email, data);
+    if (password == null) {
+      stderr.writeln(
+          '  ERROR: no hay password para $email. Pasalo con '
+          '--password=$email=valor o LOCUSTAF_SEED_PASSWORDS.');
+      exitCode = 1;
+      continue;
+    }
 
     final auth = await _ensureUserExists(email, password);
     if (auth == null) {
@@ -137,8 +152,53 @@ Future<void> main(List<String> args) async {
   print('Users created:');
   for (final u in users) {
     final data = u as Map<String, dynamic>;
-    print('  ${data['email']} / ${data['password']}');
+    print('  ${data['email']}');
   }
+  if (exitCode != 0) {
+    print('\nHubo errores: revisá los mensajes anteriores.');
+  }
+}
+
+/// Resuelve la contraseña de [email]: argumento CLI > env JSON > seed file.
+/// Devuelve null si el usuario no tiene contraseña configurada.
+String? _resolvePassword(
+    Map<String, String> passwords, String email, Map<String, dynamic> data) {
+  final override = passwords[email.toLowerCase()];
+  if (override != null && override.isNotEmpty) return override;
+  final filePassword = data['password'];
+  if (filePassword is String && filePassword.isNotEmpty) return filePassword;
+  return null;
+}
+
+/// Parsea `--password=email=valor` (repetible) y la variable de entorno
+/// `LOCUSTAF_SEED_PASSWORDS` (JSON {email: password}). Las claves CLI tienen
+/// prioridad sobre las de entorno.
+Map<String, String> _parseUserPasswords(List<String> args) {
+  final map = <String, String>{};
+  for (final arg in args) {
+    if (!arg.startsWith('--password=')) continue;
+    final kv = arg.substring('--password='.length);
+    final eq = kv.indexOf('=');
+    if (eq <= 0 || eq == kv.length - 1) {
+      stderr.writeln('  --password ignorado (esperado email=valor): $kv');
+      continue;
+    }
+    map[kv.substring(0, eq).toLowerCase()] = kv.substring(eq + 1);
+  }
+  final envJson = Platform.environment['LOCUSTAF_SEED_PASSWORDS'];
+  if (envJson != null && envJson.isNotEmpty) {
+    try {
+      final decoded = jsonDecode(envJson);
+      if (decoded is Map) {
+        for (final entry in decoded.entries) {
+          map[entry.key.toString().toLowerCase()] = entry.value.toString();
+        }
+      }
+    } catch (_) {
+      stderr.writeln('  LOCUSTAF_SEED_PASSWORDS no es JSON válido, se ignora.');
+    }
+  }
+  return map;
 }
 
 /// Returns {uid, idToken} for [email], creating the Auth user if needed.
