@@ -72,16 +72,40 @@ class CompanyRepositoryImpl implements CompanyRepository {
     String companyId, {
     required DateTime paidUntil,
     CompanyPlan plan = CompanyPlan.mensual,
+    String? nota,
   }) async {
-    await _firestoreService.updateDocument(
+    final companyData = await _firestoreService.getDocument(
       path: 'companies',
       documentId: companyId,
-      data: {
-        'paidUntil': paidUntil.toUtc().toIso8601String(),
-        'lastPaymentAt': DateTime.now().toUtc().toIso8601String(),
-        'plan': plan.name,
-        'updatedAt': DateTime.now().toUtc().toIso8601String(),
-      },
     );
+    if (companyData == null) {
+      throw StateError('Empresa no encontrada: $companyId');
+    }
+
+    final now = DateTime.now().toUtc();
+    final paymentRef = _firestoreService.collection('payments').doc();
+
+    // La actualización de la empresa y el alta del histórico se commitan en
+    // un único batch: nunca queda un pago registrado sin su registro histórico
+    // (o viceversa).
+    await _firestoreService.runBatch((batch) async {
+      batch.update(
+        _firestoreService.collection('companies').doc(companyId),
+        {
+          'paidUntil': paidUntil.toUtc().toIso8601String(),
+          'lastPaymentAt': now.toIso8601String(),
+          'plan': plan.name,
+          'updatedAt': now.toIso8601String(),
+        },
+      );
+      batch.set(paymentRef, {
+        'companyId': companyId,
+        'companyName': companyData['nombreComercial'],
+        'plan': plan.name,
+        'paidUntil': paidUntil.toUtc().toIso8601String(),
+        'nota': nota,
+        'createdAt': now.toIso8601String(),
+      });
+    });
   }
 }

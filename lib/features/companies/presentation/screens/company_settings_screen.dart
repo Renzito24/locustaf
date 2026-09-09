@@ -7,12 +7,18 @@ import '../../../../core/theme/app_theme.dart';
 import '../providers/company_action_provider.dart';
 import '../providers/company_providers.dart';
 import '../widgets/company_form.dart';
+import '../widgets/superadmin_settings_panel.dart';
 
 class CompanySettingsScreen extends ConsumerWidget {
   const CompanySettingsScreen({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final isSuperadmin = ref.watch(isSuperadminProvider);
+    if (isSuperadmin) {
+      return const SuperadminSettingsPanel();
+    }
+
     final companyAsync = ref.watch(currentCompanyProvider);
     final state = ref.watch(updateCompanyProvider);
     final isMobile = AppTheme.isMobile(context);

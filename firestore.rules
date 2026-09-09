@@ -300,6 +300,17 @@ service cloud.firestore {
     }
 
     // ====================================================================
+    // PAYMENTS
+    // Historial de pagos de la plataforma (TASK-017). Solo el superadmin
+    // registra y lee pagos; es una colección inmutable (sin update/delete).
+    // ====================================================================
+    match /payments/{paymentId} {
+      allow read: if isSuperadmin();
+      allow create: if isSuperadmin();
+      allow update, delete: if false;
+    }
+
+    // ====================================================================
     // ATTENDANCES
     // Superadmin : full access
     // Admin/Superv: read de su empresa

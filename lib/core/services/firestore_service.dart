@@ -25,6 +25,15 @@ class FirestoreService {
     return _firestore.runTransaction(callback);
   }
 
+  /// Ejecuta un lote atómico de escrituras (varias actualizaciones/altas en un
+  /// solo commit). Útil para operaciones que no requieren lecturas previas
+  /// condicionales pero sí atomicidad (ej: actualizar la empresa + registrar
+  /// el histórico del pago del superadmin).
+  Future<void> runBatch(Future<void> Function(WriteBatch batch) callback) {
+    final batch = _firestore.batch();
+    return callback(batch).then((_) => batch.commit());
+  }
+
   /// Genera un ID único para un documento en la colección especificada,
   /// sin escribir el documento. Útil cuando se necesita el ID antes de
   /// realizar operaciones como upload a Storage.

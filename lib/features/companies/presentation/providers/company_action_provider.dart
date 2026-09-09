@@ -120,11 +120,13 @@ class RegisterPaymentNotifier extends AsyncNotifier<void> {
   Future<void> build() => Future.value();
 
   /// Registra un pago manual y extiende el uso de la empresa hasta [paidUntil]
-  /// (TASK-011). Solo el superadmin invoca esta acción desde la UI.
+  /// (TASK-011), dejando el registro en el historial con una [nota] opcional
+  /// (TASK-017). Solo el superadmin invoca esta acción desde la UI.
   Future<void> registerPayment(
     String companyId, {
     required DateTime paidUntil,
     CompanyPlan plan = CompanyPlan.mensual,
+    String? nota,
   }) async {
     state = const AsyncLoading();
     final repo = ref.read(companyRepositoryProvider);
@@ -133,6 +135,7 @@ class RegisterPaymentNotifier extends AsyncNotifier<void> {
         companyId,
         paidUntil: paidUntil,
         plan: plan,
+        nota: nota,
       );
       state = const AsyncData(null);
     } catch (e, st) {

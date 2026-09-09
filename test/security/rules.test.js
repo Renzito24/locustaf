@@ -59,6 +59,12 @@ async function seedLock(id, data) {
   });
 }
 
+async function seedPayment(id, data) {
+  await testEnv.withSecurityRulesDisabled(async (context) => {
+    await context.firestore().doc(`payments/${id}`).set(data);
+  });
+}
+
 // ─── Setup / Teardown ───────────────────────────────────────────────────────
 
 before(async () => {
@@ -1005,6 +1011,86 @@ describe('TASK-012: billing fields solo superadmin', () => {
       ctx.firestore().doc('companies/emp-1').update({
         createdBy: 'nuevo-admin',
       }),
+    );
+  });
+});
+
+describe('TASK-017: historial de pagos (payments)', () => {
+  const paymentData = {
+    companyId: 'emp-1',
+    companyName: 'Empresa A',
+    plan: 'mensual',
+    paidUntil: '2026-10-09T00:00:00.000Z',
+    nota: 'Renovación',
+    createdAt: '2026-09-09T12:00:00.000Z',
+  };
+
+  it('un superadmin SÍ puede registrar un pago', async () => {
+    await seedUser('superadmin-1', { rol: 'superadmin', companyId: null, isActive: true, isDeleted: false });
+    const ctx = testEnv.authenticatedContext('superadmin-1');
+    await assertSucceeds(
+      ctx.firestore().doc('payments/pay-1').set(paymentData),
+    );
+  });
+
+  it('un superadmin SÍ puede leer el historial de pagos', async () => {
+    await seedUser('superadmin-1', { rol: 'superadmin', companyId: null, isActive: true, isDeleted: false });
+    await seedPayment('pay-1', paymentData);
+    const ctx = testEnv.authenticatedContext('superadmin-1');
+    await assertSucceeds(
+      ctx.firestore().doc('payments/pay-1').get(),
+    );
+  });
+
+  it('un admin NO puede crear pagos', async () => {
+    await seedUser('admin-1', { rol: 'admin', companyId: 'emp-1', isActive: true, isDeleted: false });
+    const ctx = testEnv.authenticatedContext('admin-1');
+    await assertFails(
+      ctx.firestore().doc('payments/pay-1').set(paymentData),
+    );
+  });
+
+  it('un admin NO puede leer el historial de pagos', async () => {
+    await seedUser('admin-1', { rol: 'admin', companyId: 'emp-1', isActive: true, isDeleted: false });
+    await seedPayment('pay-1', paymentData);
+    const ctx = testEnv.authenticatedContext('admin-1');
+    await assertFails(
+      ctx.firestore().doc('payments/pay-1').get(),
+    );
+  });
+
+  it('un empleado NO puede crear pagos', async () => {
+    await seedUser('emp-1', { rol: 'employee', companyId: 'emp-1', isActive: true, isDeleted: false });
+    const ctx = testEnv.authenticatedContext('emp-1');
+    await assertFails(
+      ctx.firestore().doc('payments/pay-2').set(paymentData),
+    );
+  });
+
+  it('un empleado NO puede leer el historial de pagos', async () => {
+    await seedUser('emp-1', { rol: 'employee', companyId: 'emp-1', isActive: true, isDeleted: false });
+    await seedPayment('pay-1', paymentData);
+    const ctx = testEnv.authenticatedContext('emp-1');
+    await assertFails(
+      ctx.firestore().doc('payments/pay-1').get(),
+    );
+  });
+
+  it('el historial es inmutable: nadie puede actualizar pagos', async () => {
+    await seedUser('superadmin-1', { rol: 'superadmin', companyId: null, isActive: true, isDeleted: false });
+    await seedPayment('pay-1', paymentData);
+    const ctx = testEnv.authenticatedContext('superadmin-1');
+    await assertFails(
+      ctx.firestore().doc('payments/pay-1').update({ nota: 'cambiada' }),
+    );
+  });
+
+  it('el historial es inmutable: nadie puede eliminar pagos', async () => {
+    await seedUser('superadmin-1', { rol: 'superadmin', companyId: null, isActive: true, isDeleted: false });
+    await seedPayment('pay-1', paymentData);
+    const ctx = testEnv.authenticatedContext('superadmin-1');
+    await assertFails(
+      ctx.firestore().doc('payments/pay-1').delete(),
     );
   });
 });
