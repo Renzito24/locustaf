@@ -61,6 +61,7 @@ class OnboardingNotifier extends Notifier<OnboardingState> {
         isActive: true,
         isDeleted: false,
         createdAt: DateTime.now(),
+        acceptedPoliciesAt: DateTime.now(),
       );
       final userRef = firestore.collection('users').doc(authUser.uid);
 

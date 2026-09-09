@@ -33,11 +33,12 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
   final _passwordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
 
-  // Datos de la empresa
+  // Empresa
   final _empresaController = TextEditingController();
   final _razonSocialController = TextEditingController();
   final _cuitController = TextEditingController();
   final _empresaEmailController = TextEditingController();
+  bool _aceptaPoliticas = false;
 
   @override
   void dispose() {
@@ -357,6 +358,79 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                       decoration: AppTheme.inputDecoration(
                         label: 'Email de la empresa',
                         icon: Icons.email_outlined,
+                      ),
+                    ),
+                    const SizedBox(height: 24),
+                    Text('Términos y políticas', style: AppTheme.headingMd),
+                    const SizedBox(height: 4),
+                    Text(
+                      'Al continuar confirmás que leíste y aceptás los términos '
+                      'de uso, las políticas de privacidad y el tratamiento de '
+                      'los datos personales de tus empleados.',
+                      style: AppTheme.bodyMd,
+                    ),
+                    const SizedBox(height: 12),
+                    FormField<bool>(
+                      initialValue: _aceptaPoliticas,
+                      validator: (v) => (v == true)
+                          ? null
+                          : 'Debés aceptar los términos y políticas para continuar.',
+                      builder: (field) => Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          InkWell(
+                            onTap: state.isLoading
+                                ? null
+                                : () {
+                                    setState(() =>
+                                        _aceptaPoliticas = !_aceptaPoliticas);
+                                    field.didChange(_aceptaPoliticas);
+                                  },
+                            child: Row(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Checkbox(
+                                  value: _aceptaPoliticas,
+                                  activeColor: AppColors.gold,
+                                  checkColor: Colors.white,
+                                  side: const BorderSide(
+                                    color: AppColors.textSecondary,
+                                  ),
+                                  onChanged: state.isLoading
+                                      ? null
+                                      : (v) {
+                                          setState(() => _aceptaPoliticas = v ?? false);
+                                          field.didChange(_aceptaPoliticas);
+                                        },
+                                ),
+                                const Expanded(
+                                  child: Padding(
+                                    padding: EdgeInsets.only(top: 12),
+                                    child: Text(
+                                      'Acepto los términos y condiciones y las '
+                                      'políticas de uso y privacidad de LOCUSTAF.',
+                                      style: TextStyle(
+                                        color: AppColors.textWhite,
+                                        fontSize: 13,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          if (field.hasError)
+                            Padding(
+                              padding: const EdgeInsets.only(left: 12),
+                              child: Text(
+                                field.errorText!,
+                                style: const TextStyle(
+                                  color: AppColors.error,
+                                  fontSize: 12,
+                                ),
+                              ),
+                            ),
+                        ],
                       ),
                     ),
                     const SizedBox(height: 24),

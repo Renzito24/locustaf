@@ -50,6 +50,10 @@ class UserModel extends Equatable {
   final DateTime createdAt;
   final DateTime? updatedAt;
 
+  /// Momento en que el usuario aceptó los términos y políticas de la
+  /// plataforma (TASK-013). Se fija en el onboarding; null si es legacy.
+  final DateTime? acceptedPoliciesAt;
+
   const UserModel({
     required this.id,
     required this.nombre,
@@ -67,6 +71,7 @@ class UserModel extends Equatable {
     this.companyId,
     required this.createdAt,
     this.updatedAt,
+    this.acceptedPoliciesAt,
   });
 
   String get nombreCompleto => '$nombre $apellido';
@@ -88,6 +93,7 @@ class UserModel extends Equatable {
     String? companyId,
     DateTime? createdAt,
     DateTime? updatedAt,
+    DateTime? acceptedPoliciesAt,
   }) {
     return UserModel(
       id: id ?? this.id,
@@ -106,6 +112,7 @@ class UserModel extends Equatable {
       companyId: companyId ?? this.companyId,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
+      acceptedPoliciesAt: acceptedPoliciesAt ?? this.acceptedPoliciesAt,
     );
   }
 
@@ -129,6 +136,9 @@ class UserModel extends Equatable {
       updatedAt: json['updatedAt'] != null
           ? DateTime.parse(json['updatedAt'] as String).toLocal()
           : null,
+      acceptedPoliciesAt: json['acceptedPoliciesAt'] != null
+          ? DateTime.parse(json['acceptedPoliciesAt'] as String).toLocal()
+          : null,
     );
   }
 
@@ -150,6 +160,7 @@ class UserModel extends Equatable {
       'companyId': companyId,
       'createdAt': createdAt.toUtc().toIso8601String(),
       'updatedAt': updatedAt?.toUtc().toIso8601String(),
+      'acceptedPoliciesAt': acceptedPoliciesAt?.toUtc().toIso8601String(),
     };
   }
 
@@ -171,5 +182,6 @@ class UserModel extends Equatable {
         companyId,
         createdAt,
         updatedAt,
+        acceptedPoliciesAt,
       ];
 }
