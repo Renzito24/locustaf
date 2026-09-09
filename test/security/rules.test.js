@@ -147,7 +147,30 @@ describe('VUL-3: campos server-only en asistencias', () => {
     );
   });
 
-  it('un empleado SÍ puede hacer un check-out válido (active -> completed)', async () => {
+  it('AUI-02 Fase 3: un empleado YA NO puede completar su jornada por Firestore (debe usar checkOutGeo)', async () => {
+    await seedUser('emp-1', { rol: 'employee', companyId: 'emp-1', isActive: true, isDeleted: false });
+    await seedAttendance('att-1', {
+      userId: 'emp-1',
+      companyId: 'emp-1',
+      checkInTime: new Date('2026-08-26T08:00:00.000Z'),
+      date: '2026-08-26',
+      isLate: false,
+      workplaceId: 'wp-1',
+      checkInLatitud: -34.6,
+      checkInLongitud: -58.4,
+      status: 'active',
+    });
+    const ctx = testEnv.authenticatedContext('emp-1');
+    await assertFails(
+      ctx.firestore().doc('attendances/att-1').update({
+        checkOutTime: new Date('2026-08-26T16:00:00.000Z'),
+        status: 'completed',
+        durationMinutes: 480,
+      }),
+    );
+  });
+
+  it('un empleado SÍ puede finalizar una jornada huérfana marcada como isOrphaned', async () => {
     await seedUser('emp-1', { rol: 'employee', companyId: 'emp-1', isActive: true, isDeleted: false });
     await seedAttendance('att-1', {
       userId: 'emp-1',
@@ -166,6 +189,31 @@ describe('VUL-3: campos server-only en asistencias', () => {
         checkOutTime: new Date('2026-08-26T16:00:00.000Z'),
         status: 'completed',
         durationMinutes: 480,
+        isOrphaned: true,
+      }),
+    );
+  });
+
+  it('un empleado NO puede completar su jornada usando isOrphaned=false (bypass)', async () => {
+    await seedUser('emp-1', { rol: 'employee', companyId: 'emp-1', isActive: true, isDeleted: false });
+    await seedAttendance('att-1', {
+      userId: 'emp-1',
+      companyId: 'emp-1',
+      checkInTime: new Date('2026-08-26T08:00:00.000Z'),
+      date: '2026-08-26',
+      isLate: false,
+      workplaceId: 'wp-1',
+      checkInLatitud: -34.6,
+      checkInLongitud: -58.4,
+      status: 'active',
+    });
+    const ctx = testEnv.authenticatedContext('emp-1');
+    await assertFails(
+      ctx.firestore().doc('attendances/att-1').update({
+        checkOutTime: new Date('2026-08-26T16:00:00.000Z'),
+        status: 'completed',
+        durationMinutes: 480,
+        isOrphaned: false,
       }),
     );
   });

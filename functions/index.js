@@ -18,6 +18,7 @@ const { getAuth } = require('firebase-admin/auth');
 const { getFirestore, Timestamp } = require('firebase-admin/firestore');
 const { computeUserAuthUpdate } = require('./userStatus');
 const { decideRegisterCheckIn, isStaleLock } = require('./geoCheckIn');
+const { decideRegisterCheckOut, computeCheckOutDuration } = require('./geoCheckOut');
 
 initializeApp();
 
@@ -146,6 +147,100 @@ exports.checkInGeo = onCall(
       checkInTime: now.toISOString(),
       isLate: decision.isLate,
       distanceMeters: Math.round(decision.distance),
+    };
+  }
+);
+
+/**
+ * Callable de check-out con geocerca (AUI-02, Fase 3).
+ *
+ * Recepción: `{ latitud, longitud, attendanceId }`. Resuelve el lugar de
+ * trabajo desde el documento del usuario (nunca del cliente), valida en el
+ * servidor la distancia Haversine y cierra la jornada en una transacción:
+ * - checkOutTime y durationMinutes se derivan del servidor (el cliente no los
+ *   puede fijar).
+ * - La asistencia debe existir, pertenecer al usuario y estar 'active'.
+ * - Elimina el lock `_attendance_locks/{uid}` del empleado.
+ */
+exports.checkOutGeo = onCall(
+  {
+    region: 'southamerica-east1',
+  },
+  async (request) => {
+    if (!request.auth) {
+      throw new HttpsError('unauthenticated', 'Debés iniciar sesión para finalizar la jornada.');
+    }
+    const uid = request.auth.uid;
+    const latitud = request.data?.latitud;
+    const longitud = request.data?.longitud;
+    const attendanceId = request.data?.attendanceId;
+    if (typeof attendanceId !== 'string' || attendanceId.length === 0) {
+      throw new HttpsError('failed-precondition', 'Falta el identificador de la asistencia.');
+    }
+
+    const userSnap = await _db.doc(`users/${uid}`).get();
+    const user = userSnap.exists ? { ...userSnap.data(), id: uid } : null;
+
+    let workplace = null;
+    const workplaceId = user && user.lugarDeTrabajoId;
+    if (user && workplaceId) {
+      const wpSnap = await _db.doc(`workplaces/${workplaceId}`).get();
+      if (wpSnap.exists) {
+        workplace = { ...wpSnap.data(), id: workplaceId };
+      }
+    }
+
+    const attSnap = await _db.doc(`attendances/${attendanceId}`).get();
+    const attendance = attSnap.exists ? { ...attSnap.data(), id: attendanceId } : null;
+
+    const now = new Date();
+    const decision = decideRegisterCheckOut({ user, workplace, attendance, now, latitud, longitud });
+    if (!decision.ok) {
+      throw new HttpsError('failed-precondition', decision.message);
+    }
+
+    const durationMinutes = computeCheckOutDuration(attendance.checkInTime, now);
+    const lockRef = _db.doc(`_attendance_locks/${uid}`);
+    try {
+      await _db.runTransaction(async (tx) => {
+        const attRef = _db.doc(`attendances/${attendanceId}`);
+        const inTx = await tx.get(attRef);
+        if (!inTx.exists) {
+          throw new HttpsError('failed-precondition', 'Registro de asistencia no encontrado.');
+        }
+        const inTxData = inTx.data();
+        if (inTxData.userId !== uid) {
+          throw new HttpsError('failed-precondition', 'Este registro no te pertenece.');
+        }
+        if (inTxData.status === 'completed') {
+          throw new HttpsError('failed-precondition', 'Esta asistencia ya fue finalizada.');
+        }
+        const lockSnap = await tx.get(lockRef);
+        if (!lockSnap.exists) {
+          throw new HttpsError(
+            'failed-precondition',
+            'No se encontró un bloqueo de sesión activo. Es posible que la sesión ya haya sido finalizada.'
+          );
+        }
+        tx.update(attRef, {
+          checkOutTime: Timestamp.fromDate(now),
+          durationMinutes,
+          status: 'completed',
+          checkOutLatitud: latitud,
+          checkOutLongitud: longitud,
+        });
+        tx.delete(lockRef);
+      });
+    } catch (err) {
+      if (err instanceof HttpsError) throw err;
+      console.error('Error al registrar check-out geolocalizado:', err);
+      throw new HttpsError('internal', 'Error al finalizar la jornada.');
+    }
+
+    return {
+      attendanceId,
+      checkOutTime: now.toISOString(),
+      durationMinutes,
     };
   }
 );

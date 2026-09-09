@@ -288,10 +288,9 @@ class AttendanceNotifier extends Notifier<AttendanceActionState> {
       final location = locationResult.location!;
 
       await repo.checkOut(
-        attendanceId,
-        userId,
-        checkOutLatitud: location.latitude,
-        checkOutLongitud: location.longitude,
+        attendanceId: attendanceId,
+        latitud: location.latitude,
+        longitud: location.longitude,
       );
       LoggingService.instance.info(
         'Check-out registrado',

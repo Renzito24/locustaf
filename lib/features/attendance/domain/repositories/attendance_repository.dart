@@ -29,11 +29,15 @@ abstract class AttendanceRepository {
   /// Registra un ingreso manual (realizado por un administrador) sin validar
   /// ubicación, para empleados que no pueden registrarse por sí mismos.
   Future<void> manualCheckIn(AttendanceModel attendance);
-  Future<void> checkOut(
-    String attendanceId,
-    String userId, {
-    double? checkOutLatitud,
-    double? checkOutLongitud,
+
+  /// Finaliza la jornada del empleado por GPS. La geocerca se valida en el
+  /// servidor (callable `checkOutGeo`): solo se envían las coordenadas y el id
+  /// de la asistencia; checkOutTime/durationMinutes se derivan en el servidor
+  /// (AUI-02, Fase 3).
+  Future<void> checkOut({
+    required String attendanceId,
+    required double latitud,
+    required double longitud,
   });
   Future<void> finalizeOrphaned(String attendanceId, String userId);
   Future<UserModel?> getUser(String userId);

@@ -132,6 +132,18 @@ service cloud.firestore {
         && !('reviewedAt' in request.resource.data);
     }
 
+    // AUI-02 (Fase 3): el check-out del empleado pasa por la callable
+    // `checkOutGeo` (geocerca server-side). Por eso el self check-out directo
+    // quedó bloqueado en Firestore. Única excepción: la finalización de una
+    // jornada huérfana (isOrphaned = true), caso documentado donde el empleado
+    // no está en el lugar de trabajo porque la jornada ya superó su fin.
+    function isEmployeeCompletionAllowed() {
+      return resource.data.status == 'active'
+        && request.resource.data.status == 'completed'
+        && 'checkOutTime' in request.resource.data
+        && request.resource.data.isOrphaned == true;
+    }
+
     // En updates de asistencias, los campos fijados en el check-in y la identidad
     // no pueden cambiar (evita falsificar hora de entrada, fecha, lugar o
     // coordenadas de ingreso). Además se protegen los campos server-only:
@@ -293,7 +305,8 @@ service cloud.firestore {
       allow update: if isAuthenticated()
         && (isSuperadmin()
             || (isEmployee() && resource.data.userId == request.auth.uid
-                && inCompany(resource.data.companyId)))
+                && inCompany(resource.data.companyId)
+                && isEmployeeCompletionAllowed()))
         && (isSuperadmin() || noAttendanceServerFieldChanges());
       allow delete: if isSuperadmin();
     }

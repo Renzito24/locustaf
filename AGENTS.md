@@ -33,10 +33,11 @@
 ## Cloud Functions
 - `functions/` — Node.js, `firebase-functions/v2`, region `southamerica-east1`
 - `checkInGeo` (callable): server-side geocerca (AUI-02 Fase 2). Receives only `{ latitud, longitud }`; resolves workplace from `user.lugarDeTrabajoId` (never from client); validates Haversine distance vs workplace radio; creates attendance + `_attendance_locks/{uid}` in a transaction (lock stale TTL 24h). Derived server-side: `date`, `checkInTime`, `isLate`. On failure throws `HttpsError` (`unauthenticated`|`failed-precondition`|`internal`) with Spanish messages.
+- `checkOutGeo` (callable): server-side cierre de jornada con geocerca (AUI-02 Fase 3). Receives only `{ latitud, longitud, attendanceId }`; validates same geofence; in a transaction updates `status: completed` + server-derived `checkOutTime` and `durationMinutes` + coords, and deletes `_attendance_locks/{uid}`. Employee self check-out is blocked by `firestore.rules` (only exception: `isOrphaned == true` via `finalizeOrphaned`). Pure logic in `functions/geoCheckOut.js` (`decideRegisterCheckOut`, `computeCheckOutDuration`).
 - `syncUserAuthStatus` (firestore trigger): disables/enables Auth account from user doc `isActive`/`isDeleted`
 - Pure logic in `functions/geoCheckIn.js` + `functions/userStatus.js` (unit-tested under `functions/test/`)
-- Orchestration of `checkInGeo` (transaction, lock reclaim, error mapping) is integration-tested in `functions/test/checkInGeo.integration.test.js` (node:test). Runs only with the Firestore emulator; auto-skipped on `npm test` without emulator.
-- Client: `AttendanceRepositoryImpl.checkIn()` sends only coords via `httpsCallable('checkInGeo')`; client-side geo pre-check is UX-only (server is authority). App uses `cloud_functions` (`functionsProvider` in `lib/core/providers/firebase_providers.dart`).
+- Orchestration of `checkInGeo` (transaction, lock reclaim, error mapping) is integration-tested in `functions/test/checkInGeo.integration.test.js`; `checkOutGeo` in `functions/test/checkOutGeo.integration.test.js` (node:test). Both run only with the Firestore emulator; auto-skipped on `npm test` without emulator.
+- Client: `AttendanceRepositoryImpl.checkIn()` sends only coords via `httpsCallable('checkInGeo')`; `checkOut()` sends `{ attendanceId, latitud, longitud }` via `httpsCallable('checkOutGeo')`; client-side geo pre-check is UX-only (server is authority). App uses `cloud_functions` (`functionsProvider` in `lib/core/providers/firebase_providers.dart`).
 
 ## Seed Data
 - `seed/seed_data.json` contains: 1 superadmin, 1 admin, 1 supervisor, 1 employee, 1 workplace

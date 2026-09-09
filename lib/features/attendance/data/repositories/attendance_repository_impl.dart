@@ -196,55 +196,25 @@ class AttendanceRepositoryImpl implements AttendanceRepository {
   }
 
   @override
-  Future<void> checkOut(
-    String attendanceId,
-    String userId, {
-    double? checkOutLatitud,
-    double? checkOutLongitud,
+  Future<void> checkOut({
+    required String attendanceId,
+    required double latitud,
+    required double longitud,
   }) async {
-    final attendanceRef =
-        _firestoreService.collection('attendances').doc(attendanceId);
-    final lockRef =
-        _firestoreService.collection('_attendance_locks').doc(userId);
-
-    await _firestoreService.runTransaction((transaction) async {
-      final attendanceDoc = await transaction.get(attendanceRef);
-      if (!attendanceDoc.exists) {
-        throw AttendanceException('Registro de asistencia no encontrado.');
-      }
-      final attendanceData =
-          attendanceDoc.data() as Map<String, dynamic>;
-      if (attendanceData['userId'] != userId) {
-        throw AttendanceException('Este registro no te pertenece.');
-      }
-      if (attendanceData['status'] == 'completed') {
-        throw AttendanceException('Esta asistencia ya fue finalizada.');
-      }
-
-      final lockDoc = await transaction.get(lockRef);
-      if (!lockDoc.exists) {
-        throw AttendanceException('No se encontró un bloqueo de sesión activo. '
-            'Es posible que la sesión ya haya sido finalizada.');
-      }
-
-      final now = DateTime.now();
-      final checkInTime = _parseLockTime(attendanceData['checkInTime']);
-      if (checkInTime == null && attendanceData['checkInTime'] != null) {
-        throw AttendanceException('Asistencia con fecha de ingreso inválida.');
-      }
-      final durationMinutes = checkInTime == null
-          ? 0
-          : now.difference(checkInTime).inMinutes;
-
-      transaction.update(attendanceRef, {
-        'checkOutTime': Timestamp.fromDate(now.toUtc()),
-        'durationMinutes': durationMinutes,
-        'status': 'completed',
-        'checkOutLatitud': checkOutLatitud,
-        'checkOutLongitud': checkOutLongitud,
+    final functions = _functions;
+    if (functions == null) {
+      throw AttendanceException('El servicio de Cloud Functions no está configurado.');
+    }
+    try {
+      final callable = functions.httpsCallable('checkOutGeo');
+      await callable<Map<String, dynamic>>({
+        'attendanceId': attendanceId,
+        'latitud': latitud,
+        'longitud': longitud,
       });
-      transaction.delete(lockRef);
-    });
+    } on FirebaseFunctionsException catch (e) {
+      throw AttendanceException(e.message ?? 'No se pudo finalizar la jornada.');
+    }
   }
 
   @override

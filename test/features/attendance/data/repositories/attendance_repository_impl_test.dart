@@ -223,108 +223,24 @@ void main() {
     });
   });
 
-  /* ------------------------------- check-out ------------------------------- */
+  /* -------------------------------- check-out ------------------------------- */
 
   group('checkOut', () {
-    test('finaliza la asistencia, guarda duración y limpia el lock', () async {
-      final checkInTime = DateTime.now().subtract(const Duration(hours: 4));
-      await repo.manualCheckIn(buildAttendance(checkInTime: checkInTime));
-      final attendanceId = (await fake
-              .collection('attendances')
-              .where('userId', isEqualTo: userId)
-              .get())
-          .docs
-          .first
-          .id;
-
-      await repo.checkOut(
-        attendanceId,
-        userId,
-        checkOutLatitud: -34.6037,
-        checkOutLongitud: -58.3816,
-      );
-
-      final doc = await fake.collection('attendances').doc(attendanceId).get();
-      expect(doc.get('status'), 'completed');
-      expect(doc.get('durationMinutes'), greaterThanOrEqualTo(4 * 60));
-      expect(doc.get('checkOutLatitud'), -34.6037);
-      expect(doc.get('checkOutLongitud'), -58.3816);
-
-      final lock = await fake.collection('_attendance_locks').doc(userId).get();
-      expect(lock.exists, isFalse);
-    });
-
-    test('lanza error si el registro no pertenece al usuario', () async {
-      await repo.manualCheckIn(buildAttendance());
-      final attendanceId = (await fake
-              .collection('attendances')
-              .where('userId', isEqualTo: userId)
-              .get())
-          .docs
-          .first
-          .id;
-
+    test('delega en la callable checkOutGeo (envía coords e id de asistencia)', () async {
+      // El flujo de geocerca (server-side) ya no toca Firestore desde el
+      // cliente: sin Cloud Functions configuradas, el repo lo rechaza. La
+      // orquestación de checkOutGeo se valida en functions/test.
       expect(
-        () => repo.checkOut(attendanceId, 'other-user'),
-        throwsA(
-          isA<AttendanceException>().having(
-            (e) => e.message,
-            'message',
-            contains('Este registro no te pertenece'),
-          ),
+        () => repo.checkOut(
+          attendanceId: 'att-1',
+          latitud: -34.6037,
+          longitud: -58.3816,
         ),
-      );
-    });
-
-    test('lanza error si la asistencia ya fue finalizada', () async {
-      await repo.manualCheckIn(buildAttendance(id: 'att-done'));
-      final attendanceId = (await fake
-              .collection('attendances')
-              .where('userId', isEqualTo: userId)
-              .get())
-          .docs
-          .first
-          .id;
-      await fake.collection('attendances').doc(attendanceId).update({
-        'status': 'completed',
-        'checkOutTime': Timestamp.fromDate(DateTime.now().toUtc()),
-      });
-
-      expect(
-        () => repo.checkOut(attendanceId, userId),
         throwsA(
           isA<AttendanceException>().having(
             (e) => e.message,
             'message',
-            contains('ya fue finalizada'),
-          ),
-        ),
-      );
-    });
-
-    test('lanza error si no existe un lock activo', () async {
-      await seedAttendance(buildAttendance(id: 'att-no-lock'));
-
-      expect(
-        () => repo.checkOut('att-no-lock', userId),
-        throwsA(
-          isA<AttendanceException>().having(
-            (e) => e.message,
-            'message',
-            contains('bloqueo de sesión activo'),
-          ),
-        ),
-      );
-    });
-
-    test('lanza error si el registro no existe', () async {
-      expect(
-        () => repo.checkOut('missing-attendance', userId),
-        throwsA(
-          isA<AttendanceException>().having(
-            (e) => e.message,
-            'message',
-            contains('no encontrado'),
+            contains('Cloud Functions'),
           ),
         ),
       );
