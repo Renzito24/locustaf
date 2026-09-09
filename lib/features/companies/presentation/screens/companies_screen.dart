@@ -398,7 +398,20 @@ class _SubscriptionInfo extends StatelessWidget {
 
     final days = company.daysRemainingAt(now);
     final nearExpiry = days <= 7;
-    final label = 'Vence ${_fmtDate(paidUntil)}';
+    final isTrial = company.lastPaymentAt == null;
+    final label = isTrial ? 'Prueba' : company.plan.label;
+    final detail = '${_fmtDate(paidUntil)} · ${days}d';
+
+    if (isTrial) {
+      return AppTheme.badge(
+        label: '$label hasta $detail',
+        bgColor: nearExpiry
+            ? AppColors.warning.withValues(alpha: 0.15)
+            : AppColors.info.withValues(alpha: 0.15),
+        textColor: nearExpiry ? AppColors.warning : AppColors.info,
+      );
+    }
+
     final Color bg =
         nearExpiry ? AppColors.warning.withValues(alpha: 0.15) : AppColors.gold.withValues(alpha: 0.12);
     final Color fg = nearExpiry ? AppColors.warning : AppColors.gold;
@@ -409,12 +422,12 @@ class _SubscriptionInfo extends StatelessWidget {
       crossAxisAlignment: WrapCrossAlignment.center,
       children: [
         AppTheme.badge(
-          label: company.plan.label,
+          label: label,
           bgColor: AppColors.cardDark,
           textColor: AppColors.textSecondary,
         ),
         AppTheme.badge(
-          label: '$label · ${days}d restantes',
+          label: 'Vence $detail',
           bgColor: bg,
           textColor: fg,
         ),

@@ -11,7 +11,7 @@
  * Esto cierra la brecha de seguridad donde un empleado "eliminado" conservaba
  * su sesión/credencial activa en el servidor.
  */
-const { onDocumentUpdated } = require('firebase-functions/v2/firestore');
+const { onDocumentCreated, onDocumentUpdated } = require('firebase-functions/v2/firestore');
 const { onCall, HttpsError } = require('firebase-functions/v2/https');
 const { initializeApp } = require('firebase-admin/app');
 const { getAuth } = require('firebase-admin/auth');
@@ -19,6 +19,7 @@ const { getFirestore, Timestamp } = require('firebase-admin/firestore');
 const { computeUserAuthUpdate } = require('./userStatus');
 const { decideRegisterCheckIn, isStaleLock } = require('./geoCheckIn');
 const { decideRegisterCheckOut, computeCheckOutDuration } = require('./geoCheckOut');
+const { decideCompanyInitialBilling } = require('./companyBilling');
 
 initializeApp();
 
@@ -53,6 +54,32 @@ exports.syncUserAuthStatus = onDocumentUpdated(
     } catch (err) {
       console.error(`Error al actualizar Auth del usuario ${userId}:`, err);
     }
+  }
+);
+
+/**
+ * Trigger de alta de empresas (TASK-014): al crearse una empresa sin datos de
+ * facturación (p.ej. durante el onboarding), se le registra la prueba gratuita
+ * de 90 días: `plan: mensual` y `paidUntil = created + 90 días` (server-side).
+ * Si el documento ya trae campos de suscripción (alta del superadmin con pago
+ * inicial) se respetan y no se aplica la prueba.
+ */
+exports.registerCompanyTrial = onDocumentCreated(
+  {
+    document: 'companies/{companyId}',
+    region: 'southamerica-east1',
+  },
+  async (event) => {
+    const data = event.data?.data();
+    const decision = decideCompanyInitialBilling(data, new Date());
+    if (!decision.shouldApplyTrial) {
+      return;
+    }
+    await event.data.ref.update({
+      plan: decision.plan,
+      paidUntil: decision.paidUntil,
+      updatedAt: new Date().toISOString(),
+    });
   }
 );
 

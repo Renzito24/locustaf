@@ -5,6 +5,7 @@
 - `dart run seed/seed.dart` — Standalone seed script (no Flutter dep), reads `seed/seed_data.json`
 - `cd functions && npm test` — unit tests (node:test)
 - `cd functions && npm run test:integration` — orchestration tests via Firestore emulator (`emulators:exec --only firestore`); skipped on plain `npm test` without emulator
+- `cd functions && npm run test:trial` — trigger test `registerCompanyTrial` via `emulators:exec --only firestore,functions` (needs `LOCUSTAF_TRIAL_INTEGRATION=1` env, set inside the script)
 
 ## Seed Deployment Order
 1. Deploy permissive rules: `firebase deploy --only firestore:rules firestore.rules.seed`
@@ -29,15 +30,20 @@
 - Supervisor has read access to: users, workplaces, attendances, incidences (not medical_documents)
 - Attendance `create`: only superadmin or admin manual check-in of another employee (AUI-06). Employee self check-in is fully blocked client-side — the app calls the `checkInGeo` callable (AUI-02, Fase 2). `attendances.create` by employee-self is always denied by rules.
 - `companies.update` by admin freezes `createdBy` (AUI-05)
+- `companies.update` by admin also freezes billing fields `plan`/`paidUntil`/`lastPaymentAt` (TASK-012, `companyNoBillingFieldChanges`); only superadmin writes them (registro de pagos desde el dashboard, TASK-011)
 
 ## Cloud Functions
 - `functions/` — Node.js, `firebase-functions/v2`, region `southamerica-east1`
 - `checkInGeo` (callable): server-side geocerca (AUI-02 Fase 2). Receives only `{ latitud, longitud }`; resolves workplace from `user.lugarDeTrabajoId` (never from client); validates Haversine distance vs workplace radio; creates attendance + `_attendance_locks/{uid}` in a transaction (lock stale TTL 24h). Derived server-side: `date`, `checkInTime`, `isLate`. On failure throws `HttpsError` (`unauthenticated`|`failed-precondition`|`internal`) with Spanish messages.
 - `checkOutGeo` (callable): server-side cierre de jornada con geocerca (AUI-02 Fase 3). Receives only `{ latitud, longitud, attendanceId }`; validates same geofence; in a transaction updates `status: completed` + server-derived `checkOutTime` and `durationMinutes` + coords, and deletes `_attendance_locks/{uid}`. Employee self check-out is blocked by `firestore.rules` (only exception: `isOrphaned == true` via `finalizeOrphaned`). Pure logic in `functions/geoCheckOut.js` (`decideRegisterCheckOut`, `computeCheckOutDuration`).
 - `syncUserAuthStatus` (firestore trigger): disables/enables Auth account from user doc `isActive`/`isDeleted`
-- Pure logic in `functions/geoCheckIn.js` + `functions/userStatus.js` (unit-tested under `functions/test/`)
+- `registerCompanyTrial` (firestore trigger `onDocumentCreated companies`): aplica prueba gratuita de 90 días a empresas nuevas sin campos de facturación (`plan: mensual`, `paidUntil = created + 90d`, server-side). Si el doc ya trae `paidUntil`/`plan`/`lastPaymentAt` (p.ej. alta del superadmin con pago inicial) no aplica trial. Pure logic in `functions/companyBilling.js` (`decideCompanyInitialBilling`, `computeTrialPaidUntil`).
+- Pure logic in `functions/geoCheckIn.js` + `functions/userStatus.js` + `functions/companyBilling.js` (unit-tested under `functions/test/`)
 - Orchestration of `checkInGeo` (transaction, lock reclaim, error mapping) is integration-tested in `functions/test/checkInGeo.integration.test.js`; `checkOutGeo` in `functions/test/checkOutGeo.integration.test.js` (node:test). Both run only with the Firestore emulator; auto-skipped on `npm test` without emulator.
+- `registerCompanyTrial` is integration-tested in `functions/test/registerCompanyTrial.integration.test.js` via `npm run test:trial` (Firestore + Functions emulators; needs `LOCUSTAF_TRIAL_INTEGRATION=1`). No corre bajo `test:integration` (solo firestore): se saltaría sin el trigger activo.
 - Client: `AttendanceRepositoryImpl.checkIn()` sends only coords via `httpsCallable('checkInGeo')`; `checkOut()` sends `{ attendanceId, latitud, longitud }` via `httpsCallable('checkOutGeo')`; client-side geo pre-check is UX-only (server is authority). App uses `cloud_functions` (`functionsProvider` in `lib/core/providers/firebase_providers.dart`).
+- Superadmin dashboard (TASK-011): `companies_screen.dart` muestra métricas (`platformMetricsProvider` en `lib/features/companies/domain/services/platform_metrics.dart`, lógica pura testeada) y permite «Registrar pago» (`registerPaymentProvider`) definiendo `plan`/`paidUntil`/`lastPaymentAt` via `CompanyRepository.registerPayment`. Modelo de suscripción en `CompanyModel` (`CompanyPlan.plan`, `paidUntil`, `lastPaymentAt`, `isUsableAt`/`daysRemainingAt`; sin `paidUntil` = legacy/trial utilizable).
+- Onboarding (TASK-013): el admin acepta términos y políticas (checkbox) y su documento de usuario se crea con `acceptedPoliciesAt = now` (campo en `UserModel`).
 
 ## Seed Data
 - `seed/seed_data.json` contains: 1 superadmin, 1 admin, 1 supervisor, 1 employee, 1 workplace
