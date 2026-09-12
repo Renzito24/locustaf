@@ -73,8 +73,8 @@ test('isWithinRadius: dentro del radio OK, exactamente en el límite OK, fuera n
 });
 
 test('localDateString formatea fecha local YYYY-MM-DD', () => {
-  assert.strictEqual(localDateString(new Date(2026, 8, 7, 23, 59)), '2026-09-07');
-  assert.strictEqual(localDateString(new Date(2026, 0, 1)), '2026-01-01');
+  assert.strictEqual(localDateString(new Date('2026-09-07T23:59:00-03:00')), '2026-09-07');
+  assert.strictEqual(localDateString(new Date('2026-01-01T00:00:00-03:00')), '2026-01-01');
 });
 
 test('localDateString usa la zona de la empresa (UTC-3), no el horario de la máquina', () => {
@@ -87,7 +87,7 @@ test('localDateString usa la zona de la empresa (UTC-3), no el horario de la má
 });
 
 test('isLateFor: tarde si supera hora inicio + tolerancia, a tiempo en el límite', () => {
-  const base = new Date(2026, 8, 7, 9, 0);
+  const base = new Date('2026-09-07T09:00:00-03:00');
   assert.strictEqual(isLateFor(new Date(base.getTime() + 14 * 60000), '09:00', 15), false);
   assert.strictEqual(isLateFor(new Date(base.getTime() + 15 * 60000), '09:00', 15), false);
   assert.strictEqual(isLateFor(new Date(base.getTime() + 16 * 60000), '09:00', 15), true);
