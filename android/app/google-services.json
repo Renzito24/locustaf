@@ -9,7 +9,7 @@
       "client_info": {
         "mobilesdk_app_id": "1:167995437113:android:4be8e71093afa94227dde8",
         "android_client_info": {
-          "package_name": "com.example.app_locustaf"
+          "package_name": "com.locustaf.app"
         }
       },
       "oauth_client": [],

@@ -1,4 +1,4 @@
-package com.example.app_locustaf
+package com.locustaf.app
 
 import io.flutter.embedding.android.FlutterActivity
 
