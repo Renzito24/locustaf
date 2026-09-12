@@ -16,8 +16,7 @@ class AttendanceScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final authUser = ref.watch(currentUserProvider);
-    final userId = authUser?.uid;
+    final userId = ref.watch(currentUserIdProvider);
 
     final actionState = ref.watch(attendanceActionProvider);
 

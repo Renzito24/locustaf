@@ -16,8 +16,7 @@ class EmployeeCreateIncidenceScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final createState = ref.watch(incidenceCreateProvider);
-    final authUser = ref.watch(currentUserProvider);
-    final userId = authUser?.uid;
+    final userId = ref.watch(currentUserIdProvider);
 
     return Scaffold(
       backgroundColor: AppColors.bgDarkTop,

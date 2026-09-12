@@ -33,6 +33,7 @@ import '../../features/companies/presentation/screens/company_form_screen.dart';
 import '../../features/companies/presentation/screens/company_settings_screen.dart';
 import '../../features/companies/presentation/screens/onboarding_screen.dart';
 import 'app_routes.dart';
+import 'route_guard.dart';
 
 class AppRouter {
   static final _auth = AuthStateListenable();
@@ -42,62 +43,17 @@ class AppRouter {
     refreshListenable: _auth,
 
     redirect: (context, state) {
-      final loggedIn = _auth.isLoggedIn;
-
-      final goingToLogin = state.matchedLocation == '/login';
-      final goingToSplash = state.matchedLocation == '/';
-
-      if (!loggedIn) {
-        return goingToLogin ? null : '/login';
-      }
-
-      // Si el usuario está autenticado pero su cuenta está bloqueada
-      // (desactivada o eliminada), forzar cierre de sesión.
-      if (loggedIn && _auth.isUserBlocked) {
-        return goingToLogin ? null : '/login?blocked=true';
-      }
-
-      // Si la empresa del usuario está inactiva, bloquear el acceso a la app.
-      if (loggedIn && _auth.isCompanyInactive) {
-        return goingToLogin ? null : '/login?company=inactive';
-      }
-
-      // Si el usuario está autenticado pero no tiene empresa, debe completar
-      // el onboarding (crear su empresa).
-      if (loggedIn && _auth.needsOnboarding) {
-        final goingToOnboarding = state.matchedLocation == '/onboarding';
-        return goingToOnboarding ? null : '/onboarding';
-      }
-
-      // Si el usuario está autenticado, ya no necesita onboarding (tiene
-      // empresa o es superadmin) y está en /onboarding, salir de ahí.
-      if (loggedIn && state.matchedLocation == '/onboarding') {
-        return _auth.isEmployee ? '/attendance' : '/dashboard';
-      }
-
-      final role = _auth.role;
-
-      if (loggedIn && (goingToLogin || goingToSplash)) {
-        return role == UserRole.employee ? '/attendance' : '/dashboard';
-      }
-
-      final path = state.matchedLocation;
-
-      if (role == UserRole.employee) {
-        final allowed = ['/attendance', '/reports', '/profile', '/justificativos'];
-        if (!allowed.any((r) => path.startsWith(r)) && path != '/' && !path.startsWith('/login')) {
-          return '/attendance';
-        }
-      }
-
-      if (role == UserRole.supervisor) {
-        final restricted = ['/attendance', '/settings', '/medical_documents', '/reports', '/employees/create', '/employees/edit', '/workplaces/create', '/workplaces/edit', '/incidences/create', '/incidences/edit'];
-        if (restricted.any((r) => path.startsWith(r))) {
-          return '/dashboard';
-        }
-      }
-
-      return null;
+      return resolveRedirect(
+        RouteGuardState(
+          isLoggedIn: _auth.isLoggedIn,
+          isUserBlocked: _auth.isUserBlocked,
+          isCompanyInactive: _auth.isCompanyInactive,
+          needsOnboarding: _auth.needsOnboarding,
+          role: _auth.role,
+          isEmployee: _auth.isEmployee,
+        ),
+        state.matchedLocation,
+      );
     },
 
     routes: [

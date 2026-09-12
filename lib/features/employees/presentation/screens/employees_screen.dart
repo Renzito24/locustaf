@@ -22,7 +22,7 @@ class EmployeesScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final filteredEmployeesAsync = ref.watch(filteredEmployeesProvider);
     final isAdmin = ref.watch(isAdminProvider);
-    final currentUserId = ref.watch(currentUserProvider)?.uid;
+    final currentUserId = ref.watch(currentUserIdProvider);
 
     ref.listen<AsyncValue<void>>(deleteEmployeeProvider, (prev, next) {
       next.whenOrNull(

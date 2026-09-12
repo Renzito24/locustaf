@@ -16,7 +16,7 @@ final medicalDocumentRepositoryProvider = Provider<MedicalDocumentRepository>((r
   final firestoreService = ref.read(firestoreServiceProvider);
   final companyId = ref.watch(currentCompanyIdProvider);
   final role = ref.watch(userRoleProvider);
-  final userId = ref.watch(currentUserProvider)?.uid;
+  final userId = ref.watch(currentUserIdProvider);
   return MedicalDocumentRepositoryImpl(
     firestoreService,
     companyId: companyId,
@@ -356,7 +356,7 @@ class MedicalDocumentApprovalNotifier extends AsyncNotifier<void> {
   Future<void> approve(String id) async {
     state = const AsyncLoading();
     final repo = ref.read(medicalDocumentRepositoryProvider);
-    final reviewerId = ref.read(currentUserProvider)?.uid;
+    final reviewerId = ref.read(currentUserIdProvider);
     try {
       await repo.updateEstado(
         id,
@@ -382,7 +382,7 @@ class MedicalDocumentApprovalNotifier extends AsyncNotifier<void> {
   Future<void> reject(String id, {required String observacion}) async {
     state = const AsyncLoading();
     final repo = ref.read(medicalDocumentRepositoryProvider);
-    final reviewerId = ref.read(currentUserProvider)?.uid;
+    final reviewerId = ref.read(currentUserIdProvider);
     try {
       await repo.updateEstado(
         id,

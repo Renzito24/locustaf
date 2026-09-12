@@ -67,8 +67,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
   }
 
   Future<void> _autoLogoutBlockedUser() async {
-    final authSvc = ref.read(authServiceProvider);
-    await authSvc.logout();
+    final authRepo = ref.read(authRepositoryProvider);
+    await authRepo.logout();
     if (!mounted) return;
     setState(() {
       errorMessage = 'Tu cuenta ha sido desactivada o eliminada. Contactá al administrador.';

@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/models/user_model.dart';
 import '../../data/services/auth_service.dart';
 import '../../data/repositories/auth_repository_impl.dart';
+import '../../domain/repositories/auth_repository.dart';
 import '../../../../core/providers/firebase_providers.dart';
 
 /// 1. Provider de FirebaseAuth
@@ -17,8 +18,9 @@ final authServiceProvider = Provider<AuthService>((ref) {
   return AuthService(firebaseAuth);
 });
 
-/// 3. Provider del repository
-final authRepositoryProvider = Provider<AuthRepositoryImpl>((ref) {
+/// 3. Provider del repository (tipado contra la interfaz para permitir
+///    fakes en tests sin instanciar FirebaseAuth).
+final authRepositoryProvider = Provider<AuthRepository>((ref) {
   final service = ref.read(authServiceProvider);
   return AuthRepositoryImpl(service);
 });
@@ -32,6 +34,15 @@ final authStateProvider = StreamProvider<User?>((ref) {
 /// 5. Provider de usuario actual (Firebase Auth)
 final currentUserProvider = Provider<User?>((ref) {
   return FirebaseAuth.instance.currentUser;
+});
+
+/// 5b. Provider del uid del usuario autenticado.
+///
+/// Seam de testeabilidad: a diferencia de [currentUserProvider] (que expone
+/// un `firebase_auth.User` no construible fuera del plugin), este proveedor
+/// expone solo el uid y puede sobreescribirse en widget/provider tests.
+final currentUserIdProvider = Provider<String?>((ref) {
+  return FirebaseAuth.instance.currentUser?.uid;
 });
 
 /// 6. Provider del documento Firestore del usuario autenticado

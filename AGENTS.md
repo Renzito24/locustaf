@@ -6,6 +6,7 @@
 - `cd functions && npm test` — unit tests (node:test)
 - `cd functions && npm run test:integration` — orchestration tests via Firestore emulator (`emulators:exec --only firestore`); skipped on plain `npm test` without emulator
 - `cd functions && npm run test:trial` — trigger test `registerCompanyTrial` via `emulators:exec --only firestore,functions` (needs `LOCUSTAF_TRIAL_INTEGRATION=1` env, set inside the script)
+- `cd test/security && npm run test:full` — Firestore + Storage Rules security suite (emuladores con `--project locustaf-test`; 96 tests). IMPORTANTE: si lo corrés manualmente usá `firebase emulators:exec --project locustaf-test --only firestore,storage "npm test"` — el flag de proyecto ES OBLIGATORIO: el rules-runtime de Storage resuelve `firestore.get()` por namespace de proyecto; sin él los tests de Storage fallan en falso (todos deben ser 96 passing).
 
 ## Seed Deployment Order
 1. Deploy permissive rules: `firebase deploy --only firestore:rules firestore.rules.seed`

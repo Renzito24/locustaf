@@ -2,16 +2,20 @@
   "name": "locustaf-security-tests",
   "version": "1.0.0",
   "private": true,
-  "description": "Tests de seguridad de las Firestore Rules de LOCUSTAF usando el emulador",
+  "description": "Tests de seguridad de Firestore+Storage Rules de LOCUSTAF. IMPORTANTE: los scripts con emulador deben pasar --project locustaf-test (el rules-runtime de Storage resuelve firestore.get() por proyecto; sin align, los tests de Storage fallan en falso por namespace mismatch).",
   "type": "module",
   "scripts": {
-    "test": "mocha rules.test.js storage.test.js --timeout 30000"
+    "test": "mocha rules.test.js storage.test.js --timeout 30000",
+    "test:rules": "firebase emulators:exec --project locustaf-test --only firestore \"mocha rules.test.js --timeout 30000\"",
+    "test:storage": "firebase emulators:exec --project locustaf-test --only firestore,storage \"mocha storage.test.js --timeout 30000\"",
+    "test:full": "firebase emulators:exec --project locustaf-test --only firestore,storage \"mocha rules.test.js storage.test.js --timeout 30000\""
   },
   "dependencies": {
     "@firebase/rules-unit-testing": "^3.0.1",
     "firebase": "^10.12.0"
   },
   "devDependencies": {
+    "firebase-tools": "^15.28.1",
     "mocha": "^10.4.0"
   }
 }

@@ -22,8 +22,7 @@ class _EmployeeReportsScreenState extends ConsumerState<EmployeeReportsScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final authUser = ref.watch(currentUserProvider);
-    final userId = authUser?.uid;
+    final userId = ref.watch(currentUserIdProvider);
 
     if (userId == null) {
       return Padding(

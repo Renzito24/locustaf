@@ -8,7 +8,7 @@
     "deploy": "firebase deploy --only functions",
     "logs": "firebase functions:log",
     "test": "node --test",
-    "test:integration": "firebase emulators:exec --only firestore \"npm test\"",
+    "test:integration": "firebase emulators:exec --only firestore \"node --test --test-concurrency=1\"",
     "test:trial": "set LOCUSTAF_TRIAL_INTEGRATION=1&& firebase emulators:exec --only firestore,functions \"node --test test/registerCompanyTrial.integration.test.js\""
   },
   "engines": {

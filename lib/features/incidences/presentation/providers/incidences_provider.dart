@@ -13,7 +13,7 @@ final incidenceRepositoryProvider = Provider<IncidenceRepository>((ref) {
   final firestoreService = ref.read(firestoreServiceProvider);
   final companyId = ref.watch(currentCompanyIdProvider);
   final role = ref.watch(userRoleProvider);
-  final userId = ref.watch(currentUserProvider)?.uid;
+  final userId = ref.watch(currentUserIdProvider);
   return IncidenceRepositoryImpl(
     firestoreService,
     companyId: companyId,
@@ -221,7 +221,7 @@ class IncidenceApprovalNotifier extends AsyncNotifier<void> {
   Future<void> approve(String id) async {
     state = const AsyncLoading();
     final repo = ref.read(incidenceRepositoryProvider);
-    final reviewerId = ref.read(currentUserProvider)?.uid;
+    final reviewerId = ref.read(currentUserIdProvider);
     try {
       await repo.updateEstado(
         id,
@@ -247,7 +247,7 @@ class IncidenceApprovalNotifier extends AsyncNotifier<void> {
   Future<void> reject(String id, {required String observacion}) async {
     state = const AsyncLoading();
     final repo = ref.read(incidenceRepositoryProvider);
-    final reviewerId = ref.read(currentUserProvider)?.uid;
+    final reviewerId = ref.read(currentUserIdProvider);
     try {
       await repo.updateEstado(
         id,

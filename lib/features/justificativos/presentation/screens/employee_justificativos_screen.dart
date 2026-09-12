@@ -19,8 +19,7 @@ class EmployeeJustificativosScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final authUser = ref.watch(currentUserProvider);
-    final userId = authUser?.uid;
+    final userId = ref.watch(currentUserIdProvider);
 
     if (userId == null) {
       return Padding(
