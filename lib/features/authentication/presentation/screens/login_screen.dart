@@ -611,6 +611,16 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
                                   textAlign: TextAlign.center,
                                 ),
                               ),
+                              const SizedBox(height: 24),
+                              Center(
+                                child: Text(
+                                  '© 2026 LOCUSTAF. Todos los derechos reservados.',
+                                  style: TextStyle(
+                                    color: AppColors.textMuted.withValues(alpha: 0.5),
+                                    fontSize: 11,
+                                  ),
+                                ),
+                              ),
                             ],
                           ),
                         ),

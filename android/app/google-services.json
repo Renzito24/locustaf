@@ -9,10 +9,15 @@
       "client_info": {
         "mobilesdk_app_id": "1:167995437113:android:4be8e71093afa94227dde8",
         "android_client_info": {
-          "package_name": "com.locustaf.app"
+          "package_name": "com.example.app_locustaf"
         }
       },
-      "oauth_client": [],
+      "oauth_client": [
+        {
+          "client_id": "167995437113-m9tbaos5e47rj8qjn3tpsicfimqo39vf.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
       "api_key": [
         {
           "current_key": "AIzaSyBQwFvCdTpMBMzFV8QehIpvDk05LJ1l5qQ"
@@ -20,7 +25,55 @@
       ],
       "services": {
         "appinvite_service": {
-          "other_platform_oauth_client": []
+          "other_platform_oauth_client": [
+            {
+              "client_id": "167995437113-m9tbaos5e47rj8qjn3tpsicfimqo39vf.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "167995437113-lmri20nj3tlhki4ld9k91d8k315i8309.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.example.appLocustaf"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:167995437113:android:a5e80f26346320e727dde8",
+        "android_client_info": {
+          "package_name": "com.locustaf.app"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "167995437113-m9tbaos5e47rj8qjn3tpsicfimqo39vf.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBQwFvCdTpMBMzFV8QehIpvDk05LJ1l5qQ"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "167995437113-m9tbaos5e47rj8qjn3tpsicfimqo39vf.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "167995437113-lmri20nj3tlhki4ld9k91d8k315i8309.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.example.appLocustaf"
+              }
+            }
+          ]
         }
       }
     }
