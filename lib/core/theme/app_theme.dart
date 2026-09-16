@@ -251,6 +251,22 @@ class AppTheme {
     );
   }
 
+  static SnackBar infoSnackBar(String message) {
+    return SnackBar(
+      content: Row(
+        children: [
+          const Icon(Icons.info_outline, color: Colors.white, size: 18),
+          const SizedBox(width: 8),
+          Expanded(child: Text(message)),
+        ],
+      ),
+      backgroundColor: AppColors.textMuted,
+      behavior: SnackBarBehavior.floating,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(radiusSm)),
+      duration: const Duration(seconds: 4),
+    );
+  }
+
   // ── Badge ────────────────────────────────────────────────────────────────
   static Widget badge({
     required String label,

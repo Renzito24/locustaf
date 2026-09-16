@@ -5,6 +5,7 @@ import '../../../../core/constants/app_colors.dart';
 import '../../../../core/providers/data_providers.dart';
 import '../../../../core/services/report_exporter.dart';
 import '../../../../core/theme/app_theme.dart';
+import '../../../../core/utils/date_formatter.dart';
 import '../../../workplaces/data/models/workplace_model.dart';
 import '../../../workplaces/presentation/providers/workplace_notifier.dart';
 import '../providers/reports_provider.dart';
@@ -27,6 +28,7 @@ class ReportsScreen extends ConsumerWidget {
     final currentPage = ref.watch(attendanceReportPageProvider);
     final filter = ref.watch(attendanceReportFilterProvider);
     final workplacesListAsync = ref.watch(workplacesStreamProvider);
+    final exporter = ref.watch(reportExporterProvider);
 
     final anyLoaded = usersAsync.hasValue || workplacesAsync.hasValue || attendancesAsync.hasValue;
     final isLoading = !anyLoaded && (usersAsync.isLoading || workplacesAsync.isLoading || attendancesAsync.isLoading);
@@ -54,37 +56,9 @@ class ReportsScreen extends ConsumerWidget {
               children: [
                 _buildMetricCards(totalEmployees, presentToday, absentToday, activeWorkplaces),
                 const SizedBox(height: 24),
-                _buildFilters(context, ref, filter, workplacesListAsync),
+                _buildFilters(ref, filter, workplacesListAsync),
                 const SizedBox(height: 16),
-                Row(
-                  children: [
-                    Text('Reporte de asistencia', style: AppTheme.headingMd),
-                    const Spacer(),
-                    OutlinedButton.icon(
-                      onPressed: reportRows.isEmpty
-                          ? null
-                          : () => _exportExcel(context, reportRows),
-                      icon: const Icon(Icons.grid_on, size: 18),
-                      label: const Text('Excel'),
-                      style: OutlinedButton.styleFrom(
-                        foregroundColor: AppColors.gold,
-                        side: const BorderSide(color: AppColors.gold),
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    OutlinedButton.icon(
-                      onPressed: reportRows.isEmpty
-                          ? null
-                          : () => _exportPdf(context, reportRows),
-                      icon: const Icon(Icons.picture_as_pdf, size: 18),
-                      label: const Text('PDF'),
-                      style: OutlinedButton.styleFrom(
-                        foregroundColor: AppColors.gold,
-                        side: const BorderSide(color: AppColors.gold),
-                      ),
-                    ),
-                  ],
-                ),
+                _buildReportHeader(context, reportRows, exporter),
                 const SizedBox(height: 12),
                 _buildReportTable(reportRows),
                 if (totalPages > 1) ...[
@@ -140,8 +114,67 @@ class ReportsScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildFilters(
+  /// Cabecera del reporte con botones de exportación, responsive: en anchos
+/// reducidos el título y los botones se apilan en columna (expandidndose cada
+/// botón) para evitar RIGHT OVERFLOWED. (Fase B — C2)
+  Widget _buildReportHeader(
     BuildContext context,
+    List<AttendanceReportRow> rows,
+    ReportExporter exporter,
+  ) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final isNarrow = constraints.maxWidth < 480;
+        final excelButton = OutlinedButton.icon(
+          onPressed: rows.isEmpty ? null : () => _exportExcel(context, rows, exporter),
+          icon: const Icon(Icons.grid_on, size: 18),
+          label: const Text('Excel'),
+          style: OutlinedButton.styleFrom(
+            foregroundColor: AppColors.gold,
+            side: const BorderSide(color: AppColors.gold),
+          ),
+        );
+        final pdfButton = OutlinedButton.icon(
+          onPressed: rows.isEmpty ? null : () => _exportPdf(context, rows, exporter),
+          icon: const Icon(Icons.picture_as_pdf, size: 18),
+          label: const Text('PDF'),
+          style: OutlinedButton.styleFrom(
+            foregroundColor: AppColors.gold,
+            side: const BorderSide(color: AppColors.gold),
+          ),
+        );
+
+        if (isNarrow) {
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text('Reporte de asistencia', style: AppTheme.headingMd),
+              const SizedBox(height: 12),
+              Row(
+                children: [
+                  Expanded(child: excelButton),
+                  const SizedBox(width: 8),
+                  Expanded(child: pdfButton),
+                ],
+              ),
+            ],
+          );
+        }
+
+        return Row(
+          children: [
+            Text('Reporte de asistencia', style: AppTheme.headingMd),
+            const Spacer(),
+            excelButton,
+            const SizedBox(width: 8),
+            pdfButton,
+          ],
+        );
+      },
+    );
+  }
+
+  Widget _buildFilters(
     WidgetRef ref,
     AttendanceReportFilter filter,
     AsyncValue<List<WorkplaceModel>> workplacesAsync,
@@ -149,67 +182,81 @@ class ReportsScreen extends ConsumerWidget {
     return Container(
       decoration: AppTheme.cardDecoration(),
       padding: const EdgeInsets.all(16),
-      child: Row(
-        children: [
-          SizedBox(
-            width: 180,
-            child: TextField(
-              decoration: AppTheme.inputDecoration(
-                label: 'Fecha',
-                icon: Icons.calendar_today,
-                hint: 'YYYY-MM-DD',
-              ),
-              style: const TextStyle(color: AppColors.textWhite),
-              controller: TextEditingController(text: filter.date ?? ''),
-              onChanged: (value) {
-                ref.read(attendanceReportFilterProvider.notifier).setDate(
-                  value.trim().isEmpty ? null : value.trim(),
-                );
-                ref.read(attendanceReportPageProvider.notifier).reset();
-              },
-            ),
-          ),
-          const SizedBox(width: 16),
-          SizedBox(
-            width: 200,
-            child: workplacesAsync.when(
-              data: (workplaces) => DropdownButtonFormField<String?>(
-                initialValue: filter.workplaceId,
-                decoration: AppTheme.inputDecoration(label: 'Lugar de trabajo', icon: Icons.business),
-                dropdownColor: AppColors.cardDark,
-                style: const TextStyle(color: AppColors.textWhite),
-                items: [
-                  const DropdownMenuItem<String?>(
-                    value: null,
-                    child: Text('Todos'),
-                  ),
-                  ...workplaces.map(
-                    (w) => DropdownMenuItem<String?>(
-                      value: w.id,
-                      child: Text(w.nombre, overflow: TextOverflow.ellipsis),
-                    ),
-                  ),
-                ],
-                onChanged: (value) {
-                  ref.read(attendanceReportFilterProvider.notifier).setWorkplaceId(value);
-                  ref.read(attendanceReportPageProvider.notifier).reset();
-                },
-              ),
-              loading: () => const SizedBox.shrink(),
-              error: (_, _) => const SizedBox.shrink(),
-            ),
-          ),
-          const SizedBox(width: 16),
-          TextButton.icon(
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final isNarrow = constraints.maxWidth < 560;
+          final dateField = const _DatePickerField();
+          final workplaceField = _buildWorkplaceField(ref, filter, workplacesAsync);
+          final clearButton = TextButton.icon(
             onPressed: () {
               ref.read(attendanceReportFilterProvider.notifier).clear();
               ref.read(attendanceReportPageProvider.notifier).reset();
             },
             icon: const Icon(Icons.clear, color: AppColors.textMuted),
             label: const Text('Limpiar', style: TextStyle(color: AppColors.textMuted)),
+          );
+
+          if (isNarrow) {
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                dateField,
+                const SizedBox(height: 12),
+                workplaceField,
+                const SizedBox(height: 8),
+                Align(
+                  alignment: Alignment.centerRight,
+                  child: clearButton,
+                ),
+              ],
+            );
+          }
+
+          return Row(
+            children: [
+              SizedBox(width: 180, child: dateField),
+              const SizedBox(width: 16),
+              SizedBox(width: 200, child: workplaceField),
+              const SizedBox(width: 16),
+              clearButton,
+            ],
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _buildWorkplaceField(
+    WidgetRef ref,
+    AttendanceReportFilter filter,
+    AsyncValue<List<WorkplaceModel>> workplacesAsync,
+  ) {
+    return workplacesAsync.when(
+      data: (workplaces) => DropdownButtonFormField<String?>(
+        initialValue: filter.workplaceId,
+        decoration: AppTheme.inputDecoration(label: 'Lugar de trabajo', icon: Icons.business),
+        dropdownColor: AppColors.cardDark,
+        style: const TextStyle(color: AppColors.textWhite),
+        isExpanded: true,
+        items: [
+          const DropdownMenuItem<String?>(
+            value: null,
+            child: Text('Todos'),
+          ),
+          ...workplaces.map(
+            (w) => DropdownMenuItem<String?>(
+              value: w.id,
+              child: Text(w.nombre, overflow: TextOverflow.ellipsis),
+            ),
           ),
         ],
+        onChanged: (value) {
+          ref.read(attendanceReportFilterProvider.notifier).setWorkplaceId(value);
+          ref.read(attendanceReportPageProvider.notifier).reset();
+        },
       ),
+      loading: () => const SizedBox(height: 56),
+      error: (_, _) => const SizedBox(height: 56),
     );
   }
 
@@ -285,17 +332,26 @@ class ReportsScreen extends ConsumerWidget {
     );
   }
 
-  Future<void> _exportExcel(BuildContext context, List<AttendanceReportRow> rows) async {
+  Future<void> _exportExcel(
+    BuildContext context,
+    List<AttendanceReportRow> rows,
+    ReportExporter exporter,
+  ) async {
     final now = DateTime.now();
     final dateStr = '${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}';
     try {
-      await ReportExporter.exportAttendanceExcel(
+      final saved = await exporter.exportExcel(
         rows,
         fileName: 'reporte_asistencia_$dateStr',
       );
-      if (context.mounted) {
+      if (!context.mounted) return;
+      if (saved) {
         ScaffoldMessenger.of(context).showSnackBar(
           AppTheme.successSnackBar('Reporte Excel exportado correctamente'),
+        );
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          AppTheme.infoSnackBar('Descarga cancelada. No se generó ningún archivo.'),
         );
       }
     } catch (e) {
@@ -307,17 +363,26 @@ class ReportsScreen extends ConsumerWidget {
     }
   }
 
-  Future<void> _exportPdf(BuildContext context, List<AttendanceReportRow> rows) async {
+  Future<void> _exportPdf(
+    BuildContext context,
+    List<AttendanceReportRow> rows,
+    ReportExporter exporter,
+  ) async {
     final now = DateTime.now();
     final dateStr = '${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}';
     try {
-      await ReportExporter.exportAttendancePdf(
+      final saved = await exporter.exportPdf(
         rows,
         fileName: 'reporte_asistencia_$dateStr',
       );
-      if (context.mounted) {
+      if (!context.mounted) return;
+      if (saved) {
         ScaffoldMessenger.of(context).showSnackBar(
           AppTheme.successSnackBar('Reporte PDF exportado correctamente'),
+        );
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          AppTheme.infoSnackBar('Descarga cancelada. No se generó ningún archivo.'),
         );
       }
     } catch (e) {
@@ -383,6 +448,74 @@ class _MetricCard extends StatelessWidget {
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+/// Selector de fecha del filtro de reportes (Fase B — C3).
+///
+/// Reemplaza el ingreso manual (evita crashes de `DateTime.parse` con valores
+/// inválidos): abre un `showDatePicker`, muestra la fecha en formato amigable
+/// `dd/MM/yyyy` y la persiste internamente en el formato del sistema
+/// `yyyy-MM-dd` (el mismo que usa `AttendanceModel.date`).
+class _DatePickerField extends ConsumerStatefulWidget {
+  const _DatePickerField();
+
+  @override
+  ConsumerState<_DatePickerField> createState() => _DatePickerFieldState();
+}
+
+class _DatePickerFieldState extends ConsumerState<_DatePickerField> {
+  Future<void> _pick(DateTime? current) async {
+    final now = DateTime.now();
+    final selected = await showDatePicker(
+      context: context,
+      initialDate: current ?? now,
+      firstDate: DateTime(now.year - 3),
+      lastDate: DateTime(now.year + 1, 12, 31),
+      helpText: 'Seleccionar fecha',
+      cancelText: 'Cancelar',
+      confirmText: 'Aceptar',
+      builder: (context, child) {
+        return Theme(
+          data: Theme.of(context).copyWith(
+            colorScheme: const ColorScheme.dark(
+              primary: AppColors.gold,
+              onPrimary: Colors.white,
+              surface: AppColors.cardDark,
+              onSurface: AppColors.textWhite,
+            ),
+          ),
+          child: child!,
+        );
+      },
+    );
+    if (selected == null || !mounted) return;
+    ref.read(attendanceReportFilterProvider.notifier).setDate(formatIsoDate(selected));
+    ref.read(attendanceReportPageProvider.notifier).reset();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final filter = ref.watch(attendanceReportFilterProvider);
+    final date = tryParseIsoDate(filter.date);
+    return InkWell(
+      borderRadius: BorderRadius.circular(AppTheme.radiusLg),
+      onTap: () => _pick(date),
+      child: InputDecorator(
+        decoration: AppTheme.inputDecoration(
+          label: 'Fecha',
+          icon: Icons.calendar_today,
+          hint: 'dd/mm/aaaa',
+        ),
+        isEmpty: date == null,
+        child: date == null
+            ? null
+            : Text(
+                formatUserDate(date),
+                style: const TextStyle(color: AppColors.textWhite),
+              ),
       ),
     );
   }

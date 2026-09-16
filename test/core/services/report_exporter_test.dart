@@ -75,4 +75,36 @@ void main() {
       expect(text(rows[0][0]), 'Empleado');
     });
   });
+
+  group('ReportExporter.buildAttendancePdfBytes', () {
+    test('genera bytes de un PDF con filas (Fase B – Corrección)', () async {
+      final bytes = await ReportExporter.buildAttendancePdfBytes([
+        AttendanceReportRow(
+          employeeName: 'María, González',
+          workplaceName: 'Sucursal Central',
+          checkInTime: DateTime(2026, 9, 7, 8, 0),
+          checkOutTime: DateTime(2026, 9, 7, 17, 0),
+          durationMinutes: 480,
+        ),
+      ]);
+
+      expect(bytes, isNotEmpty);
+      // Un PDF válido empieza con el header "%PDF".
+      final header = String.fromCharCodes(bytes.take(4));
+      expect(header, '%PDF');
+    });
+  });
+
+  group('ReportExporter.mobileOutcome (Fase B – Corrección)', () {
+    test('el SAF completó la escritura (path no nulo) => saved', () {
+      expect(
+        ReportExporter.mobileOutcome('/storage/emulated/0/Download/rep.xlsx'),
+        MobileSaveOutcome.saved,
+      );
+    });
+
+    test('el usuario canceló el selector (null) => cancelled', () {
+      expect(ReportExporter.mobileOutcome(null), MobileSaveOutcome.cancelled);
+    });
+  });
 }

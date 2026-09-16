@@ -223,51 +223,54 @@ class _EmployeeReportsScreenState extends ConsumerState<EmployeeReportsScreen> {
   Widget _buildStatCards(_ReportStats stats) {
     return LayoutBuilder(
       builder: (context, constraints) {
-        final crossAxisCount = constraints.maxWidth > 900 ? 3 : (constraints.maxWidth > 600 ? 2 : 2);
-        return GridView.count(
-          crossAxisCount: crossAxisCount,
-          shrinkWrap: true,
-          physics: const NeverScrollableScrollPhysics(),
-          mainAxisSpacing: 16,
-          crossAxisSpacing: 16,
-          childAspectRatio: 1.6,
+        final width = constraints.maxWidth;
+        final crossAxisCount = width > 900 ? 3 : (width > 600 ? 2 : 1);
+        final itemWidth = (width - (crossAxisCount - 1) * 16) / crossAxisCount;
+
+        final cards = [
+          _StatCard(
+            icon: Icons.calendar_today,
+            label: 'Días trabajados',
+            value: stats.daysWorked.toString(),
+            color: AppColors.gold,
+          ),
+          _StatCard(
+            icon: Icons.access_time,
+            label: 'Horas trabajadas',
+            value: '${stats.totalHours.toStringAsFixed(1)}h',
+            color: AppColors.gold,
+          ),
+          _StatCard(
+            icon: Icons.schedule,
+            label: 'Llegadas tarde',
+            value: stats.lateArrivals.toString(),
+            color: stats.lateArrivals > 0 ? AppColors.warning : AppColors.success,
+          ),
+          _StatCard(
+            icon: Icons.cancel_outlined,
+            label: 'Ausencias',
+            value: stats.absences.toString(),
+            color: stats.absences > 0 ? AppColors.error : AppColors.success,
+          ),
+          _StatCard(
+            icon: Icons.description_outlined,
+            label: 'Justificativos',
+            value: stats.justifications.toString(),
+            color: AppColors.goldLight,
+          ),
+          _StatCard(
+            icon: Icons.warning_amber_outlined,
+            label: 'Incidencias propias',
+            value: stats.ownIncidences.toString(),
+            color: stats.ownIncidences > 0 ? AppColors.error : AppColors.success,
+          ),
+        ];
+
+        return Wrap(
+          spacing: 16,
+          runSpacing: 16,
           children: [
-            _StatCard(
-              icon: Icons.calendar_today,
-              label: 'Días trabajados',
-              value: stats.daysWorked.toString(),
-              color: AppColors.gold,
-            ),
-            _StatCard(
-              icon: Icons.access_time,
-              label: 'Horas trabajadas',
-              value: '${stats.totalHours.toStringAsFixed(1)}h',
-              color: AppColors.gold,
-            ),
-            _StatCard(
-              icon: Icons.schedule,
-              label: 'Llegadas tarde',
-              value: stats.lateArrivals.toString(),
-              color: stats.lateArrivals > 0 ? AppColors.warning : AppColors.success,
-            ),
-            _StatCard(
-              icon: Icons.cancel_outlined,
-              label: 'Ausencias',
-              value: stats.absences.toString(),
-              color: stats.absences > 0 ? AppColors.error : AppColors.success,
-            ),
-            _StatCard(
-              icon: Icons.description_outlined,
-              label: 'Justificativos',
-              value: stats.justifications.toString(),
-              color: AppColors.goldLight,
-            ),
-            _StatCard(
-              icon: Icons.warning_amber_outlined,
-              label: 'Incidencias propias',
-              value: stats.ownIncidences.toString(),
-              color: stats.ownIncidences > 0 ? AppColors.error : AppColors.success,
-            ),
+            for (final card in cards) SizedBox(width: itemWidth, child: card),
           ],
         );
       },
@@ -365,7 +368,7 @@ class _StatCard extends StatelessWidget {
       padding: const EdgeInsets.all(20),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisAlignment: MainAxisAlignment.center,
+        mainAxisSize: MainAxisSize.min,
         children: [
           Container(
             width: 40,
