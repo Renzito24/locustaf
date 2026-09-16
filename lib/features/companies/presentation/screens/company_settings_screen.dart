@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../../core/constants/app_colors.dart';
+import '../../../../core/router/app_routes.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../providers/company_action_provider.dart';
 import '../providers/company_providers.dart';
@@ -74,8 +75,11 @@ class CompanySettingsScreen extends ConsumerWidget {
                         IconButton(
                           icon: const Icon(Icons.arrow_back,
                               color: AppColors.textWhite),
-                          tooltip: 'Volver',
-                          onPressed: () => context.pop(),
+                          tooltip: 'Volver al inicio',
+                          // Navegación dentro del ShellRoute: se llega con
+                          // context.go, por lo que pop() no tiene nada que
+                          // desapilar. (Fase B — A1)
+                          onPressed: () => context.go(RoutePaths.dashboard),
                         ),
                         const SizedBox(width: 8),
                         Text('Configuración', style: AppTheme.headingLg),
