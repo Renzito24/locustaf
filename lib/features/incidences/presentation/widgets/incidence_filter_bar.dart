@@ -19,38 +19,51 @@ class IncidenceFilterBar extends ConsumerWidget {
     return Container(
       decoration: AppTheme.cardDecoration(),
       padding: const EdgeInsets.all(16),
-      child: Wrap(
-        spacing: 12,
-        runSpacing: 12,
-        crossAxisAlignment: WrapCrossAlignment.center,
-        children: [
-          SizedBox(
-            width: 220,
-            child: TextField(
-              decoration: AppTheme.inputDecoration(
-                label: 'Buscar nombre/apellido/tipo',
-                icon: Icons.search,
-                hint: 'Escribe para buscar...',
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          // En pantallas chicas (teléfonos) los campos se estiran a todo el
+          // ancho disponible; en pantallas grandes conservan el ancho fijo.
+          // Nunca dependen del ancho del dispositivo para no desbordar.
+          final w = constraints.maxWidth;
+          final searchWidth = w >= 900 ? 260.0 : w;
+          final pairWidth = (w - 12) / 2;
+          final fieldWidth = w >= 900 ? 200.0 : (w >= 640 ? pairWidth : w);
+          final stateWidth = w >= 900 ? 180.0 : fieldWidth;
+
+          return Wrap(
+            spacing: 12,
+            runSpacing: 12,
+            crossAxisAlignment: WrapCrossAlignment.center,
+            children: [
+              SizedBox(
+                width: searchWidth,
+                child: TextField(
+                  decoration: AppTheme.inputDecoration(
+                    label: 'Buscar nombre/apellido/tipo',
+                    icon: Icons.search,
+                    hint: 'Escribe para buscar...',
+                  ),
+                  style: const TextStyle(color: AppColors.textWhite),
+                  controller: TextEditingController(
+                    text: filter.searchQuery.isNotEmpty ? filter.searchQuery : '',
+                  )
+                    ..selection = TextSelection.collapsed(offset: filter.searchQuery.length),
+                  onChanged: (value) {
+                    ref.read(incidencesFilterProvider.notifier).setSearchQuery(value);
+                  },
+                ),
               ),
-              style: const TextStyle(color: AppColors.textWhite),
-              controller: TextEditingController(
-                text: filter.searchQuery.isNotEmpty ? filter.searchQuery : '',
-              )
-                ..selection = TextSelection.collapsed(offset: filter.searchQuery.length),
-              onChanged: (value) {
-                ref.read(incidencesFilterProvider.notifier).setSearchQuery(value);
-              },
-            ),
-          ),
-          _buildEmployeeDropdown(ref, usersAsync, filter.employeeId),
-          _buildTypeDropdown(ref, filter.type),
-          _buildStateDropdown(ref, filter.state),
-          TextButton.icon(
-            onPressed: () => ref.read(incidencesFilterProvider.notifier).clear(),
-            icon: const Icon(Icons.clear, color: AppColors.textMuted),
-            label: const Text('Limpiar', style: TextStyle(color: AppColors.textMuted)),
-          ),
-        ],
+              _buildEmployeeDropdown(ref, usersAsync, filter.employeeId, fieldWidth),
+              _buildTypeDropdown(ref, filter.type, fieldWidth),
+              _buildStateDropdown(ref, filter.state, stateWidth),
+              TextButton.icon(
+                onPressed: () => ref.read(incidencesFilterProvider.notifier).clear(),
+                icon: const Icon(Icons.clear, color: AppColors.textMuted),
+                label: const Text('Limpiar', style: TextStyle(color: AppColors.textMuted)),
+              ),
+            ],
+          );
+        },
       ),
     );
   }
@@ -59,18 +72,20 @@ class IncidenceFilterBar extends ConsumerWidget {
     WidgetRef ref,
     AsyncValue<List<UserModel>> usersAsync,
     String? selectedId,
+    double width,
   ) {
     return usersAsync.when(
       data: (users) {
         final employees =
             users.where((u) => u.rol == UserRole.employee && !u.isDeleted).toList();
         return SizedBox(
-          width: 200,
+          width: width,
           child: DropdownButtonFormField<String?>(
             initialValue: selectedId,
             decoration: AppTheme.inputDecoration(label: 'Empleado', icon: Icons.person),
             dropdownColor: AppColors.cardDark,
             style: const TextStyle(color: AppColors.textWhite),
+            isExpanded: true,
             items: [
               const DropdownMenuItem<String?>(value: null, child: Text('Todos')),
               ...employees.map(
@@ -86,25 +101,26 @@ class IncidenceFilterBar extends ConsumerWidget {
           ),
         );
       },
-      loading: () => const SizedBox(width: 200),
-      error: (_, _) => const SizedBox(width: 200),
+      loading: () => SizedBox(width: width),
+      error: (_, _) => SizedBox(width: width),
     );
   }
 
-  Widget _buildTypeDropdown(WidgetRef ref, IncidenceType? selectedType) {
+  Widget _buildTypeDropdown(WidgetRef ref, IncidenceType? selectedType, double width) {
     return SizedBox(
-      width: 200,
+      width: width,
       child: DropdownButtonFormField<IncidenceType?>(
         initialValue: selectedType,
         decoration: AppTheme.inputDecoration(label: 'Tipo', icon: Icons.category),
         dropdownColor: AppColors.cardDark,
         style: const TextStyle(color: AppColors.textWhite),
+        isExpanded: true,
         items: [
           const DropdownMenuItem<IncidenceType?>(value: null, child: Text('Todos')),
           ...IncidenceType.values.map(
             (t) => DropdownMenuItem<IncidenceType?>(
               value: t,
-              child: Text(t.label),
+              child: Text(t.label, overflow: TextOverflow.ellipsis),
             ),
           ),
         ],
@@ -115,20 +131,21 @@ class IncidenceFilterBar extends ConsumerWidget {
     );
   }
 
-  Widget _buildStateDropdown(WidgetRef ref, IncidenceEstado? selectedState) {
+  Widget _buildStateDropdown(WidgetRef ref, IncidenceEstado? selectedState, double width) {
     return SizedBox(
-      width: 180,
+      width: width,
       child: DropdownButtonFormField<IncidenceEstado?>(
         initialValue: selectedState,
         decoration: AppTheme.inputDecoration(label: 'Estado', icon: Icons.flag),
         dropdownColor: AppColors.cardDark,
         style: const TextStyle(color: AppColors.textWhite),
+        isExpanded: true,
         items: [
           const DropdownMenuItem<IncidenceEstado?>(value: null, child: Text('Todos')),
           ...IncidenceEstado.values.map(
             (s) => DropdownMenuItem<IncidenceEstado?>(
               value: s,
-              child: Text(s.label),
+              child: Text(s.label, overflow: TextOverflow.ellipsis),
             ),
           ),
         ],
