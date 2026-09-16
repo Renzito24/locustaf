@@ -35,6 +35,8 @@ class MedicalDocumentCard extends StatelessWidget {
                   Expanded(
                     child: Text(
                       employeeName,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
                       style: const TextStyle(
                         fontWeight: FontWeight.w600,
                         fontSize: 15,
@@ -42,19 +44,36 @@ class MedicalDocumentCard extends StatelessWidget {
                       ),
                     ),
                   ),
-                  _EstadoAprobacionBadge(estado: document.estado),
                   const SizedBox(width: 8),
-                  _VigenciaBadge(vigencia: document.vigencia),
+                  Flexible(
+                    child: Wrap(
+                      spacing: 8,
+                      runSpacing: 4,
+                      alignment: WrapAlignment.end,
+                      crossAxisAlignment: WrapCrossAlignment.center,
+                      children: [
+                        _EstadoAprobacionBadge(estado: document.estado),
+                        _VigenciaBadge(vigencia: document.vigencia),
+                      ],
+                    ),
+                  ),
                 ],
               ),
               const SizedBox(height: 8),
-              Row(
+              Wrap(
+                spacing: 12,
+                runSpacing: 6,
+                crossAxisAlignment: WrapCrossAlignment.center,
                 children: [
                   _InfoChip(icon: Icons.description, text: document.tipo.label),
-                  const SizedBox(width: 12),
-                  _InfoChip(icon: Icons.event, text: _formatDate(document.fechaInicio)),
-                  const SizedBox(width: 12),
-                  _InfoChip(icon: Icons.event_busy, text: _formatDate(document.fechaFin)),
+                  _InfoChip(
+                    icon: Icons.event,
+                    text: _formatDate(document.fechaInicio),
+                  ),
+                  _InfoChip(
+                    icon: Icons.event_busy,
+                    text: _formatDate(document.fechaFin),
+                  ),
                 ],
               ),
               const SizedBox(height: 6),
@@ -63,12 +82,19 @@ class MedicalDocumentCard extends StatelessWidget {
                   padding: const EdgeInsets.only(top: 6),
                   child: Row(
                     children: [
-                      const Icon(Icons.attach_file, size: 14, color: AppColors.gold),
+                      const Icon(
+                        Icons.attach_file,
+                        size: 14,
+                        color: AppColors.gold,
+                      ),
                       const SizedBox(width: 4),
                       Expanded(
                         child: Text(
                           document.archivoNombre ?? 'Archivo adjunto',
-                          style: const TextStyle(fontSize: 12, color: AppColors.gold),
+                          style: const TextStyle(
+                            fontSize: 12,
+                            color: AppColors.gold,
+                          ),
                           overflow: TextOverflow.ellipsis,
                         ),
                       ),
@@ -78,7 +104,10 @@ class MedicalDocumentCard extends StatelessWidget {
               if (document.motivo.isNotEmpty)
                 Text(
                   document.motivo,
-                  style: const TextStyle(fontSize: 13, color: AppColors.textMuted),
+                  style: const TextStyle(
+                    fontSize: 13,
+                    color: AppColors.textMuted,
+                  ),
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
                 ),
@@ -86,7 +115,11 @@ class MedicalDocumentCard extends StatelessWidget {
                 Align(
                   alignment: Alignment.centerRight,
                   child: IconButton(
-                    icon: const Icon(Icons.delete_outline, size: 18, color: AppColors.error),
+                    icon: const Icon(
+                      Icons.delete_outline,
+                      size: 18,
+                      color: AppColors.error,
+                    ),
                     onPressed: onDelete,
                     tooltip: 'Eliminar',
                     visualDensity: VisualDensity.compact,
@@ -113,11 +146,23 @@ class _VigenciaBadge extends StatelessWidget {
   Widget build(BuildContext context) {
     switch (vigencia) {
       case VigenciaEstado.vigente:
-        return AppTheme.badge(label: vigencia.label, bgColor: AppColors.success.withValues(alpha: 0.15), textColor: AppColors.success);
+        return AppTheme.badge(
+          label: vigencia.label,
+          bgColor: AppColors.success.withValues(alpha: 0.15),
+          textColor: AppColors.success,
+        );
       case VigenciaEstado.proximoAVencer:
-        return AppTheme.badge(label: vigencia.label, bgColor: AppColors.warning.withValues(alpha: 0.15), textColor: AppColors.warning);
+        return AppTheme.badge(
+          label: vigencia.label,
+          bgColor: AppColors.warning.withValues(alpha: 0.15),
+          textColor: AppColors.warning,
+        );
       case VigenciaEstado.vencido:
-        return AppTheme.badge(label: vigencia.label, bgColor: AppColors.error.withValues(alpha: 0.15), textColor: AppColors.error);
+        return AppTheme.badge(
+          label: vigencia.label,
+          bgColor: AppColors.error.withValues(alpha: 0.15),
+          textColor: AppColors.error,
+        );
     }
   }
 }
@@ -131,11 +176,23 @@ class _EstadoAprobacionBadge extends StatelessWidget {
   Widget build(BuildContext context) {
     switch (estado) {
       case MedicalDocumentEstado.pendiente:
-        return AppTheme.badge(label: estado.label, bgColor: AppColors.warning.withValues(alpha: 0.15), textColor: AppColors.warning);
+        return AppTheme.badge(
+          label: estado.label,
+          bgColor: AppColors.warning.withValues(alpha: 0.15),
+          textColor: AppColors.warning,
+        );
       case MedicalDocumentEstado.aprobado:
-        return AppTheme.badge(label: estado.label, bgColor: AppColors.success.withValues(alpha: 0.15), textColor: AppColors.success);
+        return AppTheme.badge(
+          label: estado.label,
+          bgColor: AppColors.success.withValues(alpha: 0.15),
+          textColor: AppColors.success,
+        );
       case MedicalDocumentEstado.rechazado:
-        return AppTheme.badge(label: estado.label, bgColor: AppColors.error.withValues(alpha: 0.15), textColor: AppColors.error);
+        return AppTheme.badge(
+          label: estado.label,
+          bgColor: AppColors.error.withValues(alpha: 0.15),
+          textColor: AppColors.error,
+        );
     }
   }
 }
@@ -155,6 +212,8 @@ class _InfoChip extends StatelessWidget {
         const SizedBox(width: 4),
         Text(
           text,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
           style: const TextStyle(fontSize: 13, color: AppColors.textMuted),
         ),
       ],

@@ -7,6 +7,7 @@ import '../../../../core/router/app_routes.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/models/user_model.dart';
 import '../../../../core/utils/string_utils.dart';
+import '../../../../core/widgets/metric_cards.dart';
 import '../../../authentication/presentation/providers/auth_provider.dart';
 import '../../../employees/presentation/providers/users_provider.dart';
 import '../../data/models/medical_document_model.dart';
@@ -60,88 +61,81 @@ class MedicalDocumentsScreen extends ConsumerWidget {
       );
     });
 
-    return Padding(
-      padding: const EdgeInsets.all(24.0),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text('Documentación Médica', style: AppTheme.headingLg),
-          const SizedBox(height: 4),
-          Text(
-            'Administra los certificados y documentación médica de los empleados.',
-            style: AppTheme.bodyLg,
-          ),
-          const SizedBox(height: 24),
-          _buildIndicatorCards(total, vigentes, proximos, vencidos),
-          const SizedBox(height: 24),
-          const MedicalDocumentFilterBar(),
-          const SizedBox(height: 16),
-          if (isAdmin)
-            Align(
-              alignment: Alignment.centerRight,
-              child: FilledButton.icon(
-                onPressed: () => context.push(RoutePaths.createMedicalDocument),
-                icon: const Icon(Icons.add, size: 18),
-                label: const Text('Nuevo documento'),
-                style: FilledButton.styleFrom(
-                  backgroundColor: AppColors.gold,
-                  foregroundColor: Colors.white,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppTheme.radiusSm)),
-                ),
+    // Todo el contenido (cabecera + métricas + filtros + listado) vive dentro
+    // de un único CustomScrollView: en teléfonos chicos la página scrollea
+    // como una sola unidad y vacían de los `BOTTOM OVERFLOWED` que generaba la
+    // columna no scrolleable (Fase B — Corrección).
+    return CustomScrollView(
+      slivers: [
+        SliverPadding(
+          padding: const EdgeInsets.fromLTRB(24, 24, 24, 0),
+          sliver: SliverList.list(
+            children: [
+              Text('Documentación Médica', style: AppTheme.headingLg),
+              const SizedBox(height: 4),
+              Text(
+                'Administra los certificados y documentación médica de los empleados.',
+                style: AppTheme.bodyLg,
               ),
-            ),
-          const SizedBox(height: 16),
-          Expanded(
-            child: _buildContent(context, ref, docs, usersAsync, isAdmin),
+              const SizedBox(height: 24),
+              MetricCardsGrid(
+                cards: [
+                  MetricCardData(
+                    icon: Icons.description,
+                    label: 'Total documentos',
+                    value: total.toString(),
+                    color: AppColors.gold,
+                  ),
+                  MetricCardData(
+                    icon: Icons.check_circle,
+                    label: 'Vigentes',
+                    value: vigentes.toString(),
+                    color: AppColors.success,
+                  ),
+                  MetricCardData(
+                    icon: Icons.warning,
+                    label: 'Próximo a vencer',
+                    value: proximos.toString(),
+                    color: AppColors.warning,
+                  ),
+                  MetricCardData(
+                    icon: Icons.cancel,
+                    label: 'Vencidos',
+                    value: vencidos.toString(),
+                    color: AppColors.error,
+                  ),
+                ],
+              ),
+              const SizedBox(height: 24),
+              const MedicalDocumentFilterBar(),
+              const SizedBox(height: 16),
+              if (isAdmin)
+                Align(
+                  alignment: Alignment.centerRight,
+                  child: FilledButton.icon(
+                    onPressed: () => context.push(RoutePaths.createMedicalDocument),
+                    icon: const Icon(Icons.add, size: 18),
+                    label: const Text('Nuevo documento'),
+                    style: FilledButton.styleFrom(
+                      backgroundColor: AppColors.gold,
+                      foregroundColor: Colors.white,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppTheme.radiusSm)),
+                    ),
+                  ),
+                ),
+              const SizedBox(height: 16),
+            ],
           ),
-        ],
-      ),
+        ),
+        SliverPadding(
+          padding: const EdgeInsets.fromLTRB(24, 0, 24, 24),
+          sliver: _buildContentSliver(context, ref, docs, usersAsync, isAdmin),
+        ),
+      ],
     );
   }
 
-  Widget _buildIndicatorCards(int total, int vigentes, int proximos, int vencidos) {
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final crossAxisCount = constraints.maxWidth > 800 ? 4 : (constraints.maxWidth > 500 ? 2 : 1);
-        return GridView.count(
-          crossAxisCount: crossAxisCount,
-          shrinkWrap: true,
-          physics: const NeverScrollableScrollPhysics(),
-          mainAxisSpacing: 16,
-          crossAxisSpacing: 16,
-          childAspectRatio: 2.2,
-          children: [
-            _IndicatorCard(
-              icon: Icons.description,
-              label: 'Total documentos',
-              value: total.toString(),
-              color: AppColors.gold,
-            ),
-            _IndicatorCard(
-              icon: Icons.check_circle,
-              label: 'Vigentes',
-              value: vigentes.toString(),
-              color: AppColors.success,
-            ),
-            _IndicatorCard(
-              icon: Icons.warning,
-              label: 'Próximo a vencer',
-              value: proximos.toString(),
-              color: AppColors.warning,
-            ),
-            _IndicatorCard(
-              icon: Icons.cancel,
-              label: 'Vencidos',
-              value: vencidos.toString(),
-              color: AppColors.error,
-            ),
-          ],
-        );
-      },
-    );
-  }
-
-  Widget _buildContent(
+  Widget _buildContentSliver(
     BuildContext context,
     WidgetRef ref,
     List<MedicalDocumentModel> docs,
@@ -153,18 +147,20 @@ class MedicalDocumentsScreen extends ConsumerWidget {
         final userMap = {for (final u in users) u.id: u};
 
         if (docs.isEmpty) {
-          return AppTheme.emptyState(
-            icon: Icons.description_outlined,
-            title: 'Sin documentos médicos',
-            subtitle: 'No hay documentos para los filtros seleccionados.',
+          return SliverFillRemaining(
+            hasScrollBody: false,
+            child: AppTheme.emptyState(
+              icon: Icons.description_outlined,
+              title: 'Sin documentos médicos',
+              subtitle: 'No hay documentos para los filtros seleccionados.',
+            ),
           );
         }
 
-        return LayoutBuilder(
+        return SliverLayoutBuilder(
           builder: (context, constraints) {
-            if (constraints.maxWidth < 800) {
-              return ListView.separated(
-                padding: const EdgeInsets.only(bottom: 24),
+            if (constraints.crossAxisExtent < 800) {
+              return SliverList.separated(
                 itemCount: docs.length,
                 separatorBuilder: (_, _) => const SizedBox(height: 8),
                 itemBuilder: (context, index) {
@@ -187,11 +183,12 @@ class MedicalDocumentsScreen extends ConsumerWidget {
               );
             }
 
-            return SingleChildScrollView(
-              scrollDirection: Axis.vertical,
+            return SliverToBoxAdapter(
               child: SingleChildScrollView(
-                scrollDirection: Axis.horizontal,
-                child: DataTable(
+                scrollDirection: Axis.vertical,
+                child: SingleChildScrollView(
+                  scrollDirection: Axis.horizontal,
+                  child: DataTable(
                   columnSpacing: 20,
                   headingRowColor: WidgetStateProperty.all(AppColors.gold.withValues(alpha: 0.1)),
                   columns: [
@@ -243,14 +240,18 @@ class MedicalDocumentsScreen extends ConsumerWidget {
                       ],
                     );
                   }).toList(),
+                  ),
                 ),
               ),
             );
           },
         );
       },
-      loading: () => AppTheme.loadingState(),
-      error: (_, _) => AppTheme.errorState('No se pudieron obtener los datos de los empleados.'),
+      loading: () => SliverFillRemaining(hasScrollBody: false, child: AppTheme.loadingState()),
+      error: (_, _) => SliverFillRemaining(
+        hasScrollBody: false,
+        child: AppTheme.errorState('No se pudieron obtener los datos de los empleados.'),
+      ),
     );
   }
 
@@ -312,57 +313,6 @@ class MedicalDocumentsScreen extends ConsumerWidget {
               foregroundColor: Colors.white,
             ),
             child: const Text('Eliminar'),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _IndicatorCard extends StatelessWidget {
-  final IconData icon;
-  final String label;
-  final String value;
-  final Color color;
-
-  const _IndicatorCard({
-    required this.icon,
-    required this.label,
-    required this.value,
-    required this.color,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      decoration: AppTheme.cardDecoration(),
-      padding: const EdgeInsets.all(16),
-      child: Row(
-        children: [
-          Container(
-            width: 40,
-            height: 40,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              color: color.withValues(alpha: 0.15),
-            ),
-            child: Icon(icon, color: color, size: 20),
-          ),
-          const SizedBox(width: 12),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Text(
-                value,
-                style: TextStyle(
-                  fontSize: 24,
-                  fontWeight: FontWeight.bold,
-                  color: color,
-                ),
-              ),
-              Text(label, style: const TextStyle(fontSize: 13, color: AppColors.textMuted)),
-            ],
           ),
         ],
       ),
