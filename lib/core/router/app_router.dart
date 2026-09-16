@@ -46,6 +46,7 @@ class AppRouter {
       return resolveRedirect(
         RouteGuardState(
           isLoggedIn: _auth.isLoggedIn,
+          isProfileLoading: _auth.isProfileLoading,
           isUserBlocked: _auth.isUserBlocked,
           isCompanyInactive: _auth.isCompanyInactive,
           needsOnboarding: _auth.needsOnboarding,

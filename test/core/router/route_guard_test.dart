@@ -9,6 +9,7 @@ import 'package:flutter_test/flutter_test.dart';
 void main() {
   RouteGuardState guard({
     bool loggedIn = true,
+    bool profileLoading = false,
     bool blocked = false,
     bool companyInactive = false,
     bool onboarding = false,
@@ -16,6 +17,7 @@ void main() {
   }) {
     return RouteGuardState(
       isLoggedIn: loggedIn,
+      isProfileLoading: profileLoading,
       isUserBlocked: blocked,
       isCompanyInactive: companyInactive,
       needsOnboarding: onboarding,
@@ -89,6 +91,60 @@ void main() {
 
     test('logueado (superadmin) en /login: /dashboard', () {
       expect(resolveRedirect(guard(role: UserRole.superadmin), '/login'), '/dashboard');
+    });
+  });
+
+  group('resolveRedirect — carga de perfil (Fase B — A3)', () {
+    test('perfil cargando fuera del splash: redirige a /', () {
+      expect(resolveRedirect(guard(profileLoading: true), '/dashboard'), '/');
+      expect(resolveRedirect(guard(profileLoading: true), '/login'), '/');
+      expect(resolveRedirect(guard(profileLoading: true), '/onboarding'), '/');
+      expect(resolveRedirect(guard(profileLoading: true), '/attendance'), '/');
+    });
+
+    test('perfil cargando ya en el splash /: se queda (null)', () {
+      expect(resolveRedirect(guard(profileLoading: true), '/'), isNull);
+    });
+
+    test('perfil cargando ignora needsOnboarding: nunca decide a ciegas', () {
+      expect(
+        resolveRedirect(guard(profileLoading: true, onboarding: true), '/dashboard'),
+        '/',
+      );
+    });
+
+    test('perfil cargando ignora bloqueo/empresa inactiva hasta saber el estado', () {
+      expect(
+        resolveRedirect(guard(profileLoading: true, blocked: true), '/dashboard'),
+        '/',
+      );
+      expect(
+        resolveRedirect(guard(profileLoading: true, companyInactive: true), '/dashboard'),
+        '/',
+      );
+    });
+
+    test('perfil cargado sin onboarding: home normal del rol', () {
+      expect(resolveRedirect(guard(role: UserRole.admin), '/dashboard'), isNull);
+      expect(resolveRedirect(guard(role: UserRole.admin), '/'), '/dashboard');
+    });
+
+    test('perfil cargado con onboarding pendiente: /onboarding (flujo legítimo)', () {
+      expect(resolveRedirect(guard(onboarding: true), '/dashboard'), '/onboarding');
+    });
+
+    test('perfil cargado con usuario bloqueado: /login?blocked=true', () {
+      expect(
+        resolveRedirect(guard(blocked: true, profileLoading: false), '/dashboard'),
+        '/login?blocked=true',
+      );
+    });
+
+    test('no logueado durante carga de perfil: /login (no depende del loading)', () {
+      expect(
+        resolveRedirect(guard(loggedIn: false, profileLoading: true), '/dashboard'),
+        '/login',
+      );
     });
   });
 

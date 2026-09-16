@@ -6,6 +6,7 @@ import '../models/user_model.dart';
 /// una función pura y testeable sin FirebaseAuth ni go_router.
 class RouteGuardState {
   final bool isLoggedIn;
+  final bool isProfileLoading;
   final bool isUserBlocked;
   final bool isCompanyInactive;
   final bool needsOnboarding;
@@ -14,6 +15,7 @@ class RouteGuardState {
 
   const RouteGuardState({
     required this.isLoggedIn,
+    required this.isProfileLoading,
     required this.isUserBlocked,
     required this.isCompanyInactive,
     required this.needsOnboarding,
@@ -32,6 +34,14 @@ String? resolveRedirect(RouteGuardState s, String location) {
 
   if (!s.isLoggedIn) {
     return goingToLogin ? null : '/login';
+  }
+
+  // Perfil del usuario aún no leído (documento de 'users' pendiente):
+  // el estado de rol/empresa/bloqueo es desconocido. Permanecer en el splash
+  // en lugar de decidir a ciegas (evita mostrar el onboarding por un instante
+  // a un usuario que ya tiene empresa). (Fase B — A3)
+  if (s.isProfileLoading) {
+    return goingToSplash ? null : '/';
   }
 
   // Usuario autenticado con cuenta bloqueada (desactivada o eliminada):

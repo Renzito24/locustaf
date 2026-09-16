@@ -36,6 +36,7 @@ class AuthStateListenable extends ChangeNotifier {
   late final StreamSubscription _authSub;
   StreamSubscription<Object?>? _userDocSub;
   StreamSubscription<Object?>? _companyDocSub;
+  bool _profileLoading = false;
   UserRole? _role;
   bool? _isActive;
   bool? _isDeleted;
@@ -45,6 +46,12 @@ class AuthStateListenable extends ChangeNotifier {
   User? get user => FirebaseAuth.instance.currentUser;
 
   bool get isLoggedIn => user != null;
+
+  /// El documento del usuario en 'users' todavía no se ha leído: el estado de
+  /// rol/empresa/bloqueo es desconocido. Mientras sea true el router debe
+  /// permanecer en el splash y NO decidir (p. ej. mandar al onboarding a un
+  /// usuario que ya tiene empresa). (Fase B — A3)
+  bool get isProfileLoading => _profileLoading;
 
   UserRole? get role => _role;
 
@@ -65,7 +72,10 @@ class AuthStateListenable extends ChangeNotifier {
   /// El usuario está autenticado pero aún no tiene empresa asignada
   /// (debe completar el onboarding). El superadmin queda excluido: no tiene
   /// empresa propia y gestiona todas las empresas desde la pantalla Empresas.
-  bool get needsOnboarding => isLoggedIn && _companyId == null && !isSuperadmin;
+  /// Solo aplica una vez que el perfil fue leído: durante la carga el router
+  /// permanece en el splash vía [isProfileLoading]. (Fase B — A3)
+  bool get needsOnboarding =>
+      isLoggedIn && !_profileLoading && _companyId == null && !isSuperadmin;
 
   void _onAuthChanged(User? user) {
     _userDocSub?.cancel();
@@ -77,6 +87,7 @@ class AuthStateListenable extends ChangeNotifier {
     _isDeleted = null;
     _companyId = null;
     _companyEstado = null;
+    _profileLoading = user != null;
     if (user != null) {
       _startListeningUserDoc(user.uid);
     }
@@ -84,32 +95,51 @@ class AuthStateListenable extends ChangeNotifier {
   }
 
   void _startListeningUserDoc(String uid) {
+    _profileLoading = true;
     final svc = FirestoreService(FirebaseFirestore.instance);
     _userDocSub = svc.documentStream<UserModel>(
       path: 'users',
       documentId: uid,
       fromJson: UserModel.fromJson,
-    ).listen((userModel) {
-      if (userModel == null) {
-        // El usuario aún no tiene documento en 'users' (p. ej. recién se
-        // registró con Google y debe completar el onboarding). Se deja sin
-        // datos para que el router lo derive a /onboarding en lugar de
-        // bloquearlo como cuenta eliminada.
+    ).listen(
+      (userModel) {
+        // Primer snapshot recibido: el estado del perfil ya es conocido y el
+        // router puede decidir (dashboard u onboarding). (Fase B — A3)
+        _profileLoading = false;
+        if (userModel == null) {
+          // El usuario aún no tiene documento en 'users' (p. ej. recién se
+          // registró con Google y debe completar el onboarding). Se deja sin
+          // datos para que el router lo derive a /onboarding en lugar de
+          // bloquearlo como cuenta eliminada.
+          _role = null;
+          _isActive = null;
+          _isDeleted = null;
+          _companyId = null;
+          _startListeningCompanyDoc(svc, null);
+          notifyListeners();
+          return;
+        }
+        _role = userModel.rol;
+        _isActive = userModel.isActive;
+        _isDeleted = userModel.isDeleted;
+        _companyId = userModel.companyId;
+        _startListeningCompanyDoc(svc, userModel.companyId);
+        notifyListeners();
+      },
+      onError: (Object error, StackTrace stackTrace) {
+        // Si el documento no puede leerse (permisos/red), no quedarse en el
+        // splash eternamente: se degrada al estado "sin documento", el mismo
+        // comportamiento que una cuenta sin datos (deriva a onboarding).
         _role = null;
         _isActive = null;
         _isDeleted = null;
         _companyId = null;
+        _companyEstado = null;
+        _profileLoading = false;
         _startListeningCompanyDoc(svc, null);
         notifyListeners();
-        return;
-      }
-      _role = userModel.rol;
-      _isActive = userModel.isActive;
-      _isDeleted = userModel.isDeleted;
-      _companyId = userModel.companyId;
-      _startListeningCompanyDoc(svc, userModel.companyId);
-      notifyListeners();
-    });
+      },
+    );
   }
 
   void _startListeningCompanyDoc(FirestoreService svc, String? companyId) {
