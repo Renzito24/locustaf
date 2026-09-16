@@ -1,9 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../../reports/presentation/providers/reports_provider.dart';
+import '../../../companies/domain/services/platform_metrics.dart';
+import '../../../companies/presentation/providers/company_providers.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/providers/data_providers.dart';
+import '../../../../core/router/app_routes.dart';
 import '../../../../core/theme/app_theme.dart';
 
 class HomeScreen extends ConsumerWidget {
@@ -11,6 +15,11 @@ class HomeScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final isSuperadmin = ref.watch(isSuperadminProvider);
+    if (isSuperadmin) {
+      return _buildSuperadminDashboard(context, ref);
+    }
+
     final usersAsync = ref.watch(allUsersStreamProvider);
     final workplacesAsync = ref.watch(allWorkplacesStreamProvider);
     final attendancesAsync = ref.watch(allAttendancesStreamProvider);
@@ -19,13 +28,6 @@ class HomeScreen extends ConsumerWidget {
     final presentToday = ref.watch(employeesPresentTodayProvider);
     final absentToday = ref.watch(employeesAbsentTodayProvider);
     final activeWorkplaces = ref.watch(activeWorkplacesCountProvider);
-
-    final now = DateTime.now();
-    final months = [
-      'enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio',
-      'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre',
-    ];
-    final dateStr = '${now.day} de ${months[now.month - 1]} de ${now.year}';
 
     final anyLoaded = usersAsync.hasValue || workplacesAsync.hasValue || attendancesAsync.hasValue;
     final isLoading = !anyLoaded && (usersAsync.isLoading || workplacesAsync.isLoading || attendancesAsync.isLoading);
@@ -36,26 +38,141 @@ class HomeScreen extends ConsumerWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          ShaderMask(
-            shaderCallback: (bounds) => AppTheme.goldGradient.createShader(bounds),
-            child: const Text(
-              'Dashboard',
-              style: TextStyle(
-                fontSize: 24,
-                fontWeight: FontWeight.bold,
-                color: Colors.white,
-                letterSpacing: 0.5,
-              ),
-            ),
-          ),
-          const SizedBox(height: 4),
-          Text(dateStr, style: AppTheme.bodyLg),
-          const SizedBox(height: 4),
-          const Text('Resumen general del estado del sistema.', style: AppTheme.bodyLg),
+          _buildHeader(context, 'Resumen general del estado del sistema.'),
           const SizedBox(height: 24),
           _buildBody(isLoading, hasError, totalEmployees, presentToday, absentToday, activeWorkplaces, context),
         ],
       ),
+    );
+  }
+
+  /// Dashboard del Super Admin orientado a EMPRESAS (Fase B — 3ª corrección).
+  ///
+  /// El Super Admin no administra empleados: su dashboard refleja el estado de
+  /// las empresas de la plataforma usando las métricas ya existentes
+  /// ([platformMetricsProvider]) sin inventar datos nuevos.
+  Widget _buildSuperadminDashboard(BuildContext context, WidgetRef ref) {
+    final companiesAsync = ref.watch(allCompaniesProvider);
+    final metrics = ref.watch(platformMetricsProvider);
+    final isMobile = AppTheme.isMobile(context);
+
+    return SingleChildScrollView(
+      padding: EdgeInsets.all(isMobile ? 16 : 24),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _buildHeader(context, 'Resumen del estado de las empresas de la plataforma.'),
+          const SizedBox(height: 24),
+          companiesAsync.when(
+            loading: () => AppTheme.loadingState(message: 'Cargando empresas...'),
+            error: (_, _) => AppTheme.errorState('No se pudieron obtener los datos del sistema.'),
+            data: (_) => Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _buildCompanyKpis(metrics),
+                const SizedBox(height: 24),
+                FilledButton.icon(
+                  onPressed: () => context.go(RoutePaths.companies),
+                  icon: const Icon(Icons.business_outlined, size: 18),
+                  label: const Text('Gestionar empresas'),
+                  style: FilledButton.styleFrom(
+                    backgroundColor: AppColors.gold,
+                    foregroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(AppTheme.radiusSm),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildHeader(BuildContext context, String subtitle) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        ShaderMask(
+          shaderCallback: (bounds) => AppTheme.goldGradient.createShader(bounds),
+          child: const Text(
+            'Dashboard',
+            style: TextStyle(
+              fontSize: 24,
+              fontWeight: FontWeight.bold,
+              color: Colors.white,
+              letterSpacing: 0.5,
+            ),
+          ),
+        ),
+        const SizedBox(height: 4),
+        Text(_todayString(), style: AppTheme.bodyLg),
+        const SizedBox(height: 4),
+        Text(subtitle, style: AppTheme.bodyLg),
+      ],
+    );
+  }
+
+  String _todayString() {
+    final now = DateTime.now();
+    const months = [
+      'enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio',
+      'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre',
+    ];
+    return '${now.day} de ${months[now.month - 1]} de ${now.year}';
+  }
+
+  Widget _buildCompanyKpis(PlatformMetrics metrics) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final width = constraints.maxWidth;
+        final crossAxisCount = width < 500 ? 2 : (width < 900 ? 3 : 4);
+        final itemWidth = (width - (crossAxisCount - 1) * 16) / crossAxisCount;
+
+        return Wrap(
+          spacing: 16,
+          runSpacing: 16,
+          children: [
+            _KpiCard(
+              icon: Icons.business_outlined,
+              label: 'Total de empresas',
+              value: metrics.total.toString(),
+              color: AppColors.gold,
+              width: itemWidth,
+            ),
+            _KpiCard(
+              icon: Icons.check_circle_outline,
+              label: 'Empresas activas',
+              value: metrics.activas.toString(),
+              color: AppColors.success,
+              width: itemWidth,
+            ),
+            _KpiCard(
+              icon: Icons.block_outlined,
+              label: 'Empresas inactivas',
+              value: metrics.suspendidas.toString(),
+              color: metrics.suspendidas > 0 ? AppColors.error : AppColors.success,
+              width: itemWidth,
+            ),
+            _KpiCard(
+              icon: Icons.event_outlined,
+              label: 'Próximas a vencer',
+              value: metrics.porVencer.toString(),
+              color: metrics.porVencer > 0 ? AppColors.warning : AppColors.success,
+              width: itemWidth,
+            ),
+            _KpiCard(
+              icon: Icons.science_outlined,
+              label: 'En prueba',
+              value: metrics.enPrueba.toString(),
+              color: AppColors.info,
+              width: itemWidth,
+            ),
+          ],
+        );
+      },
     );
   }
 

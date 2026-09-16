@@ -85,9 +85,9 @@ void main() {
   }
 
   group('Sidebar — visibilidad por rol', () {
-    testWidgets('superadmin: Empresas + Configuración + Perfil', (tester) async {
+    testWidgets('superadmin: Inicio + Empresas + Configuración + Perfil', (tester) async {
       await pumpSidebar(tester, UserRole.superadmin);
-      expectOnly(tester, {'Empresas', 'Configuración', 'Perfil'});
+      expectOnly(tester, {'Inicio', 'Empresas', 'Configuración', 'Perfil'});
       expect(find.text('Cerrar sesión'), findsOneWidget);
     });
 

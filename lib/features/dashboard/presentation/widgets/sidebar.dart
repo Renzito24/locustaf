@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../../core/config/app_version.dart';
 import '../../../../core/models/user_model.dart';
 import '../../../authentication/presentation/providers/auth_provider.dart';
 import '../../../../core/constants/app_colors.dart';
@@ -13,18 +14,83 @@ class Sidebar extends ConsumerWidget {
   const Sidebar({super.key});
 
   static const List<_MenuItem> _items = [
-    _MenuItem(icon: Icons.home_outlined, label: 'Inicio', route: RoutePaths.dashboard, visibleFor: {UserRole.admin, UserRole.supervisor}),
-    _MenuItem(icon: Icons.business_outlined, label: 'Empresas', route: RoutePaths.companies, visibleFor: {UserRole.superadmin}),
-    _MenuItem(icon: Icons.tune_outlined, label: 'Configuración', route: RoutePaths.companySettings, visibleFor: {UserRole.admin, UserRole.superadmin}),
-    _MenuItem(icon: Icons.people_outline, label: 'Empleados', route: RoutePaths.employees, visibleFor: {UserRole.admin, UserRole.supervisor}),
-    _MenuItem(icon: Icons.business_outlined, label: 'Lugares', route: RoutePaths.workplaces, visibleFor: {UserRole.admin, UserRole.supervisor}),
-    _MenuItem(icon: Icons.fingerprint, label: 'Asistencia', route: RoutePaths.attendance, visibleFor: {UserRole.admin, UserRole.employee}),
-    _MenuItem(icon: Icons.history_outlined, label: 'Historial', route: RoutePaths.history, visibleFor: {UserRole.admin, UserRole.supervisor}),
-    _MenuItem(icon: Icons.medical_services_outlined, label: 'Documentación', route: RoutePaths.medicalDocuments, visibleFor: {UserRole.admin}),
-    _MenuItem(icon: Icons.warning_amber_outlined, label: 'Incidencias', route: RoutePaths.incidences, visibleFor: {UserRole.admin, UserRole.supervisor}),
-    _MenuItem(icon: Icons.bar_chart_outlined, label: 'Reportes', route: RoutePaths.reports, visibleFor: {UserRole.admin, UserRole.employee}),
-    _MenuItem(icon: Icons.assignment_outlined, label: 'Justificativos', route: RoutePaths.employeeJustificativos, visibleFor: {UserRole.employee}),
-    _MenuItem(icon: Icons.person_outline, label: 'Perfil', route: RoutePaths.profile, visibleFor: {UserRole.superadmin, UserRole.admin, UserRole.supervisor, UserRole.employee}),
+    _MenuItem(
+      icon: Icons.home_outlined,
+      label: 'Inicio',
+      route: RoutePaths.dashboard,
+      visibleFor: {UserRole.admin, UserRole.supervisor, UserRole.superadmin},
+    ),
+    _MenuItem(
+      icon: Icons.business_outlined,
+      label: 'Empresas',
+      route: RoutePaths.companies,
+      visibleFor: {UserRole.superadmin},
+    ),
+    _MenuItem(
+      icon: Icons.tune_outlined,
+      label: 'Configuración',
+      route: RoutePaths.companySettings,
+      visibleFor: {UserRole.admin, UserRole.superadmin},
+    ),
+    _MenuItem(
+      icon: Icons.people_outline,
+      label: 'Empleados',
+      route: RoutePaths.employees,
+      visibleFor: {UserRole.admin, UserRole.supervisor},
+    ),
+    _MenuItem(
+      icon: Icons.business_outlined,
+      label: 'Lugares',
+      route: RoutePaths.workplaces,
+      visibleFor: {UserRole.admin, UserRole.supervisor},
+    ),
+    _MenuItem(
+      icon: Icons.fingerprint,
+      label: 'Asistencia',
+      route: RoutePaths.attendance,
+      visibleFor: {UserRole.admin, UserRole.employee},
+    ),
+    _MenuItem(
+      icon: Icons.history_outlined,
+      label: 'Historial',
+      route: RoutePaths.history,
+      visibleFor: {UserRole.admin, UserRole.supervisor},
+    ),
+    _MenuItem(
+      icon: Icons.medical_services_outlined,
+      label: 'Documentación',
+      route: RoutePaths.medicalDocuments,
+      visibleFor: {UserRole.admin},
+    ),
+    _MenuItem(
+      icon: Icons.warning_amber_outlined,
+      label: 'Incidencias',
+      route: RoutePaths.incidences,
+      visibleFor: {UserRole.admin, UserRole.supervisor},
+    ),
+    _MenuItem(
+      icon: Icons.bar_chart_outlined,
+      label: 'Reportes',
+      route: RoutePaths.reports,
+      visibleFor: {UserRole.admin, UserRole.employee},
+    ),
+    _MenuItem(
+      icon: Icons.assignment_outlined,
+      label: 'Justificativos',
+      route: RoutePaths.employeeJustificativos,
+      visibleFor: {UserRole.employee},
+    ),
+    _MenuItem(
+      icon: Icons.person_outline,
+      label: 'Perfil',
+      route: RoutePaths.profile,
+      visibleFor: {
+        UserRole.superadmin,
+        UserRole.admin,
+        UserRole.supervisor,
+        UserRole.employee,
+      },
+    ),
   ];
 
   @override
@@ -32,22 +98,23 @@ class Sidebar extends ConsumerWidget {
     final currentRoute = GoRouterState.of(context).uri.path;
     final role = ref.watch(userRoleProvider);
 
-    final visibleItems = _items.where((item) => item.visibleFor.contains(role)).toList();
+    final visibleItems = _items
+        .where((item) => item.visibleFor.contains(role))
+        .toList();
 
     return Container(
       width: 240,
       decoration: const BoxDecoration(
         color: AppColors.sidebar,
-        border: Border(
-          right: BorderSide(color: AppColors.gold, width: 0.3),
-        ),
+        border: Border(right: BorderSide(color: AppColors.gold, width: 0.3)),
       ),
       child: Column(
         children: [
           // Logo
           const SizedBox(height: 24),
           ShaderMask(
-            shaderCallback: (bounds) => AppTheme.goldGradient.createShader(bounds),
+            shaderCallback: (bounds) =>
+                AppTheme.goldGradient.createShader(bounds),
             child: const Text(
               'LOCUSTAF',
               style: TextStyle(
@@ -125,6 +192,25 @@ class Sidebar extends ConsumerWidget {
               final logout = container.read(logoutProvider);
               await logout();
             },
+          ),
+          const SizedBox(height: 8),
+          // Pie con la versión instalada: permite confirmar en el dispositivo
+          // físico qué build del APK está corriendo (Fase B — Corrección).
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 20),
+            child: Align(
+              alignment: Alignment.centerLeft,
+              child: Text(
+                'v$appVersion · $appBuildLabel',
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  color: AppColors.textMuted.withValues(alpha: 0.4),
+                  fontSize: 10,
+                  letterSpacing: 0.5,
+                ),
+              ),
+            ),
           ),
           const SizedBox(height: 16),
         ],
