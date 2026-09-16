@@ -17,11 +17,7 @@ final usersStreamProvider = StreamProvider<List<UserModel>>((ref) {
   return repo.getUsers();
 });
 
-enum EmployeeStatusFilter {
-  all,
-  active,
-  inactive,
-}
+enum EmployeeStatusFilter { all, active, inactive }
 
 class EmployeeWorkplaceFilter extends Notifier<String?> {
   @override
@@ -36,9 +32,10 @@ class EmployeeWorkplaceFilter extends Notifier<String?> {
   }
 }
 
-final employeeWorkplaceFilterProvider = NotifierProvider<EmployeeWorkplaceFilter, String?>(
-  EmployeeWorkplaceFilter.new,
-);
+final employeeWorkplaceFilterProvider =
+    NotifierProvider<EmployeeWorkplaceFilter, String?>(
+      EmployeeWorkplaceFilter.new,
+    );
 
 class EmployeeSearchQuery extends Notifier<String> {
   @override
@@ -53,7 +50,8 @@ class EmployeeSearchQuery extends Notifier<String> {
   }
 }
 
-final employeeSearchQueryProvider = NotifierProvider<EmployeeSearchQuery, String>(EmployeeSearchQuery.new);
+final employeeSearchQueryProvider =
+    NotifierProvider<EmployeeSearchQuery, String>(EmployeeSearchQuery.new);
 
 class EmployeeFilterNotifier extends Notifier<EmployeeStatusFilter> {
   @override
@@ -64,7 +62,10 @@ class EmployeeFilterNotifier extends Notifier<EmployeeStatusFilter> {
   }
 }
 
-final employeeFilterProvider = NotifierProvider<EmployeeFilterNotifier, EmployeeStatusFilter>(EmployeeFilterNotifier.new);
+final employeeFilterProvider =
+    NotifierProvider<EmployeeFilterNotifier, EmployeeStatusFilter>(
+      EmployeeFilterNotifier.new,
+    );
 
 class EmployeeRoleFilter extends Notifier<UserRole?> {
   @override
@@ -79,13 +80,15 @@ class EmployeeRoleFilter extends Notifier<UserRole?> {
   }
 }
 
-final employeeRoleFilterProvider = NotifierProvider<EmployeeRoleFilter, UserRole?>(
-  EmployeeRoleFilter.new,
-);
+final employeeRoleFilterProvider =
+    NotifierProvider<EmployeeRoleFilter, UserRole?>(EmployeeRoleFilter.new);
 
 final filteredEmployeesProvider = Provider<AsyncValue<List<UserModel>>>((ref) {
   final usersAsync = ref.watch(usersStreamProvider);
-  final searchQuery = ref.watch(employeeSearchQueryProvider).trim().toLowerCase();
+  final searchQuery = ref
+      .watch(employeeSearchQueryProvider)
+      .trim()
+      .toLowerCase();
   final statusFilter = ref.watch(employeeFilterProvider);
 
   return usersAsync.whenData((users) {
@@ -126,7 +129,9 @@ final filteredEmployeesProvider = Provider<AsyncValue<List<UserModel>>>((ref) {
     // 6. Filter by workplace
     final workplaceFilter = ref.watch(employeeWorkplaceFilterProvider);
     if (workplaceFilter != null) {
-      employees = employees.where((u) => u.lugarDeTrabajoId == workplaceFilter).toList();
+      employees = employees
+          .where((u) => u.lugarDeTrabajoId == workplaceFilter)
+          .toList();
     }
 
     // 7. Sort alphabetically by last name (apellido), then name (nombre)
@@ -162,12 +167,41 @@ class EmployeeFormData {
   });
 }
 
-class CreateEmployeeNotifier extends AsyncNotifier<void> {
+/// Fase explícita de la creación de un usuario.
+///
+/// Fase B — Corrección: antes el notifier usaba `AsyncNotifier<void>` cuyo
+/// valor inicial era `AsyncData(null)` (éxito). Como `ref.listen` se dispara
+/// con el valor actual al montar la pantalla, abrir "Nuevo usuario" mostraba el
+/// mensaje "Usuario creado correctamente" sin haber creado nada (evento
+/// reutilizado: estado idle == estado de éxito). Ahora el estado inicial es
+/// [CreateEmployeeStatus.idle] y el éxito solo existe después de que
+/// `createUser` terminó realmente.
+enum CreateEmployeeStatus { idle, loading, success, failure }
+
+class CreateEmployeeState {
+  final CreateEmployeeStatus status;
+  final Object? error;
+
+  const CreateEmployeeState._(this.status, {this.error});
+
+  const CreateEmployeeState.idle() : this._(CreateEmployeeStatus.idle);
+
+  const CreateEmployeeState.loading() : this._(CreateEmployeeStatus.loading);
+
+  const CreateEmployeeState.success() : this._(CreateEmployeeStatus.success);
+
+  const CreateEmployeeState.failure(Object error)
+    : this._(CreateEmployeeStatus.failure, error: error);
+
+  bool get isLoading => status == CreateEmployeeStatus.loading;
+}
+
+class CreateEmployeeNotifier extends Notifier<CreateEmployeeState> {
   @override
-  Future<void> build() => Future.value();
+  CreateEmployeeState build() => const CreateEmployeeState.idle();
 
   Future<void> createEmployee(EmployeeFormData data) async {
-    state = const AsyncLoading();
+    state = const CreateEmployeeState.loading();
     final repo = ref.read(usersRepositoryProvider);
     try {
       final user = UserModel(
@@ -183,19 +217,18 @@ class CreateEmployeeNotifier extends AsyncNotifier<void> {
         createdAt: DateTime.now(),
       );
       await repo.createUser(user, data.password);
-      state = const AsyncData(null);
-    } catch (e, st) {
-      state = AsyncError(e, st);
+      state = const CreateEmployeeState.success();
+    } catch (e) {
+      state = CreateEmployeeState.failure(e);
     }
   }
 
   void reset() {
-    state = const AsyncData(null);
+    state = const CreateEmployeeState.idle();
   }
 }
 
 final createEmployeeProvider =
-    AsyncNotifierProvider<CreateEmployeeNotifier, void>(
-  CreateEmployeeNotifier.new,
-);
-
+    NotifierProvider<CreateEmployeeNotifier, CreateEmployeeState>(
+      CreateEmployeeNotifier.new,
+    );

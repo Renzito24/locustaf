@@ -6,6 +6,7 @@ import '../../../../core/constants/app_sizes.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/utils/validators.dart';
 import '../../../../core/models/user_model.dart';
+import '../../domain/user_validation.dart';
 import '../../../authentication/presentation/providers/auth_provider.dart';
 import '../../../workplaces/presentation/providers/workplace_notifier.dart';
 import '../providers/update_employee_notifier.dart';
@@ -159,6 +160,25 @@ class _EmployeeFormState extends ConsumerState<EmployeeForm> {
     );
   }
 
+  String? _validateDni(String? value, List<UserModel>? existingUsers) {
+    final formatError = Validators.dni(value);
+    if (formatError != null) return formatError;
+
+    // Sin datos cargados del stream: no bloquear (la validación de formato ya
+    // protege la integridad mínima del dato).
+    if (existingUsers == null || value == null) return null;
+
+    final duplicate = findDuplicateDni(
+      existingUsers,
+      dni: value.trim(),
+      excludeUserId: widget.isEditing ? widget.initialData!.id : null,
+    );
+    if (duplicate != null) {
+      return 'El DNI $duplicate ya está registrado en tu empresa.';
+    }
+    return null;
+  }
+
   Future<void> _submit() async {
     if (!_formKey.currentState!.validate()) return;
 
@@ -201,6 +221,10 @@ class _EmployeeFormState extends ConsumerState<EmployeeForm> {
     final isSaving = widget.isEditing
         ? ref.watch(updateEmployeeProvider).isLoading
         : ref.watch(createEmployeeProvider).isLoading;
+    // Lista de usuarios de la empresa (para detectar DNI duplicados). Se
+    // observa desde build para que el stream esté activo cuando el validador
+    // del DNI consulte la última lectura.
+    final existingUsers = ref.watch(usersStreamProvider).value;
 
     return Form(
       key: _formKey,
@@ -256,7 +280,7 @@ class _EmployeeFormState extends ConsumerState<EmployeeForm> {
                       color: AppColors.textWhite, fontSize: 14),
                   decoration: _inputDeco('DNI *',
                       icon: Icons.badge_outlined),
-                  validator: (value) => Validators.dni(value),
+                  validator: (value) => _validateDni(value, existingUsers),
                 ),
               ),
               const SizedBox(width: AppSizes.md),

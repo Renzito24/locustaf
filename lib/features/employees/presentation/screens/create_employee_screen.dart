@@ -30,21 +30,27 @@ class CreateEmployeeScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    ref.listen<AsyncValue<void>>(createEmployeeProvider, (prev, next) {
-      next.whenOrNull(
-        data: (_) {
+    ref.listen<CreateEmployeeState>(createEmployeeProvider, (prev, next) {
+      // Solo se reacciona a operaciones reales: un cambio de estado iniciado
+      // con loading por este mismo muletín. Al montar la pantalla ref.listen
+      // dispara con prev == null y next == idle → no hace nada (el estado idle
+      // ya no es sinónimo de éxito).
+      if (prev?.status != CreateEmployeeStatus.loading) return;
+      switch (next.status) {
+        case CreateEmployeeStatus.success:
           ref.read(createEmployeeProvider.notifier).reset();
           ScaffoldMessenger.of(context).showSnackBar(
             AppTheme.successSnackBar('Usuario creado correctamente'),
           );
           context.go('/employees');
-        },
-        error: (error, _) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            AppTheme.errorSnackBar(_mensajeError(error)),
-          );
-        },
-      );
+        case CreateEmployeeStatus.failure:
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(AppTheme.errorSnackBar(_mensajeError(next.error!)));
+        case CreateEmployeeStatus.idle:
+        case CreateEmployeeStatus.loading:
+          break;
+      }
     });
 
     return Container(
@@ -54,10 +60,7 @@ class CreateEmployeeScreen extends ConsumerWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
-              'Nuevo Usuario',
-              style: AppTheme.headingLg,
-            ),
+            Text('Nuevo Usuario', style: AppTheme.headingLg),
             const SizedBox(height: 4),
             Text(
               'Complete el formulario para registrar un nuevo usuario.',
