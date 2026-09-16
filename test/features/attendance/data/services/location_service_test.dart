@@ -91,4 +91,23 @@ void main() {
       expect(different, isFalse);
     });
   });
+
+  group('LocationService.hasAcceptableAccuracy (Fase C — precisión)', () {
+    test('precisión de 0 metros es aceptable (sin degradación)', () {
+      expect(LocationService.hasAcceptableAccuracy(0), isTrue);
+    });
+
+    test('precisión GPS típica de cielo abierto es aceptable', () {
+      expect(LocationService.hasAcceptableAccuracy(5), isTrue);
+    });
+
+    test('precisión exactamente en el límite (25m) es aceptable', () {
+      expect(LocationService.hasAcceptableAccuracy(kMaxGpsAccuracy), isTrue);
+    });
+
+    test('precisión que supera el límite es rechazada', () {
+      expect(LocationService.hasAcceptableAccuracy(26), isFalse);
+      expect(LocationService.hasAcceptableAccuracy(100), isFalse);
+    });
+  });
 }

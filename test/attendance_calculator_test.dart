@@ -61,6 +61,30 @@ void main() {
       );
     });
 
+    test('ingreso con anticipación respecto del turno nunca es tarde', () {
+      final checkIn = DateTime(2026, 8, 26, 7, 30);
+      expect(
+        AttendanceCalculator.isLate(
+          checkInTime: checkIn,
+          shiftStart: shiftStart,
+          toleranceMinutes: 15,
+        ),
+        isFalse,
+      );
+    });
+
+    test('ingreso exactamente en la hora de inicio no es tarde', () {
+      final checkIn = DateTime(2026, 8, 26, 8, 0);
+      expect(
+        AttendanceCalculator.isLate(
+          checkInTime: checkIn,
+          shiftStart: shiftStart,
+          toleranceMinutes: 15,
+        ),
+        isFalse,
+      );
+    });
+
     test('tolerancia cero: ingreso posterior a la hora es tarde', () {
       final checkIn = DateTime(2026, 8, 26, 8, 1);
       expect(
@@ -100,6 +124,30 @@ void main() {
         isTrue,
       );
     });
+
+    test('salida exactamente en el límite de tolerancia no es anticipada', () {
+      final checkOut = DateTime(2026, 8, 26, 15, 45);
+      expect(
+        AttendanceCalculator.isEarlyCheckout(
+          checkOutTime: checkOut,
+          shiftEnd: shiftEnd,
+          toleranceMinutes: 15,
+        ),
+        isFalse,
+      );
+    });
+
+    test('salida en el fin de jornada exacto no es anticipada', () {
+      final checkOut = DateTime(2026, 8, 26, 16, 0);
+      expect(
+        AttendanceCalculator.isEarlyCheckout(
+          checkOutTime: checkOut,
+          shiftEnd: shiftEnd,
+          toleranceMinutes: 15,
+        ),
+        isFalse,
+      );
+    });
   });
 
   group('AttendanceCalculator.calculateDuration', () {
@@ -132,6 +180,12 @@ void main() {
       final checkOut = DateTime(2026, 8, 26, 9, 0);
       expect(AttendanceCalculator.calculateDuration(checkIn, checkOut), 0);
     });
+
+    test('trunca los segundos: 8:00:30 → 8:01:59 da 1 minuto', () {
+      final checkIn = DateTime(2026, 8, 26, 8, 0, 30);
+      final checkOut = DateTime(2026, 8, 26, 8, 1, 59);
+      expect(AttendanceCalculator.calculateDuration(checkIn, checkOut), 1);
+    });
   });
 
   group('AttendanceCalculator.calculateExpectedDuration', () {
@@ -139,6 +193,12 @@ void main() {
       final start = DateTime(2026, 8, 26, 8, 0);
       final end = DateTime(2026, 8, 26, 16, 0);
       expect(AttendanceCalculator.calculateExpectedDuration(start, end), 480);
+    });
+
+    test('fin anterior al inicio devuelve cero', () {
+      final start = DateTime(2026, 8, 26, 16, 0);
+      final end = DateTime(2026, 8, 26, 8, 0);
+      expect(AttendanceCalculator.calculateExpectedDuration(start, end), 0);
     });
   });
 
@@ -221,6 +281,25 @@ void main() {
           attendance: a,
           shiftEnd: shiftEnd,
           now: DateTime(2026, 8, 26, 17, 0),
+        ),
+        isFalse,
+      );
+    });
+
+    test('asistencia activa exactamente en el fin de jornada no es huérfana', () {
+      final a = AttendanceModel(
+        id: '1',
+        userId: 'u1',
+        checkInTime: DateTime(2026, 8, 26, 8, 0),
+        date: '2026-08-26',
+        status: AttendanceStatus.active,
+      );
+      final shiftEnd = DateTime(2026, 8, 26, 18, 0);
+      expect(
+        AttendanceCalculator.isOrphaned(
+          attendance: a,
+          shiftEnd: shiftEnd,
+          now: DateTime(2026, 8, 26, 18, 0),
         ),
         isFalse,
       );

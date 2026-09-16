@@ -78,7 +78,7 @@ class LocationService {
         ),
       );
 
-      if (position.accuracy > kMaxGpsAccuracy) {
+      if (!hasAcceptableAccuracy(position.accuracy)) {
         return LocationResult(
           latitude: position.latitude,
           longitude: position.longitude,
@@ -103,6 +103,12 @@ class LocationService {
         message: 'No se pudo obtener la ubicación: $e',
       );
     }
+  }
+
+  /// Indica si la precisión de una posición GPS es aceptable (Fase C — C3).
+  /// Separada del flujo con plugin para poder testear el umbral de precisión.
+  static bool hasAcceptableAccuracy(double accuracy) {
+    return accuracy <= kMaxGpsAccuracy;
   }
 
   static double calculateDistance(
