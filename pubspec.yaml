@@ -55,6 +55,16 @@ dev_dependencies:
   flutter_lints: ^6.0.0
   fake_cloud_firestore: ^4.2.0
   geolocator_platform_interface: ^4.3.0
+  flutter_launcher_icons: ^0.14.4
+
+# Configuración del ícono del launcher (generado desde assets/icon/app_icon.png)
+flutter_launcher_icons:
+  android: true
+  ios: false
+  image_path: "assets/icon/app_icon.png"
+  adaptive_icon_background: "#001626"
+  adaptive_icon_foreground: "assets/icon/app_icon.png"
+  min_sdk_android: 21
 
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec
