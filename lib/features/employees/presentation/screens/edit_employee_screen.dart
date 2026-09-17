@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../../core/constants/app_colors.dart';
+import '../../../../core/providers/async_action_state.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/models/user_model.dart';
 import '../providers/update_employee_notifier.dart';
@@ -24,21 +25,19 @@ class EditEmployeeScreen extends ConsumerWidget {
       );
     }
 
-    ref.listen<AsyncValue<void>>(updateEmployeeProvider, (prev, next) {
-      next.whenOrNull(
-        data: (_) {
-          ref.read(updateEmployeeProvider.notifier).reset();
-          ScaffoldMessenger.of(context).showSnackBar(
-            AppTheme.successSnackBar('Usuario actualizado correctamente'),
-          );
-          context.pop();
-        },
-        error: (error, _) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            AppTheme.errorSnackBar('Error: $error'),
-          );
-        },
-      );
+    ref.listen<AsyncActionState>(updateEmployeeProvider, (prev, next) {
+      if (prev?.status != AsyncActionStatus.loading) return;
+      if (next.status == AsyncActionStatus.success) {
+        ref.read(updateEmployeeProvider.notifier).reset();
+        ScaffoldMessenger.of(context).showSnackBar(
+          AppTheme.successSnackBar('Usuario actualizado correctamente'),
+        );
+        context.pop();
+      } else if (next.status == AsyncActionStatus.failure) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          AppTheme.errorSnackBar('Error: ${next.error}'),
+        );
+      }
     });
 
     return Container(

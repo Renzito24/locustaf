@@ -7,6 +7,7 @@ import '../../data/repositories/incidence_repository_impl.dart';
 import '../../domain/repositories/incidence_repository.dart';
 import '../../../../core/providers/data_providers.dart';
 import '../../../../core/providers/firebase_providers.dart';
+import '../../../../core/providers/async_action_state.dart';
 import '../../../../core/services/logging_service.dart';
 
 final incidenceRepositoryProvider = Provider<IncidenceRepository>((ref) {
@@ -142,84 +143,84 @@ final finalizadasCountProvider = Provider<int>((ref) {
   return ref.watch(filteredIncidencesProvider).where((i) => i.state == IncidenceState.finalizada).length;
 });
 
-class IncidenceCreateNotifier extends AsyncNotifier<void> {
+class IncidenceCreateNotifier extends Notifier<AsyncActionState> {
   @override
-  Future<void> build() => Future.value();
+  AsyncActionState build() => const AsyncActionState.idle();
 
   Future<void> createIncidence(IncidenceModel incidence) async {
-    state = const AsyncLoading();
+    state = const AsyncActionState.loading();
     final repo = ref.read(incidenceRepositoryProvider);
     try {
       await repo.createIncidence(incidence);
-      state = const AsyncData(null);
-    } catch (e, st) {
-      state = AsyncError(e, st);
+      state = const AsyncActionState.success();
+    } catch (e) {
+      state = AsyncActionState.failure(e);
     }
   }
 
   void reset() {
-    state = const AsyncData(null);
+    state = const AsyncActionState.idle();
   }
 }
 
-final incidenceCreateProvider = AsyncNotifierProvider<IncidenceCreateNotifier, void>(
+final incidenceCreateProvider = NotifierProvider<IncidenceCreateNotifier, AsyncActionState>(
   IncidenceCreateNotifier.new,
 );
 
-class IncidenceUpdateNotifier extends AsyncNotifier<void> {
+class IncidenceUpdateNotifier extends Notifier<AsyncActionState> {
   @override
-  Future<void> build() => Future.value();
+  AsyncActionState build() => const AsyncActionState.idle();
 
   Future<void> updateIncidence(IncidenceModel incidence) async {
-    state = const AsyncLoading();
+    state = const AsyncActionState.loading();
     final repo = ref.read(incidenceRepositoryProvider);
     try {
       await repo.updateIncidence(incidence);
-      state = const AsyncData(null);
-    } catch (e, st) {
-      state = AsyncError(e, st);
+      state = const AsyncActionState.success();
+    } catch (e) {
+      state = AsyncActionState.failure(e);
     }
   }
 
   void reset() {
-    state = const AsyncData(null);
+    state = const AsyncActionState.idle();
   }
 }
 
-final incidenceUpdateProvider = AsyncNotifierProvider<IncidenceUpdateNotifier, void>(
+final incidenceUpdateProvider = NotifierProvider<IncidenceUpdateNotifier, AsyncActionState>(
   IncidenceUpdateNotifier.new,
 );
 
-class IncidenceDeleteNotifier extends AsyncNotifier<void> {
+class IncidenceDeleteNotifier extends Notifier<AsyncActionState> {
   @override
-  Future<void> build() => Future.value();
+  AsyncActionState build() => const AsyncActionState.idle();
 
   Future<void> softDelete(String id) async {
-    state = const AsyncLoading();
+    state = const AsyncActionState.loading();
     final repo = ref.read(incidenceRepositoryProvider);
     try {
       await repo.softDeleteIncidence(id);
-      state = const AsyncData(null);
-    } catch (e, st) {
-      state = AsyncError(e, st);
+      state = const AsyncActionState.success();
+    } catch (e) {
+      state = AsyncActionState.failure(e);
     }
   }
 
   void reset() {
-    state = const AsyncData(null);
+    state = const AsyncActionState.idle();
   }
 }
 
-final incidenceDeleteProvider = AsyncNotifierProvider<IncidenceDeleteNotifier, void>(
+final incidenceDeleteProvider = NotifierProvider<IncidenceDeleteNotifier, AsyncActionState>(
   IncidenceDeleteNotifier.new,
 );
 
-class IncidenceApprovalNotifier extends AsyncNotifier<void> {
+class IncidenceApprovalNotifier extends Notifier<AsyncActionState> {
   @override
-  Future<void> build() => Future.value();
+  AsyncActionState build() => const AsyncActionState.idle();
 
   Future<void> approve(String id) async {
-    state = const AsyncLoading();
+    state = const AsyncActionState.loading();
     final repo = ref.read(incidenceRepositoryProvider);
     final reviewerId = ref.read(currentUserIdProvider);
     try {
@@ -232,7 +233,7 @@ class IncidenceApprovalNotifier extends AsyncNotifier<void> {
         'Incidencia aprobada: $id',
         tag: 'incidences',
       );
-      state = const AsyncData(null);
+      state = const AsyncActionState.success();
     } catch (e, st) {
       LoggingService.instance.error(
         'Error al aprobar incidencia: $id',
@@ -240,12 +241,12 @@ class IncidenceApprovalNotifier extends AsyncNotifier<void> {
         error: e,
         stackTrace: st,
       );
-      state = AsyncError(e, st);
+      state = AsyncActionState.failure(e);
     }
   }
 
   Future<void> reject(String id, {required String observacion}) async {
-    state = const AsyncLoading();
+    state = const AsyncActionState.loading();
     final repo = ref.read(incidenceRepositoryProvider);
     final reviewerId = ref.read(currentUserIdProvider);
     try {
@@ -259,7 +260,7 @@ class IncidenceApprovalNotifier extends AsyncNotifier<void> {
         'Incidencia rechazada: $id',
         tag: 'incidences',
       );
-      state = const AsyncData(null);
+      state = const AsyncActionState.success();
     } catch (e, st) {
       LoggingService.instance.error(
         'Error al rechazar incidencia: $id',
@@ -267,15 +268,15 @@ class IncidenceApprovalNotifier extends AsyncNotifier<void> {
         error: e,
         stackTrace: st,
       );
-      state = AsyncError(e, st);
+      state = AsyncActionState.failure(e);
     }
   }
 
   void reset() {
-    state = const AsyncData(null);
+    state = const AsyncActionState.idle();
   }
 }
 
-final incidenceApprovalProvider = AsyncNotifierProvider<IncidenceApprovalNotifier, void>(
+final incidenceApprovalProvider = NotifierProvider<IncidenceApprovalNotifier, AsyncActionState>(
   IncidenceApprovalNotifier.new,
 );

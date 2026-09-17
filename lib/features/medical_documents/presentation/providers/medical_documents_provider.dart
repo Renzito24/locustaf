@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/providers/data_providers.dart';
 import '../../../../core/providers/firebase_providers.dart';
+import '../../../../core/providers/async_action_state.dart';
 import '../../../../core/services/storage_service.dart';
 import '../../../../core/services/logging_service.dart';
 import '../../../../core/utils/file_utils.dart';
@@ -314,12 +315,12 @@ final medicalDocumentUpdateProvider = NotifierProvider<MedicalDocumentUpdateNoti
 
 // ─── Delete Notifier ────────────────────────────────────────────────────────
 
-class MedicalDocumentDeleteNotifier extends AsyncNotifier<void> {
+class MedicalDocumentDeleteNotifier extends Notifier<AsyncActionState> {
   @override
-  Future<void> build() => Future.value();
+  AsyncActionState build() => const AsyncActionState.idle();
 
   Future<void> softDelete(String id, {String? archivoUrl}) async {
-    state = const AsyncLoading();
+    state = const AsyncActionState.loading();
     final repo = ref.read(medicalDocumentRepositoryProvider);
 
     try {
@@ -332,29 +333,29 @@ class MedicalDocumentDeleteNotifier extends AsyncNotifier<void> {
         await storageService.deleteFile(archivoUrl);
       }
 
-      state = const AsyncData(null);
-    } catch (e, st) {
-      state = AsyncError(e, st);
+      state = const AsyncActionState.success();
+    } catch (e) {
+      state = AsyncActionState.failure(e);
     }
   }
 
   void reset() {
-    state = const AsyncData(null);
+    state = const AsyncActionState.idle();
   }
 }
 
-final medicalDocumentDeleteProvider = AsyncNotifierProvider<MedicalDocumentDeleteNotifier, void>(
+final medicalDocumentDeleteProvider = NotifierProvider<MedicalDocumentDeleteNotifier, AsyncActionState>(
   MedicalDocumentDeleteNotifier.new,
 );
 
 // ─── Approval Notifier ──────────────────────────────────────────────────────
 
-class MedicalDocumentApprovalNotifier extends AsyncNotifier<void> {
+class MedicalDocumentApprovalNotifier extends Notifier<AsyncActionState> {
   @override
-  Future<void> build() => Future.value();
+  AsyncActionState build() => const AsyncActionState.idle();
 
   Future<void> approve(String id) async {
-    state = const AsyncLoading();
+    state = const AsyncActionState.loading();
     final repo = ref.read(medicalDocumentRepositoryProvider);
     final reviewerId = ref.read(currentUserIdProvider);
     try {
@@ -367,7 +368,7 @@ class MedicalDocumentApprovalNotifier extends AsyncNotifier<void> {
         'Documento médico aprobado: $id',
         tag: 'medical_documents',
       );
-      state = const AsyncData(null);
+      state = const AsyncActionState.success();
     } catch (e, st) {
       LoggingService.instance.error(
         'Error al aprobar documento médico: $id',
@@ -375,12 +376,12 @@ class MedicalDocumentApprovalNotifier extends AsyncNotifier<void> {
         error: e,
         stackTrace: st,
       );
-      state = AsyncError(e, st);
+      state = AsyncActionState.failure(e);
     }
   }
 
   Future<void> reject(String id, {required String observacion}) async {
-    state = const AsyncLoading();
+    state = const AsyncActionState.loading();
     final repo = ref.read(medicalDocumentRepositoryProvider);
     final reviewerId = ref.read(currentUserIdProvider);
     try {
@@ -394,7 +395,7 @@ class MedicalDocumentApprovalNotifier extends AsyncNotifier<void> {
         'Documento médico rechazado: $id',
         tag: 'medical_documents',
       );
-      state = const AsyncData(null);
+      state = const AsyncActionState.success();
     } catch (e, st) {
       LoggingService.instance.error(
         'Error al rechazar documento médico: $id',
@@ -402,15 +403,15 @@ class MedicalDocumentApprovalNotifier extends AsyncNotifier<void> {
         error: e,
         stackTrace: st,
       );
-      state = AsyncError(e, st);
+      state = AsyncActionState.failure(e);
     }
   }
 
   void reset() {
-    state = const AsyncData(null);
+    state = const AsyncActionState.idle();
   }
 }
 
-final medicalDocumentApprovalProvider = AsyncNotifierProvider<MedicalDocumentApprovalNotifier, void>(
+final medicalDocumentApprovalProvider = NotifierProvider<MedicalDocumentApprovalNotifier, AsyncActionState>(
   MedicalDocumentApprovalNotifier.new,
 );

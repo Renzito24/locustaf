@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../../core/constants/app_colors.dart';
+import '../../../../core/providers/async_action_state.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/router/app_routes.dart';
 import '../../../../core/models/user_model.dart';
@@ -24,53 +25,47 @@ class EmployeesScreen extends ConsumerWidget {
     final isAdmin = ref.watch(isAdminProvider);
     final currentUserId = ref.watch(currentUserIdProvider);
 
-    ref.listen<AsyncValue<void>>(deleteEmployeeProvider, (prev, next) {
-      next.whenOrNull(
-        data: (_) {
-          ref.read(deleteEmployeeProvider.notifier).reset();
-          ScaffoldMessenger.of(context).showSnackBar(
-            AppTheme.successSnackBar('Usuario eliminado correctamente'),
-          );
-        },
-        error: (error, _) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            AppTheme.errorSnackBar('Error al eliminar: $error'),
-          );
-        },
-      );
+    ref.listen<AsyncActionState>(deleteEmployeeProvider, (prev, next) {
+      if (prev?.status != AsyncActionStatus.loading) return;
+      if (next.status == AsyncActionStatus.success) {
+        ref.read(deleteEmployeeProvider.notifier).reset();
+        ScaffoldMessenger.of(context).showSnackBar(
+          AppTheme.successSnackBar('Usuario eliminado correctamente'),
+        );
+      } else if (next.status == AsyncActionStatus.failure) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          AppTheme.errorSnackBar('Error al eliminar: ${next.error}'),
+        );
+      }
     });
 
-    ref.listen<AsyncValue<void>>(updateEmployeeProvider, (prev, next) {
-      next.whenOrNull(
-        data: (_) {
-          ref.read(updateEmployeeProvider.notifier).reset();
-          ScaffoldMessenger.of(context).showSnackBar(
-            AppTheme.successSnackBar('Estado actualizado correctamente'),
-          );
-        },
-        error: (error, _) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            AppTheme.errorSnackBar('Error al actualizar: $error'),
-          );
-        },
-      );
+    ref.listen<AsyncActionState>(updateEmployeeProvider, (prev, next) {
+      if (prev?.status != AsyncActionStatus.loading) return;
+      if (next.status == AsyncActionStatus.success) {
+        ref.read(updateEmployeeProvider.notifier).reset();
+        ScaffoldMessenger.of(context).showSnackBar(
+          AppTheme.successSnackBar('Estado actualizado correctamente'),
+        );
+      } else if (next.status == AsyncActionStatus.failure) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          AppTheme.errorSnackBar('Error al actualizar: ${next.error}'),
+        );
+      }
     });
 
-    ref.listen<AsyncValue<void>>(resetPasswordProvider, (prev, next) {
-      next.whenOrNull(
-        data: (_) {
-          ref.read(resetPasswordProvider.notifier).reset();
-          ScaffoldMessenger.of(context).showSnackBar(
-            AppTheme.successSnackBar(
-                'Correo de restablecimiento enviado correctamente'),
-          );
-        },
-        error: (error, _) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            AppTheme.errorSnackBar('Error al enviar correo: $error'),
-          );
-        },
-      );
+    ref.listen<AsyncActionState>(resetPasswordProvider, (prev, next) {
+      if (prev?.status != AsyncActionStatus.loading) return;
+      if (next.status == AsyncActionStatus.success) {
+        ref.read(resetPasswordProvider.notifier).reset();
+        ScaffoldMessenger.of(context).showSnackBar(
+          AppTheme.successSnackBar(
+              'Correo de restablecimiento enviado correctamente'),
+        );
+      } else if (next.status == AsyncActionStatus.failure) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          AppTheme.errorSnackBar('Error al enviar correo: ${next.error}'),
+        );
+      }
     });
 
     return Container(

@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../../core/constants/app_colors.dart';
+import '../../../../core/providers/async_action_state.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/models/user_model.dart';
 import '../../../authentication/presentation/providers/auth_provider.dart';
@@ -22,20 +23,18 @@ class WorkplacesScreen extends ConsumerWidget {
     final isAdmin = role == UserRole.admin;
     final isMobile = AppTheme.isMobile(context);
 
-    ref.listen<AsyncValue<void>>(workplaceDeleteProvider, (prev, next) {
-      next.whenOrNull(
-        data: (_) {
-          ref.read(workplaceDeleteProvider.notifier).reset();
-          ScaffoldMessenger.of(context).showSnackBar(
-            AppTheme.successSnackBar('Estado actualizado correctamente'),
-          );
-        },
-        error: (error, _) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            AppTheme.errorSnackBar('Error: $error'),
-          );
-        },
-      );
+    ref.listen<AsyncActionState>(workplaceDeleteProvider, (prev, next) {
+      if (prev?.status != AsyncActionStatus.loading) return;
+      if (next.status == AsyncActionStatus.success) {
+        ref.read(workplaceDeleteProvider.notifier).reset();
+        ScaffoldMessenger.of(context).showSnackBar(
+          AppTheme.successSnackBar('Estado actualizado correctamente'),
+        );
+      } else if (next.status == AsyncActionStatus.failure) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          AppTheme.errorSnackBar('Error: ${next.error}'),
+        );
+      }
     });
 
     return SingleChildScrollView(

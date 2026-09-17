@@ -1,3 +1,4 @@
+import 'package:app_locustaf/core/providers/async_action_state.dart';
 import 'package:app_locustaf/core/providers/data_providers.dart';
 import 'package:app_locustaf/core/providers/firebase_providers.dart';
 import 'package:app_locustaf/core/services/firestore_service.dart';
@@ -53,7 +54,10 @@ void main() {
 
       final notifier = container.read(incidenceApprovalProvider.notifier);
       await notifier.approve('inc-1');
-      expect(container.read(incidenceApprovalProvider).hasValue, isTrue);
+      expect(
+        container.read(incidenceApprovalProvider).status,
+        AsyncActionStatus.success,
+      );
 
       final doc = await fake.collection('incidences').doc('inc-1').get();
       expect(doc.get('estado'), 'aprobado');
@@ -65,7 +69,10 @@ void main() {
 
       final notifier = container.read(incidenceApprovalProvider.notifier);
       await notifier.reject('inc-2', observacion: 'Falta adjuntar el certificado');
-      expect(container.read(incidenceApprovalProvider).hasValue, isTrue);
+      expect(
+        container.read(incidenceApprovalProvider).status,
+        AsyncActionStatus.success,
+      );
 
       final doc = await fake.collection('incidences').doc('inc-2').get();
       expect(doc.get('estado'), 'rechazado');

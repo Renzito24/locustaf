@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../../core/constants/app_colors.dart';
+import '../../../../core/providers/async_action_state.dart';
 import '../../../../core/router/app_routes.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/models/user_model.dart';
@@ -29,36 +30,32 @@ class IncidencesScreen extends ConsumerWidget {
     final usersAsync = ref.watch(usersStreamProvider);
     final isAdmin = ref.watch(isAdminProvider);
 
-    ref.listen<AsyncValue<void>>(incidenceDeleteProvider, (prev, next) {
-      next.whenOrNull(
-        data: (_) {
-          ref.read(incidenceDeleteProvider.notifier).reset();
-          ScaffoldMessenger.of(context).showSnackBar(
-            AppTheme.successSnackBar('Incidencia eliminada correctamente'),
-          );
-        },
-        error: (error, _) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            AppTheme.errorSnackBar('Error al eliminar: $error'),
-          );
-        },
-      );
+    ref.listen<AsyncActionState>(incidenceDeleteProvider, (prev, next) {
+      if (prev?.status != AsyncActionStatus.loading) return;
+      if (next.status == AsyncActionStatus.success) {
+        ref.read(incidenceDeleteProvider.notifier).reset();
+        ScaffoldMessenger.of(context).showSnackBar(
+          AppTheme.successSnackBar('Incidencia eliminada correctamente'),
+        );
+      } else if (next.status == AsyncActionStatus.failure) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          AppTheme.errorSnackBar('Error al eliminar: ${next.error}'),
+        );
+      }
     });
 
-    ref.listen<AsyncValue<void>>(incidenceApprovalProvider, (prev, next) {
-      next.whenOrNull(
-        data: (_) {
-          ref.read(incidenceApprovalProvider.notifier).reset();
-          ScaffoldMessenger.of(context).showSnackBar(
-            AppTheme.successSnackBar('Estado de la incidencia actualizado'),
-          );
-        },
-        error: (error, _) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            AppTheme.errorSnackBar('Error al actualizar el estado: $error'),
-          );
-        },
-      );
+    ref.listen<AsyncActionState>(incidenceApprovalProvider, (prev, next) {
+      if (prev?.status != AsyncActionStatus.loading) return;
+      if (next.status == AsyncActionStatus.success) {
+        ref.read(incidenceApprovalProvider.notifier).reset();
+        ScaffoldMessenger.of(context).showSnackBar(
+          AppTheme.successSnackBar('Estado de la incidencia actualizado'),
+        );
+      } else if (next.status == AsyncActionStatus.failure) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          AppTheme.errorSnackBar('Error al actualizar el estado: ${next.error}'),
+        );
+      }
     });
 
     return CustomScrollView(

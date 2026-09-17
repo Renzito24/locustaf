@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/models/company_model.dart';
+import '../../../../core/providers/async_action_state.dart';
 import 'company_providers.dart';
 
 class CompanyFormData {
@@ -27,12 +28,12 @@ class CompanyFormData {
   });
 }
 
-class CreateCompanyNotifier extends AsyncNotifier<void> {
+class CreateCompanyNotifier extends Notifier<AsyncActionState> {
   @override
-  Future<void> build() => Future.value();
+  AsyncActionState build() => const AsyncActionState.idle();
 
   Future<void> createCompany(CompanyFormData data) async {
-    state = const AsyncLoading();
+    state = const AsyncActionState.loading();
     final repo = ref.read(companyRepositoryProvider);
     try {
       final company = CompanyModel(
@@ -49,23 +50,23 @@ class CreateCompanyNotifier extends AsyncNotifier<void> {
         diasLaborables: data.diasLaborables,
       );
       await repo.createCompany(company);
-      state = const AsyncData(null);
-    } catch (e, st) {
-      state = AsyncError(e, st);
+      state = const AsyncActionState.success();
+    } catch (e) {
+      state = AsyncActionState.failure(e);
     }
   }
 
   void reset() {
-    state = const AsyncData(null);
+    state = const AsyncActionState.idle();
   }
 }
 
-class UpdateCompanyNotifier extends AsyncNotifier<void> {
+class UpdateCompanyNotifier extends Notifier<AsyncActionState> {
   @override
-  Future<void> build() => Future.value();
+  AsyncActionState build() => const AsyncActionState.idle();
 
   Future<void> updateCompany(CompanyModel company, CompanyFormData data) async {
-    state = const AsyncLoading();
+    state = const AsyncActionState.loading();
     final repo = ref.read(companyRepositoryProvider);
     try {
       final updated = company.copyWith(
@@ -81,43 +82,43 @@ class UpdateCompanyNotifier extends AsyncNotifier<void> {
         diasLaborables: data.diasLaborables,
       );
       await repo.updateCompany(updated);
-      state = const AsyncData(null);
-    } catch (e, st) {
-      state = AsyncError(e, st);
+      state = const AsyncActionState.success();
+    } catch (e) {
+      state = AsyncActionState.failure(e);
     }
   }
 
   void reset() {
-    state = const AsyncData(null);
+    state = const AsyncActionState.idle();
   }
 }
 
-class ToggleCompanyStateNotifier extends AsyncNotifier<void> {
+class ToggleCompanyStateNotifier extends Notifier<AsyncActionState> {
   @override
-  Future<void> build() => Future.value();
+  AsyncActionState build() => const AsyncActionState.idle();
 
   Future<void> toggle(CompanyModel company) async {
-    state = const AsyncLoading();
+    state = const AsyncActionState.loading();
     final repo = ref.read(companyRepositoryProvider);
     try {
       final newEstado = company.estado == CompanyEstado.activa
           ? CompanyEstado.inactiva
           : CompanyEstado.activa;
       await repo.setEstado(company.id, newEstado);
-      state = const AsyncData(null);
-    } catch (e, st) {
-      state = AsyncError(e, st);
+      state = const AsyncActionState.success();
+    } catch (e) {
+      state = AsyncActionState.failure(e);
     }
   }
 
   void reset() {
-    state = const AsyncData(null);
+    state = const AsyncActionState.idle();
   }
 }
 
-class RegisterPaymentNotifier extends AsyncNotifier<void> {
+class RegisterPaymentNotifier extends Notifier<AsyncActionState> {
   @override
-  Future<void> build() => Future.value();
+  AsyncActionState build() => const AsyncActionState.idle();
 
   /// Registra un pago manual y extiende el uso de la empresa hasta [paidUntil]
   /// (TASK-011), dejando el registro en el historial con una [nota] opcional
@@ -128,7 +129,7 @@ class RegisterPaymentNotifier extends AsyncNotifier<void> {
     CompanyPlan plan = CompanyPlan.mensual,
     String? nota,
   }) async {
-    state = const AsyncLoading();
+    state = const AsyncActionState.loading();
     final repo = ref.read(companyRepositoryProvider);
     try {
       await repo.registerPayment(
@@ -137,29 +138,29 @@ class RegisterPaymentNotifier extends AsyncNotifier<void> {
         plan: plan,
         nota: nota,
       );
-      state = const AsyncData(null);
-    } catch (e, st) {
-      state = AsyncError(e, st);
+      state = const AsyncActionState.success();
+    } catch (e) {
+      state = AsyncActionState.failure(e);
     }
   }
 
   void reset() {
-    state = const AsyncData(null);
+    state = const AsyncActionState.idle();
   }
 }
 
-final createCompanyProvider = AsyncNotifierProvider<CreateCompanyNotifier, void>(
+final createCompanyProvider = NotifierProvider<CreateCompanyNotifier, AsyncActionState>(
   CreateCompanyNotifier.new,
 );
 
-final updateCompanyProvider = AsyncNotifierProvider<UpdateCompanyNotifier, void>(
+final updateCompanyProvider = NotifierProvider<UpdateCompanyNotifier, AsyncActionState>(
   UpdateCompanyNotifier.new,
 );
 
-final toggleCompanyStateProvider = AsyncNotifierProvider<ToggleCompanyStateNotifier, void>(
+final toggleCompanyStateProvider = NotifierProvider<ToggleCompanyStateNotifier, AsyncActionState>(
   ToggleCompanyStateNotifier.new,
 );
 
-final registerPaymentProvider = AsyncNotifierProvider<RegisterPaymentNotifier, void>(
+final registerPaymentProvider = NotifierProvider<RegisterPaymentNotifier, AsyncActionState>(
   RegisterPaymentNotifier.new,
 );

@@ -1,28 +1,28 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../../core/providers/async_action_state.dart';
 import 'users_provider.dart';
 
-class DeleteEmployeeNotifier extends AsyncNotifier<void> {
+class DeleteEmployeeNotifier extends Notifier<AsyncActionState> {
   @override
-  Future<void> build() => Future.value();
+  AsyncActionState build() => const AsyncActionState.idle();
 
   Future<void> deleteEmployee(String uid) async {
-    state = const AsyncLoading();
+    state = const AsyncActionState.loading();
     final repo = ref.read(usersRepositoryProvider);
     try {
       await repo.deleteUser(uid);
-      state = const AsyncData(null);
-    } catch (e, st) {
-      state = AsyncError(e, st);
+      state = const AsyncActionState.success();
+    } catch (e) {
+      state = AsyncActionState.failure(e);
     }
   }
 
   void reset() {
-    state = const AsyncData(null);
+    state = const AsyncActionState.idle();
   }
 }
 
-final deleteEmployeeProvider =
-    AsyncNotifierProvider<DeleteEmployeeNotifier, void>(
+final deleteEmployeeProvider = NotifierProvider<DeleteEmployeeNotifier, AsyncActionState>(
   DeleteEmployeeNotifier.new,
 );

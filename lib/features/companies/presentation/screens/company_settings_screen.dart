@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../../core/constants/app_colors.dart';
+import '../../../../core/providers/async_action_state.dart';
 import '../../../../core/router/app_routes.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../providers/company_action_provider.dart';
@@ -24,24 +25,22 @@ class CompanySettingsScreen extends ConsumerWidget {
     final state = ref.watch(updateCompanyProvider);
     final isMobile = AppTheme.isMobile(context);
 
-    ref.listen<AsyncValue<void>>(updateCompanyProvider, (prev, next) {
-      next.whenOrNull(
-        data: (_) {
-          ref.read(updateCompanyProvider.notifier).reset();
-          if (context.mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              AppTheme.successSnackBar('Configuración guardada'),
-            );
-          }
-        },
-        error: (error, _) {
-          if (context.mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              AppTheme.errorSnackBar('Error: $error'),
-            );
-          }
-        },
-      );
+    ref.listen<AsyncActionState>(updateCompanyProvider, (prev, next) {
+      if (prev?.status != AsyncActionStatus.loading) return;
+      if (next.status == AsyncActionStatus.success) {
+        ref.read(updateCompanyProvider.notifier).reset();
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            AppTheme.successSnackBar('Configuración guardada'),
+          );
+        }
+      } else if (next.status == AsyncActionStatus.failure) {
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            AppTheme.errorSnackBar('Error: ${next.error}'),
+          );
+        }
+      }
     });
 
     return Padding(

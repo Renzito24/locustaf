@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../../core/constants/app_colors.dart';
+import '../../../../core/providers/async_action_state.dart';
 import '../../../../core/router/app_routes.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/models/user_model.dart';
@@ -29,36 +30,32 @@ class MedicalDocumentsScreen extends ConsumerWidget {
     final usersAsync = ref.watch(usersStreamProvider);
     final isAdmin = ref.watch(isAdminProvider);
 
-    ref.listen<AsyncValue<void>>(medicalDocumentDeleteProvider, (prev, next) {
-      next.whenOrNull(
-        data: (_) {
-          ref.read(medicalDocumentDeleteProvider.notifier).reset();
-          ScaffoldMessenger.of(context).showSnackBar(
-            AppTheme.successSnackBar('Documento eliminado correctamente'),
-          );
-        },
-        error: (error, _) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            AppTheme.errorSnackBar('Error al eliminar: $error'),
-          );
-        },
-      );
+    ref.listen<AsyncActionState>(medicalDocumentDeleteProvider, (prev, next) {
+      if (prev?.status != AsyncActionStatus.loading) return;
+      if (next.status == AsyncActionStatus.success) {
+        ref.read(medicalDocumentDeleteProvider.notifier).reset();
+        ScaffoldMessenger.of(context).showSnackBar(
+          AppTheme.successSnackBar('Documento eliminado correctamente'),
+        );
+      } else if (next.status == AsyncActionStatus.failure) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          AppTheme.errorSnackBar('Error al eliminar: ${next.error}'),
+        );
+      }
     });
 
-    ref.listen<AsyncValue<void>>(medicalDocumentApprovalProvider, (prev, next) {
-      next.whenOrNull(
-        data: (_) {
-          ref.read(medicalDocumentApprovalProvider.notifier).reset();
-          ScaffoldMessenger.of(context).showSnackBar(
-            AppTheme.successSnackBar('Estado del documento actualizado'),
-          );
-        },
-        error: (error, _) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            AppTheme.errorSnackBar('Error al actualizar el estado: $error'),
-          );
-        },
-      );
+    ref.listen<AsyncActionState>(medicalDocumentApprovalProvider, (prev, next) {
+      if (prev?.status != AsyncActionStatus.loading) return;
+      if (next.status == AsyncActionStatus.success) {
+        ref.read(medicalDocumentApprovalProvider.notifier).reset();
+        ScaffoldMessenger.of(context).showSnackBar(
+          AppTheme.successSnackBar('Estado del documento actualizado'),
+        );
+      } else if (next.status == AsyncActionStatus.failure) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          AppTheme.errorSnackBar('Error al actualizar el estado: ${next.error}'),
+        );
+      }
     });
 
     // Todo el contenido (cabecera + métricas + filtros + listado) vive dentro

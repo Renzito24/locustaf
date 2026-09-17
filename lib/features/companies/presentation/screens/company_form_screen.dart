@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/models/company_model.dart';
+import '../../../../core/providers/async_action_state.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../providers/company_action_provider.dart';
 import '../widgets/company_form.dart';
@@ -24,9 +25,14 @@ class _CompanyFormScreenState extends ConsumerState<CompanyFormScreen> {
     final provider = isEditing ? updateCompanyProvider : createCompanyProvider;
     final state = ref.watch(provider);
 
-    ref.listen<AsyncValue<void>>(provider, (prev, next) {
-      next.whenOrNull(
-        data: (_) {
+    ref.listen<AsyncActionState>(provider, (prev, next) {
+      // Solo se reacciona a operaciones reales: un cambio de estado iniciado
+      // con loading (la acción empezó). Al montar la pantalla ref.listen
+      // dispara con prev == null y next == idle → no hace nada (el estado idle
+      // ya no es sinónimo de éxito).
+      if (prev?.status != AsyncActionStatus.loading) return;
+      switch (next.status) {
+        case AsyncActionStatus.success:
           if (context.mounted) {
             ScaffoldMessenger.of(context).showSnackBar(
               AppTheme.successSnackBar(
@@ -35,13 +41,16 @@ class _CompanyFormScreenState extends ConsumerState<CompanyFormScreen> {
             );
             context.pop();
           }
-        },
-        error: (error, _) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            AppTheme.errorSnackBar('Error: $error'),
-          );
-        },
-      );
+        case AsyncActionStatus.failure:
+          if (context.mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              AppTheme.errorSnackBar('Error: ${next.error}'),
+            );
+          }
+        case AsyncActionStatus.idle:
+        case AsyncActionStatus.loading:
+          break;
+      }
     });
 
     return SingleChildScrollView(

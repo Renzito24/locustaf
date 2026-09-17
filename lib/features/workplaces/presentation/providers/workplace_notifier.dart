@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../data/models/workplace_model.dart';
 import '../../data/repositories/workplace_repository_impl.dart';
 import '../../domain/repositories/workplace_repository.dart';
+import '../../../../core/providers/async_action_state.dart';
 import '../../../../core/providers/data_providers.dart';
 import '../../../../core/providers/firebase_providers.dart';
 
@@ -24,88 +25,85 @@ final activeWorkplacesProvider = Provider<AsyncValue<List<WorkplaceModel>>>((ref
   );
 });
 
-class WorkplaceCreateNotifier extends AsyncNotifier<void> {
+class WorkplaceCreateNotifier extends Notifier<AsyncActionState> {
   @override
-  Future<void> build() => Future.value();
+  AsyncActionState build() => const AsyncActionState.idle();
 
   Future<void> createWorkplace(WorkplaceModel workplace) async {
-    state = const AsyncLoading();
+    state = const AsyncActionState.loading();
     final repo = ref.read(workplaceRepositoryProvider);
     try {
       await repo.createWorkplace(workplace);
-      state = const AsyncData(null);
-    } catch (e, st) {
-      state = AsyncError(e, st);
+      state = const AsyncActionState.success();
+    } catch (e) {
+      state = AsyncActionState.failure(e);
     }
   }
 
   void reset() {
-    state = const AsyncData(null);
+    state = const AsyncActionState.idle();
   }
 }
 
-final workplaceCreateProvider =
-    AsyncNotifierProvider<WorkplaceCreateNotifier, void>(
+final workplaceCreateProvider = NotifierProvider<WorkplaceCreateNotifier, AsyncActionState>(
   WorkplaceCreateNotifier.new,
 );
 
-class WorkplaceUpdateNotifier extends AsyncNotifier<void> {
+class WorkplaceUpdateNotifier extends Notifier<AsyncActionState> {
   @override
-  Future<void> build() => Future.value();
+  AsyncActionState build() => const AsyncActionState.idle();
 
   Future<void> updateWorkplace(WorkplaceModel workplace) async {
-    state = const AsyncLoading();
+    state = const AsyncActionState.loading();
     final repo = ref.read(workplaceRepositoryProvider);
     try {
       await repo.updateWorkplace(workplace);
-      state = const AsyncData(null);
-    } catch (e, st) {
-      state = AsyncError(e, st);
+      state = const AsyncActionState.success();
+    } catch (e) {
+      state = AsyncActionState.failure(e);
     }
   }
 
   void reset() {
-    state = const AsyncData(null);
+    state = const AsyncActionState.idle();
   }
 }
 
-final workplaceUpdateProvider =
-    AsyncNotifierProvider<WorkplaceUpdateNotifier, void>(
+final workplaceUpdateProvider = NotifierProvider<WorkplaceUpdateNotifier, AsyncActionState>(
   WorkplaceUpdateNotifier.new,
 );
 
-class WorkplaceDeleteNotifier extends AsyncNotifier<void> {
+class WorkplaceDeleteNotifier extends Notifier<AsyncActionState> {
   @override
-  Future<void> build() => Future.value();
+  AsyncActionState build() => const AsyncActionState.idle();
 
   Future<void> softDeleteWorkplace(String id) async {
-    state = const AsyncLoading();
+    state = const AsyncActionState.loading();
     final repo = ref.read(workplaceRepositoryProvider);
     try {
       await repo.softDeleteWorkplace(id);
-      state = const AsyncData(null);
-    } catch (e, st) {
-      state = AsyncError(e, st);
+      state = const AsyncActionState.success();
+    } catch (e) {
+      state = AsyncActionState.failure(e);
     }
   }
 
   void reset() {
-    state = const AsyncData(null);
+    state = const AsyncActionState.idle();
   }
 
   Future<void> reactivateWorkplace(String id) async {
-    state = const AsyncLoading();
+    state = const AsyncActionState.loading();
     final repo = ref.read(workplaceRepositoryProvider);
     try {
       await repo.reactivateWorkplace(id);
-      state = const AsyncData(null);
-    } catch (e, st) {
-      state = AsyncError(e, st);
+      state = const AsyncActionState.success();
+    } catch (e) {
+      state = AsyncActionState.failure(e);
     }
   }
 }
 
-final workplaceDeleteProvider =
-    AsyncNotifierProvider<WorkplaceDeleteNotifier, void>(
+final workplaceDeleteProvider = NotifierProvider<WorkplaceDeleteNotifier, AsyncActionState>(
   WorkplaceDeleteNotifier.new,
 );

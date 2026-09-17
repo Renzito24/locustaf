@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/providers/data_providers.dart';
+import '../../../../core/providers/async_action_state.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/utils/validators.dart';
 import '../../data/models/workplace_model.dart';
@@ -174,31 +175,37 @@ class _WorkplaceFormState extends ConsumerState<_WorkplaceForm> {
         ? ref.watch(workplaceUpdateProvider).isLoading
         : ref.watch(workplaceCreateProvider).isLoading;
     final isMobile = AppTheme.isMobile(context);
-    ref.listen<AsyncValue<void>>(
+    ref.listen<AsyncActionState>(
       widget.isEditing ? workplaceUpdateProvider : workplaceCreateProvider,
       (prev, next) {
-        next.whenOrNull(
-          data: (_) {
+        if (prev?.status != AsyncActionStatus.loading) return;
+        switch (next.status) {
+          case AsyncActionStatus.success:
             if (widget.isEditing) {
               ref.read(workplaceUpdateProvider.notifier).reset();
             } else {
               ref.read(workplaceCreateProvider.notifier).reset();
             }
-            ScaffoldMessenger.of(context).showSnackBar(
-              AppTheme.successSnackBar(
-                widget.isEditing
-                    ? 'Lugar de trabajo actualizado'
-                    : 'Lugar de trabajo creado',
-              ),
-            );
-            context.pop();
-          },
-          error: (error, _) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              AppTheme.errorSnackBar('Error: $error'),
-            );
-          },
-        );
+            if (context.mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                AppTheme.successSnackBar(
+                  widget.isEditing
+                      ? 'Lugar de trabajo actualizado'
+                      : 'Lugar de trabajo creado',
+                ),
+              );
+              context.pop();
+            }
+          case AsyncActionStatus.failure:
+            if (context.mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                AppTheme.errorSnackBar('Error: ${next.error}'),
+              );
+            }
+          case AsyncActionStatus.idle:
+          case AsyncActionStatus.loading:
+            break;
+        }
       },
     );
 

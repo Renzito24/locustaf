@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/models/company_model.dart';
+import '../../../../core/providers/async_action_state.dart';
 import '../../../../core/router/app_routes.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../providers/company_action_provider.dart';
@@ -19,36 +20,32 @@ class CompaniesScreen extends ConsumerWidget {
     final companiesAsync = ref.watch(allCompaniesProvider);
     final isMobile = AppTheme.isMobile(context);
 
-    ref.listen<AsyncValue<void>>(toggleCompanyStateProvider, (prev, next) {
-      next.whenOrNull(
-        data: (_) {
-          ref.read(toggleCompanyStateProvider.notifier).reset();
-          ScaffoldMessenger.of(context).showSnackBar(
-            AppTheme.successSnackBar('Estado de la empresa actualizado'),
-          );
-        },
-        error: (error, _) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            AppTheme.errorSnackBar('Error al actualizar el estado: $error'),
-          );
-        },
-      );
+    ref.listen<AsyncActionState>(toggleCompanyStateProvider, (prev, next) {
+      if (prev?.status != AsyncActionStatus.loading) return;
+      if (next.status == AsyncActionStatus.success) {
+        ref.read(toggleCompanyStateProvider.notifier).reset();
+        ScaffoldMessenger.of(context).showSnackBar(
+          AppTheme.successSnackBar('Estado de la empresa actualizado'),
+        );
+      } else if (next.status == AsyncActionStatus.failure) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          AppTheme.errorSnackBar('Error al actualizar el estado: ${next.error}'),
+        );
+      }
     });
 
-    ref.listen<AsyncValue<void>>(registerPaymentProvider, (prev, next) {
-      next.whenOrNull(
-        data: (_) {
-          ref.read(registerPaymentProvider.notifier).reset();
-          ScaffoldMessenger.of(context).showSnackBar(
-            AppTheme.successSnackBar('Pago registrado correctamente'),
-          );
-        },
-        error: (error, _) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            AppTheme.errorSnackBar('Error al registrar el pago: $error'),
-          );
-        },
-      );
+    ref.listen<AsyncActionState>(registerPaymentProvider, (prev, next) {
+      if (prev?.status != AsyncActionStatus.loading) return;
+      if (next.status == AsyncActionStatus.success) {
+        ref.read(registerPaymentProvider.notifier).reset();
+        ScaffoldMessenger.of(context).showSnackBar(
+          AppTheme.successSnackBar('Pago registrado correctamente'),
+        );
+      } else if (next.status == AsyncActionStatus.failure) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          AppTheme.errorSnackBar('Error al registrar el pago: ${next.error}'),
+        );
+      }
     });
 
     return SingleChildScrollView(
