@@ -20,10 +20,73 @@ const { computeUserAuthUpdate } = require('./userStatus');
 const { decideRegisterCheckIn, isStaleLock } = require('./geoCheckIn');
 const { decideRegisterCheckOut, computeCheckOutDuration } = require('./geoCheckOut');
 const { decideCompanyInitialBilling } = require('./companyBilling');
+const {
+  decideRateLimitAllow,
+  appendRateLimitTimestamp,
+  DEFAULT_MAX_ATTEMPTS,
+  DEFAULT_WINDOW_MILLIS,
+} = require('./rateLimit');
 
 initializeApp();
 
 const _db = getFirestore();
+
+/**
+ * Rate limit server-side por UID (FASE 1).
+ *
+ * - Clave de escala: `uid` (de `request.auth`, no falsificable). NUNCA por IP:
+ *   los portales/NAT corporativos y las IPs compartidas generan falsos
+ *   positivos que bloquean usuarios legítimos. Nunca por companyId: un abusador
+ *   dentro de una empresa agotaría el cupo de sus compañeros (efecto espejo
+ *   del problema IP). Nunca por datos del cliente (latitud/longitud/reloj).
+ * - Reloj: `Date.now()` server-side. El cliente no aporta reloj ni ventana.
+ * - Transaccional (ventana deslizante): se decide y se persiste el intento en
+ *   la MISMA transacción Firestore, de modo que dos llamadas concurrentes del
+ *   mismo uid se serializan (la segunda re-lee tras el commit del primero y
+ *   cuenta el intento agregado). Resistente a ráfagas/abuso por volumen.
+ * - Producción: max 6 intentos en 10 minutos por UID por operación
+ *   (definidos en rateLimit.js: DEFAULT_MAX_ATTEMPTS / DEFAULT_WINDOW_MILLIS).
+ * - Reintentos legítimos: un GPS impreciso dispara ~2-3 reintentos; 6 en 10
+ *   min da holgura sin bloquear. Si el usuario llegara al tope, la ventana
+ *   deslizante lo rehabilita automáticamente cuando caducan sus intentos
+ *   (anti-lockout: nunca bloqueo permanente; se respeta `retryAfterMillis`).
+ * - NO reemplaza el lock anti doble jornada (`_attendance_locks/{uid}`): esto
+ *   es una capa anti-volumen adicional por operación, anterior a la lógica
+ *   pesada (no se tocan los locks, no se cambia su semántica).
+ */
+async function enforceServerRateLimit({ op, uid }) {
+  const nowMillis = Date.now();
+  const ref = _db.doc(`_rate_limits/${op}/${uid}`);
+  let decision;
+  await _db.runTransaction(async (tx) => {
+    const snap = await tx.get(ref);
+    const timestamps = snap.exists ? (snap.data()?.timestamps ?? []) : [];
+    const result = decideRateLimitAllow({
+      timestamps,
+      nowMillis,
+      maxAttempts: DEFAULT_MAX_ATTEMPTS,
+      windowMillis: DEFAULT_WINDOW_MILLIS,
+    });
+    if (!result.allow) {
+      decision = { ok: false, retryAfterMillis: result.retryAfterMillis };
+      return;
+    }
+    const next = appendRateLimitTimestamp({
+      timestamps,
+      nowMillis,
+      windowMillis: DEFAULT_WINDOW_MILLIS,
+    });
+    tx.set(ref, { timestamps: next, updatedAt: new Date() }, { merge: true });
+    decision = { ok: true, retryAfterMillis: 0 };
+  });
+  if (!decision.ok) {
+    throw new HttpsError(
+      'resource-exhausted',
+      'Demasiados intentos en poco tiempo. Esperá unos minutos y volvé a intentar.',
+      { retryAfterMillis: decision.retryAfterMillis }
+    );
+  }
+}
 
 exports.syncUserAuthStatus = onDocumentUpdated(
   {
@@ -103,6 +166,8 @@ exports.checkInGeo = onCall(
     const uid = request.auth.uid;
     const latitud = request.data?.latitud;
     const longitud = request.data?.longitud;
+
+    await enforceServerRateLimit({ op: 'checkInGeo', uid });
 
     const userSnap = await _db.doc(`users/${uid}`).get();
     const user = userSnap.exists ? { ...userSnap.data(), id: uid } : null;
@@ -201,6 +266,7 @@ exports.checkOutGeo = onCall(
     const latitud = request.data?.latitud;
     const longitud = request.data?.longitud;
     const attendanceId = request.data?.attendanceId;
+    await enforceServerRateLimit({ op: 'checkOutGeo', uid });
     if (typeof attendanceId !== 'string' || attendanceId.length === 0) {
       throw new HttpsError('failed-precondition', 'Falta el identificador de la asistencia.');
     }
