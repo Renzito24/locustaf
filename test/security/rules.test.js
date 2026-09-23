@@ -1236,5 +1236,71 @@ describe('R-CR: aislamiento multi-tenant (cross-tenant)', () => {
     );
   });
 
+  // R-CR-8 · lugarDeTrabajoId en el CREATE de users: el mismo vector que
+  // R-CR-7 pero en el alta. El create del admin solo exige companyId propio
+  // y rol employee/supervisor: nada valida que el lugarDeTrabajoId inicial
+  // apunte a un workplace de la propia empresa.
+  it('R-CR-8a (control): un admin SÍ puede dar de alta un empleado con un workplace de su propia empresa', async () => {
+    await seedUser(empA.id, { companyId: 'emp-a', rol: 'admin', isActive: true, isDeleted: false });
+    await seedWorkplace('wp-a', wpa);
+    const ctx = testEnv.authenticatedContext(empA.id);
+    await assertSucceeds(
+      ctx.firestore().collection('users').doc('u-cr8a').set({
+        id: 'u-cr8a',
+        email: 'u-cr8a@emp-a.test',
+        dni: '38000001',
+        nombre: 'Empleado',
+        apellido: 'Nuevo',
+        rol: 'employee',
+        isActive: true,
+        isDeleted: false,
+        companyId: 'emp-a',
+        lugarDeTrabajoId: 'wp-a',
+        createdAt: new Date(),
+      }),
+    );
+  });
+
+  it('R-CR-8b (control): un admin SÍ puede dar de alta un empleado sin lugarDeTrabajoId', async () => {
+    await seedUser(empA.id, { companyId: 'emp-a', rol: 'admin', isActive: true, isDeleted: false });
+    const ctx = testEnv.authenticatedContext(empA.id);
+    await assertSucceeds(
+      ctx.firestore().collection('users').doc('u-cr8b').set({
+        id: 'u-cr8b',
+        email: 'u-cr8b@emp-a.test',
+        dni: '38000002',
+        nombre: 'Empleado',
+        apellido: 'SinSede',
+        rol: 'employee',
+        isActive: true,
+        isDeleted: false,
+        companyId: 'emp-a',
+        createdAt: new Date(),
+      }),
+    );
+  });
+
+  it('R-CR-8c: un admin NO puede dar de alta un empleado con un workplace de otra empresa', async () => {
+    await seedUser(empA.id, { companyId: 'emp-a', rol: 'admin', isActive: true, isDeleted: false });
+    await seedWorkplace('wp-b', { ...wpa, id: 'wp-b', companyId: 'emp-b' });
+    const ctx = testEnv.authenticatedContext(empA.id);
+    await assertFails(
+      ctx.firestore().collection('users').doc('u-cr8c').set({
+        id: 'u-cr8c',
+        email: 'u-cr8c@emp-a.test',
+        dni: '38000003',
+        nombre: 'Empleado',
+        apellido: 'Infiltrado',
+        rol: 'employee',
+        isActive: true,
+        isDeleted: false,
+        companyId: 'emp-a',
+        lugarDeTrabajoId: 'wp-b',
+        createdAt: new Date(),
+      }),
+    );
+  });
+
+
 });
 

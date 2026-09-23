@@ -243,6 +243,19 @@ service cloud.firestore {
             && validWorkplace(request.resource.data.companyId, next));
     }
 
+    // R-CR-8 (Vector A en el alta): al crear un usuario, el lugarDeTrabajoId
+    // inicial (si viene) debe apuntar a un workplace de la misma empresa del
+    // alta: existe, companyId coincide y activo (validWorkplace de AUI-06).
+    // Un alta sin sede sigue siendo válida: asignarla después es un update.
+    function validWorkplaceForCreate() {
+      let next = userWorkplaceId(request.resource.data);
+      return isSuperadmin()
+        || next == null
+        || (isAdmin()
+            && validWorkplace(request.resource.data.companyId, next));
+    }
+
+
     // ====================================================================
     // USERS
     // Superadmin : full access (todas las empresas)
@@ -264,7 +277,9 @@ service cloud.firestore {
                 && request.resource.data.rol == 'admin'
                 && request.resource.data.companyId != null
                 && exists(/databases/$(database)/documents/companies/$(request.resource.data.companyId))
-                && get(/databases/$(database)/documents/companies/$(request.resource.data.companyId)).data.createdBy == request.auth.uid));
+                && get(/databases/$(database)/documents/companies/$(request.resource.data.companyId)).data.createdBy == request.auth.uid))
+        && validWorkplaceForCreate();
+
       allow update: if isAuthenticated()
         && (isSuperadmin()
             || (isAdmin() && inCompany(resource.data.companyId))
