@@ -8,6 +8,15 @@ plugins {
     id("dev.flutter.flutter-gradle-plugin")
 }
 
+import java.util.Properties
+
+// Cargar key.properties para signing de release
+val keystorePropertiesFile = rootProject.file("key.properties")
+val keystoreProperties = Properties()
+if (keystorePropertiesFile.exists()) {
+    keystoreProperties.load(keystorePropertiesFile.inputStream())
+}
+
 android {
     namespace = "com.locustaf.app"
     compileSdk = flutter.compileSdkVersion
@@ -32,11 +41,26 @@ android {
         versionName = flutter.versionName
     }
 
+    signingConfigs {
+        create("release") {
+            val ksStoreFile = keystoreProperties["storeFile"] as String?
+            val ksStorePassword = keystoreProperties["storePassword"] as String?
+            val ksKeyAlias = keystoreProperties["keyAlias"] as String?
+            val ksKeyPassword = keystoreProperties["keyPassword"] as String?
+            if (ksStoreFile != null && ksStorePassword != null && ksKeyAlias != null && ksKeyPassword != null) {
+                storeFile = file(ksStoreFile)
+                storePassword = ksStorePassword
+                keyAlias = ksKeyAlias
+                keyPassword = ksKeyPassword
+            } else {
+                throw GradleException("key.properties incompleto o faltante para signing release")
+            }
+        }
+    }
+
     buildTypes {
         release {
-            // TODO: Add your own signing config for the release build.
-            // Signing with the debug keys for now, so `flutter run --release` works.
-            signingConfig = signingConfigs.getByName("debug")
+            signingConfig = signingConfigs.getByName("release")
         }
     }
 }
