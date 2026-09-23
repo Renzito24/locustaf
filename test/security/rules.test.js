@@ -1094,3 +1094,109 @@ describe('TASK-017: historial de pagos (payments)', () => {
     );
   });
 });
+
+// ──────────────────────────────────────────────────────────────────────────────
+// R-CR · Aislamiento multi-tenant (reglas de seguridad)
+// ----------------------------------------------------------------------------
+// Verifica que la regla de Firestore impide cruces entre empresas (tenant A ↔
+// tenant B): lectura, escritura y rebote de `companyId` en todas las rutas de
+// update. Cada test declara la expectativa de seguridad (la operación DEBE ser
+// rechazada) y verifica contra el emulador que `companyId` esté realmente
+// congelado (pattern F1 propuesto en la auditoría).
+// ----------------------------------------------------------------------------
+describe('R-CR: aislamiento multi-tenant (cross-tenant)', () => {
+  // Datos base: dos empresas con un empleado, un workplace y una asistencia c/u.
+  const empA = { id: 'emp-a', companyId: 'emp-a', rol: 'admin', isActive: true, isDeleted: false };
+  const empB = { id: 'emp-b', companyId: 'emp-b', rol: 'admin', isActive: true, isDeleted: false };
+  const wpa = {
+    id: 'wp-a',
+    companyId: 'emp-a',
+    nombre: 'Sede A',
+    isActive: true,
+    latitud: -34.6037,
+    longitud: -58.3816,
+    radio: 200,
+  };
+  const attA = {
+    id: 'att-a',
+    userId: 'u-a',
+    companyId: 'emp-a',
+    workplaceId: 'wp-a',
+    date: '2026-09-07',
+    status: 'active',
+    checkInTime: new Date('2026-09-07T08:00:00Z'),
+  };
+  const attB = {
+    id: 'att-b',
+    userId: 'u-b',
+    companyId: 'emp-b',
+    workplaceId: 'wp-b',
+    date: '2026-09-07',
+    status: 'active',
+    checkInTime: new Date('2026-09-07T08:00:00Z'),
+  };
+
+  it('R-CR-1: un admin de la empresa A NO puede leer una asistencia de la empresa B', async () => {
+    await seedUser(empA.id, { companyId: 'emp-a', rol: 'admin', isActive: true, isDeleted: false });
+    await seedUser(empB.id, { companyId: 'emp-b', rol: 'admin', isActive: true, isDeleted: false });
+    await seedAttendance('att-b', attB);
+    const ctx = testEnv.authenticatedContext(empA.id);
+    await assertFails(
+      ctx.firestore().doc('attendances/att-b').get(),
+    );
+  });
+
+  it('R-CR-2: un admin de la empresa A NO puede leer un workplace de la empresa B', async () => {
+    await seedUser(empA.id, { companyId: 'emp-a', rol: 'admin', isActive: true, isDeleted: false });
+    await seedUser(empB.id, { companyId: 'emp-b', rol: 'admin', isActive: true, isDeleted: false });
+    await seedWorkplace('wp-b', { ...wpa, id: 'wp-b', companyId: 'emp-b' });
+    const ctx = testEnv.authenticatedContext(empA.id);
+    await assertFails(
+      ctx.firestore().doc('workplaces/wp-b').get(),
+    );
+  });
+
+  it('R-CR-3: un admin de la empresa A NO puede cambiar el companyId (a empresa B) de un workplace propio (F1-companyId)', async () => {
+    await seedUser(empA.id, { companyId: 'emp-a', rol: 'admin', isActive: true, isDeleted: false });
+    await seedWorkplace('wp-a', wpa);
+    const ctx = testEnv.authenticatedContext(empA.id);
+    await assertFails(
+      ctx.firestore().doc('workplaces/wp-a').update({ companyId: 'emp-b' }),
+    );
+  });
+
+  it('R-CR-4: un admin de la empresa A NO puede cambiar el companyId (a empresa B) de una incidencia propia (F1-companyId)', async () => {
+    await seedUser(empA.id, { companyId: 'emp-a', rol: 'admin', isActive: true, isDeleted: false });
+    await seedIncidence('inc-a', {
+      id: 'inc-a',
+      userId: 'u-a',
+      companyId: 'emp-a',
+      titulo: 'Incidencia A',
+      estado: 'pendiente',
+    });
+    const ctx = testEnv.authenticatedContext(empA.id);
+    await assertFails(
+      ctx.firestore().doc('incidences/inc-a').update({ companyId: 'emp-b' }),
+    );
+  });
+
+  it('R-CR-5: un admin de la empresa A NO puede actualizar un workplace de la empresa B', async () => {
+    await seedUser(empA.id, { companyId: 'emp-a', rol: 'admin', isActive: true, isDeleted: false });
+    await seedUser(empB.id, { companyId: 'emp-b', rol: 'admin', isActive: true, isDeleted: false });
+    await seedWorkplace('wp-b', { ...wpa, id: 'wp-b', companyId: 'emp-b' });
+    const ctx = testEnv.authenticatedContext(empA.id);
+    await assertFails(
+      ctx.firestore().doc('workplaces/wp-b').update({ nombre: 'Sede B hackeada' }),
+    );
+  });
+
+  it('R-CR-6: un admin de la empresa A NO puede eliminar una asistencia de la empresa B', async () => {
+    await seedUser(empA.id, { companyId: 'emp-a', rol: 'admin', isActive: true, isDeleted: false });
+    await seedUser(empB.id, { companyId: 'emp-b', rol: 'admin', isActive: true, isDeleted: false });
+    await seedAttendance('att-b', attB);
+    const ctx = testEnv.authenticatedContext(empA.id);
+    await assertFails(
+      ctx.firestore().doc('attendances/att-b').delete(),
+    );
+  });
+});
