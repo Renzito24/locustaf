@@ -56,7 +56,7 @@ const _db = getFirestore();
  */
 async function enforceServerRateLimit({ op, uid }) {
   const nowMillis = Date.now();
-  const ref = _db.doc(`_rate_limits/${op}/${uid}`);
+  const ref = _db.doc(`_rate_limits/${op}/attempts/${uid}`);
   let decision;
   await _db.runTransaction(async (tx) => {
     const snap = await tx.get(ref);

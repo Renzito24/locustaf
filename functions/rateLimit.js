@@ -7,7 +7,7 @@
  * usando estas funciones.
  *
  * Modelo: ventana deslizante de timestamps (millis) por `{ uid, operación }`.
- * El contador se mantiene en el documento `_rate_limits/{operación}/{uid}`,
+ * El contador se mantiene en el documento `_rate_limits/{operación}/attempts/{uid}`,
  * que SOLO puede escribir el servidor (Admin SDK), nunca el cliente — las
  * Security Rules lo deniegan (colección de sistema no mapeada = default deny,
  * verificado en rules.test.js/AUDITORÍA).
