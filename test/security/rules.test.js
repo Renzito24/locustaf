@@ -1199,4 +1199,42 @@ describe('R-CR: aislamiento multi-tenant (cross-tenant)', () => {
       ctx.firestore().doc('attendances/att-b').delete(),
     );
   });
+
+  // R-CR-7 · lugarDeTrabajoId: puerta de entrada del Vector A.
+  // El admin SÍ puede reasignar empleados entre sedes de SU empresa (uso
+  // legítimo), pero NUNCA apuntarlos a un workplace de otra empresa.
+  it('R-CR-7a: un empleado NO puede reasignarse a sí mismo un workplace de otra empresa', async () => {
+    await seedUser(empA.id, { companyId: 'emp-a', rol: 'admin', isActive: true, isDeleted: false });
+    await seedUser('u-cr7', { companyId: 'emp-a', rol: 'employee', isActive: true, isDeleted: false, lugarDeTrabajoId: 'wp-a' });
+    await seedWorkplace('wp-a', wpa);
+    await seedWorkplace('wp-b', { ...wpa, id: 'wp-b', companyId: 'emp-b' });
+    const ctx = testEnv.authenticatedContext('u-cr7');
+    await assertFails(
+      ctx.firestore().doc('users/u-cr7').update({ lugarDeTrabajoId: 'wp-b' }),
+    );
+  });
+
+  it('R-CR-7b (control): un admin SÍ puede reasignar a su empleado a otra sede de su propia empresa', async () => {
+    await seedUser(empA.id, { companyId: 'emp-a', rol: 'admin', isActive: true, isDeleted: false });
+    await seedUser('u-cr7', { companyId: 'emp-a', rol: 'employee', isActive: true, isDeleted: false, lugarDeTrabajoId: 'wp-a' });
+    await seedWorkplace('wp-a', wpa);
+    await seedWorkplace('wp-a2', { ...wpa, id: 'wp-a2' });
+    const ctx = testEnv.authenticatedContext(empA.id);
+    await assertSucceeds(
+      ctx.firestore().doc('users/u-cr7').update({ lugarDeTrabajoId: 'wp-a2' }),
+    );
+  });
+
+  it('R-CR-7c: un admin NO puede reasignar a su empleado a un workplace de otra empresa', async () => {
+    await seedUser(empA.id, { companyId: 'emp-a', rol: 'admin', isActive: true, isDeleted: false });
+    await seedUser('u-cr7', { companyId: 'emp-a', rol: 'employee', isActive: true, isDeleted: false, lugarDeTrabajoId: 'wp-a' });
+    await seedWorkplace('wp-a', wpa);
+    await seedWorkplace('wp-b', { ...wpa, id: 'wp-b', companyId: 'emp-b' });
+    const ctx = testEnv.authenticatedContext(empA.id);
+    await assertFails(
+      ctx.firestore().doc('users/u-cr7').update({ lugarDeTrabajoId: 'wp-b' }),
+    );
+  });
+
 });
+

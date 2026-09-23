@@ -224,6 +224,24 @@ service cloud.firestore {
         && request.resource.data.lugarDeTrabajoId == resource.data.lugarDeTrabajoId
         && request.resource.data.createdAt == resource.data.createdAt;
     }
+    // R-CR-7 (Vector A): el lugarDeTrabajoId de un usuario solo puede cambiar
+    // hacia un workplace de SU propia empresa (existe, companyId coincide y
+    // activo, reutiliza validWorkplace del alta manual AUI-06). Si el campo no
+    // cambia o se desasigna a null, no se exige nada: los admins siguen
+    // pudiendo editar empleados con workplaces legacy inactivos.
+    function userWorkplaceId(data) {
+      return ('lugarDeTrabajoId' in data) ? data.lugarDeTrabajoId : null;
+    }
+
+    function validWorkplaceReassignment() {
+      let next = userWorkplaceId(request.resource.data);
+      let prev = userWorkplaceId(resource.data);
+      return isSuperadmin()
+        || next == prev
+        || next == null
+        || (isAdmin()
+            && validWorkplace(request.resource.data.companyId, next));
+    }
 
     // ====================================================================
     // USERS
@@ -251,8 +269,8 @@ service cloud.firestore {
         && (isSuperadmin()
             || (isAdmin() && inCompany(resource.data.companyId))
             || (isOwner(uid) && isOwnProfileUpdate()))
-        && noUserSensitiveChanges();
-      allow delete: if isSuperadmin();
+        && noUserSensitiveChanges()
+        && validWorkplaceReassignment();
     }
 
     // AUI-05: el admin puede editar la configuración de su empresa pero no
