@@ -403,6 +403,49 @@ describe('VUL-4b: incidencias por rol', () => {
   });
 });
 
+describe('VUL-4c: asistencias por rol', () => {
+  it('ATT-READ-E-OWN: un empleado SÍ puede leer su propia asistencia', async () => {
+    await seedUser('emp-1', { rol: 'employee', companyId: 'emp-1', isActive: true, isDeleted: false });
+    await seedAttendance('att-1', { userId: 'emp-1', companyId: 'emp-1', status: 'completed' });
+    const ctx = testEnv.authenticatedContext('emp-1');
+    await assertSucceeds(ctx.firestore().doc('attendances/att-1').get());
+  });
+
+  it('ATT-READ-E-CROSS-01: un empleado NO puede leer asistencia de otro (misma empresa)', async () => {
+    await seedUser('emp-1', { rol: 'employee', companyId: 'emp-1', isActive: true, isDeleted: false });
+    await seedAttendance('att-1', { userId: 'emp-2', companyId: 'emp-1', status: 'completed' });
+    const ctx = testEnv.authenticatedContext('emp-1');
+    await assertFails(ctx.firestore().doc('attendances/att-1').get());
+  });
+
+  it('ATT-READ-E-CROSS-02: un empleado NO puede hacer query general por companyId', async () => {
+    await seedUser('emp-1', { rol: 'employee', companyId: 'emp-1', isActive: true, isDeleted: false });
+    const ctx = testEnv.authenticatedContext('emp-1');
+    await assertFails(ctx.firestore().collection('attendances').where('companyId', '==', 'emp-1').get());
+  });
+
+  it('ATT-READ-ADMIN-OWN-COMPANY: un admin SÍ puede leer asistencia de su empresa', async () => {
+    await seedUser('admin-1', { rol: 'admin', companyId: 'emp-1', isActive: true, isDeleted: false });
+    await seedAttendance('att-1', { userId: 'emp-2', companyId: 'emp-1', status: 'completed' });
+    const ctx = testEnv.authenticatedContext('admin-1');
+    await assertSucceeds(ctx.firestore().doc('attendances/att-1').get());
+  });
+
+  it('ATT-READ-SUPERVISOR-OWN-COMPANY: un supervisor SÍ puede leer asistencia de su empresa', async () => {
+    await seedUser('sup-1', { rol: 'supervisor', companyId: 'emp-1', isActive: true, isDeleted: false });
+    await seedAttendance('att-1', { userId: 'emp-2', companyId: 'emp-1', status: 'completed' });
+    const ctx = testEnv.authenticatedContext('sup-1');
+    await assertSucceeds(ctx.firestore().doc('attendances/att-1').get());
+  });
+
+  it('ATT-READ-ADMIN-CROSS-COMPANY: un admin NO puede leer asistencia de otra empresa', async () => {
+    await seedUser('admin-1', { rol: 'admin', companyId: 'emp-1', isActive: true, isDeleted: false });
+    await seedAttendance('att-1', { userId: 'emp-2', companyId: 'emp-2', status: 'completed' });
+    const ctx = testEnv.authenticatedContext('admin-1');
+    await assertFails(ctx.firestore().doc('attendances/att-1').get());
+  });
+});
+
 describe('M1: documentos médicos', () => {
   it('un empleado NO puede crear un documento médico auto-aprobado', async () => {
     await seedUser('emp-1', { rol: 'employee', companyId: 'emp-1', isActive: true, isDeleted: false });
