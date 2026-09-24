@@ -226,113 +226,19 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
   }
 
   Future<void> _showForgotPasswordDialog() async {
-    final resetController = TextEditingController();
-    final formKey = GlobalKey<FormState>();
-    var sending = false;
-
-    await showDialog<void>(
+    final success = await showDialog<bool>(
       context: context,
-      builder: (dialogContext) => StatefulBuilder(
-        builder: (dialogContext, setDialogState) => AlertDialog(
-          backgroundColor: AppColors.cardDark,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(AppTheme.radiusXl),
-            side: BorderSide(color: AppColors.gold.withValues(alpha: 0.18)),
-          ),
-          title: const Text(
-            'Recuperar contraseña',
-            style: TextStyle(color: AppColors.textWhite),
-          ),
-          content: Form(
-            key: formKey,
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text(
-                  'Ingresá el correo con el que te registraste y te enviaremos un enlace para restablecer tu contraseña.',
-                  style: TextStyle(color: AppColors.textMuted, fontSize: 13),
-                ),
-                const SizedBox(height: 16),
-                TextFormField(
-                  controller: resetController,
-                  keyboardType: TextInputType.emailAddress,
-                  style: const TextStyle(color: AppColors.textWhite),
-                  cursorColor: AppColors.gold,
-                  decoration: AppTheme.inputDecoration(
-                    label: 'Correo electrónico',
-                    icon: Icons.email_outlined,
-                  ),
-                  validator: (value) {
-                    if (value == null || value.trim().isEmpty) {
-                      return 'Ingrese su correo electrónico';
-                    }
-                    final emailRegex =
-                        RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$');
-                    if (!emailRegex.hasMatch(value.trim())) {
-                      return 'Ingrese un correo electrónico válido';
-                    }
-                    return null;
-                  },
-                ),
-              ],
-            ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(dialogContext).pop(),
-              child: const Text('Cancelar',
-                  style: TextStyle(color: AppColors.textMuted)),
-            ),
-            TextButton(
-              onPressed: sending
-                  ? null
-                  : () async {
-                      if (!formKey.currentState!.validate()) return;
-                      setDialogState(() => sending = true);
-                      try {
-                        final authRepo =
-                            ref.read(authRepositoryProvider);
-                        await authRepo.sendPasswordReset(
-                          resetController.text.trim(),
-                        );
-                        if (!dialogContext.mounted) return;
-                        Navigator.of(dialogContext).pop();
-                        if (!mounted) return;
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          AppTheme.successSnackBar(
-                            'Si el correo existe, te enviamos un enlace para restablecer tu contraseña.',
-                          ),
-                        );
-                      } on Exception catch (e) {
-                        setDialogState(() => sending = false);
-                        if (!dialogContext.mounted) return;
-                        ScaffoldMessenger.of(dialogContext).showSnackBar(
-                          AppTheme.errorSnackBar(
-                            'Error al enviar el correo: ${_mensajeError(e)}',
-                          ),
-                        );
-                      }
-                    },
-              style: TextButton.styleFrom(
-                foregroundColor: AppColors.gold,
-              ),
-              child: sending
-                  ? const SizedBox(
-                      width: 18,
-                      height: 18,
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2,
-                        color: AppColors.gold,
-                      ),
-                    )
-                  : const Text('Enviar enlace'),
-            ),
-          ],
-        ),
+      builder: (dialogContext) => _ForgotPasswordDialog(
+        mensajeError: _mensajeError,
       ),
     );
-    resetController.dispose();
+    if (success == true && mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        AppTheme.successSnackBar(
+          'Si el correo existe, te enviamos un enlace para restablecer tu contraseña.',
+        ),
+      );
+    }
   }
 
   @override
@@ -633,6 +539,121 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
           ],
         ),
       ),
+    );
+  }
+}
+
+class _ForgotPasswordDialog extends ConsumerStatefulWidget {
+  const _ForgotPasswordDialog({
+    required this.mensajeError,
+  });
+
+  final String Function(Object error) mensajeError;
+
+  @override
+  ConsumerState<_ForgotPasswordDialog> createState() =>
+      _ForgotPasswordDialogState();
+}
+
+class _ForgotPasswordDialogState extends ConsumerState<_ForgotPasswordDialog> {
+  final resetController = TextEditingController();
+  final _formKey = GlobalKey<FormState>();
+  bool _sending = false;
+
+  @override
+  void dispose() {
+    resetController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _enviarEnlace() async {
+    if (!_formKey.currentState!.validate()) return;
+    setState(() => _sending = true);
+    try {
+      final authRepo = ref.read(authRepositoryProvider);
+      await authRepo.sendPasswordReset(resetController.text.trim());
+      if (!mounted) return;
+      Navigator.of(context).pop(true);
+    } on Exception catch (e) {
+      setState(() => _sending = false);
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        AppTheme.errorSnackBar(
+          'Error al enviar el correo: ${widget.mensajeError(e)}',
+        ),
+      );
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      backgroundColor: AppColors.cardDark,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(AppTheme.radiusXl),
+        side: BorderSide(color: AppColors.gold.withValues(alpha: 0.18)),
+      ),
+      title: const Text(
+        'Recuperar contraseña',
+        style: TextStyle(color: AppColors.textWhite),
+      ),
+      content: Form(
+        key: _formKey,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'Ingresá el correo con el que te registraste y te enviaremos un enlace para restablecer tu contraseña.',
+              style: TextStyle(color: AppColors.textMuted, fontSize: 13),
+            ),
+            const SizedBox(height: 16),
+            TextFormField(
+              controller: resetController,
+              keyboardType: TextInputType.emailAddress,
+              style: const TextStyle(color: AppColors.textWhite),
+              cursorColor: AppColors.gold,
+              decoration: AppTheme.inputDecoration(
+                label: 'Correo electrónico',
+                icon: Icons.email_outlined,
+              ),
+              validator: (value) {
+                if (value == null || value.trim().isEmpty) {
+                  return 'Ingrese su correo electrónico';
+                }
+                final emailRegex = RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$');
+                if (!emailRegex.hasMatch(value.trim())) {
+                  return 'Ingrese un correo electrónico válido';
+                }
+                return null;
+              },
+            ),
+          ],
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(),
+          child: const Text('Cancelar',
+              style: TextStyle(color: AppColors.textMuted)),
+        ),
+        TextButton(
+          onPressed: _sending ? null : _enviarEnlace,
+          style: TextButton.styleFrom(
+            foregroundColor: AppColors.gold,
+          ),
+          child: _sending
+              ? const SizedBox(
+                  width: 18,
+                  height: 18,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    color: AppColors.gold,
+                  ),
+                )
+              : const Text('Enviar enlace'),
+        ),
+      ],
     );
   }
 }

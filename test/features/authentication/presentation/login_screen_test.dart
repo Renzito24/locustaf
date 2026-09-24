@@ -15,6 +15,8 @@ import 'package:go_router/go_router.dart';
 class _FakeAuthRepository implements AuthRepository {
   Object? loginError;
   Object? googleError;
+  Object? resetPasswordError;
+  int resetPasswordCalls = 0;
   bool loggedOut = false;
 
   @override
@@ -41,7 +43,10 @@ class _FakeAuthRepository implements AuthRepository {
   Stream<User?> authStateChanges() => const Stream.empty();
 
   @override
-  Future<void> sendPasswordReset(String email) async {}
+  Future<void> sendPasswordReset(String email) async {
+    resetPasswordCalls++;
+    if (resetPasswordError != null) throw resetPasswordError!;
+  }
 
   @override
   Future<void> linkPassword({
@@ -183,6 +188,63 @@ void main() {
       await tester.pumpAndSettle();
       expect(authRepo.loggedOut, isTrue, reason: 'debe cerrar sesión del usuario bloqueado');
       expect(find.textContaining('desactivada o eliminada'), findsOneWidget);
+    });
+  });
+
+  group('LoginScreen E2E — recuperación de contraseña', () {
+    Future<void> abrirDialogoRecuperacion(WidgetTester tester) async {
+      await tester.tap(find.text('¿Olvidaste tu contraseña?'));
+      await tester.pumpAndSettle();
+      expect(find.text('Recuperar contraseña'), findsOneWidget);
+    }
+
+    Future<void> enviarRecuperacion(
+      WidgetTester tester, {
+      required String email,
+    }) async {
+      await tester.enterText(
+        find.descendant(
+          of: find.byType(AlertDialog),
+          matching: find.byType(TextFormField),
+        ),
+        email,
+      );
+      await tester.tap(find.text('Enviar enlace'));
+      await tester.pumpAndSettle();
+    }
+
+    testWidgets('email válido: envía el enlace, cierra el diálogo y muestra éxito (sin assertion del framework)', (tester) async {
+      await pumpLogin(tester);
+      await abrirDialogoRecuperacion(tester);
+      await enviarRecuperacion(tester, email: 'juan@empresa.com');
+
+      expect(authRepo.resetPasswordCalls, 1);
+      expect(find.text('Recuperar contraseña'), findsNothing, reason: 'el diálogo debe cerrarse');
+      expect(
+        find.textContaining('te enviamos un enlace'),
+        findsOneWidget,
+        reason: 'SnackBar de éxito tras el pop del diálogo',
+      );
+    });
+
+    testWidgets('correo no registrado: muestra el error del backend y mantiene el diálogo abierto', (tester) async {
+      authRepo.resetPasswordError = FirebaseAuthException(code: 'user-not-found');
+      await pumpLogin(tester);
+      await abrirDialogoRecuperacion(tester);
+      await enviarRecuperacion(tester, email: 'inexistente@empresa.com');
+
+      expect(authRepo.resetPasswordCalls, 1);
+      expect(find.textContaining('No existe una cuenta'), findsOneWidget);
+      expect(find.text('Recuperar contraseña'), findsOneWidget, reason: 'el diálogo sigue abierto');
+    });
+
+    testWidgets('email inválido: no llama al backend y muestra error de validación', (tester) async {
+      await pumpLogin(tester);
+      await abrirDialogoRecuperacion(tester);
+      await enviarRecuperacion(tester, email: 'correo-invalido');
+
+      expect(authRepo.resetPasswordCalls, 0);
+      expect(find.text('Ingrese un correo electrónico válido'), findsOneWidget);
     });
   });
 }
