@@ -4,10 +4,22 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../authentication/presentation/providers/auth_provider.dart';
+import '../../../companies/presentation/providers/company_providers.dart';
 import '../../../attendance/data/models/attendance_model.dart';
 import '../../../attendance/presentation/providers/attendance_notifier.dart';
 import '../../../incidences/data/models/incidence_model.dart';
 import '../../../incidences/presentation/providers/incidences_provider.dart';
+
+/// Tipos de incidencia que justifican una ausencia (no cuentan como falta).
+const Set<IncidenceType> _justificationTypes = {
+  IncidenceType.vacaciones,
+  IncidenceType.licenciaMedica,
+  IncidenceType.enfermedad,
+  IncidenceType.accidenteLaboral,
+  IncidenceType.comisionServicio,
+  IncidenceType.franco,
+  IncidenceType.ausenciaJustificada,
+};
 
 class EmployeeReportsScreen extends ConsumerStatefulWidget {
   const EmployeeReportsScreen({super.key});
@@ -37,6 +49,8 @@ class _EmployeeReportsScreenState extends ConsumerState<EmployeeReportsScreen> {
 
     final attendancesAsync = ref.watch(attendancesByUserProvider(userId));
     final allIncidencesAsync = ref.watch(incidencesStreamProvider);
+    final currentUserAsync = ref.watch(currentAppUserProvider);
+    final companyAsync = ref.watch(currentCompanyProvider);
 
     return SingleChildScrollView(
       padding: const EdgeInsets.all(24),
@@ -53,8 +67,18 @@ class _EmployeeReportsScreenState extends ConsumerState<EmployeeReportsScreen> {
             data: (allAttendances) {
               final allIncidences = allIncidencesAsync.value ?? [];
               final incidences = allIncidences.where((i) => i.userId == userId).toList();
+              final company = companyAsync.value;
+              final laborableDays = (company?.diasLaborables.isNotEmpty ?? false)
+                  ? company!.diasLaborables
+                  : const [1, 2, 3, 4, 5];
+              final employmentStart = currentUserAsync.value?.createdAt;
               final filtered = _filterByMonth(allAttendances);
-              final stats = _calculateStats(filtered, incidences);
+              final stats = _calculateStats(
+                filtered,
+                incidences,
+                laborableDays: laborableDays,
+                employmentStart: employmentStart,
+              );
               return _buildContent(stats, filtered);
             },
             loading: () => AppTheme.loadingState(message: 'Cargando reportes...'),
@@ -157,29 +181,81 @@ class _EmployeeReportsScreenState extends ConsumerState<EmployeeReportsScreen> {
     }).toList();
   }
 
-  _ReportStats _calculateStats(List<AttendanceModel> monthAttendances, List<IncidenceModel> incidences) {
+  _ReportStats _calculateStats(
+    List<AttendanceModel> monthAttendances,
+    List<IncidenceModel> incidences, {
+    required List<int> laborableDays,
+    required DateTime? employmentStart,
+  }) {
     final completed = monthAttendances.where((a) => a.status == AttendanceStatus.completed).toList();
     final totalMinutes = completed.fold<int>(0, (sum, a) => sum + (a.durationMinutes ?? 0));
     final totalHours = totalMinutes / 60;
 
-    int lateArrivals = completed.where((a) => a.isLate ?? false).length;
+    final lateArrivals = completed.where((a) => a.isLate ?? false).length;
 
     final uniqueDays = completed.map((a) => a.date).toSet().length;
 
     final hasActiveToday = monthAttendances.any((a) => a.status == AttendanceStatus.active);
-    final totalWorkingDays = _selectedYear == DateTime.now().year && _selectedMonth == DateTime.now().month
-        ? DateTime.now().day
-        : _daysInMonth(_selectedYear, _selectedMonth);
 
-    final absences = (totalWorkingDays - uniqueDays).clamp(0, totalWorkingDays);
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final monthStart = DateTime(_selectedYear, _selectedMonth, 1);
+    final monthEnd = DateTime(_selectedYear, _selectedMonth + 1, 0);
+    // D-7: ningún mes genera ausencias posteriores a hoy. En meses futuros
+    // la ventana queda vacía y el conteo da 0.
+    final windowEnd = monthEnd.isBefore(today) ? monthEnd : today;
+
+    DateTime startFrom = monthStart;
+    if (employmentStart != null) {
+      final startDate =
+          DateTime(employmentStart.year, employmentStart.month, employmentStart.day);
+      if (startDate.isAfter(monthStart)) startFrom = startDate;
+    }
+
+    final days = laborableDays.isEmpty ? const [1, 2, 3, 4, 5] : laborableDays;
+
+    final presentDays = monthAttendances
+        .where((a) =>
+            a.status == AttendanceStatus.completed ||
+            a.status == AttendanceStatus.active)
+        .toList();
+    final workedDays = <DateTime>{};
+    for (final a in presentDays) {
+      final parsed = DateTime.tryParse(a.date);
+      if (parsed != null) {
+        workedDays.add(DateTime(parsed.year, parsed.month, parsed.day));
+      }
+    }
+
+    final justifiedDays = <DateTime>{};
+    for (final inc in incidences) {
+      if (!_justificationTypes.contains(inc.type)) continue;
+      if (inc.estado != IncidenceEstado.aprobado) continue;
+      var inicio = DateTime(inc.fechaInicio.year, inc.fechaInicio.month, inc.fechaInicio.day);
+      final fin = DateTime(inc.fechaFin.year, inc.fechaFin.month, inc.fechaFin.day);
+      if (fin.isBefore(startFrom) || inicio.isAfter(windowEnd)) continue;
+      if (inicio.isBefore(startFrom)) inicio = startFrom;
+      final last = fin.isAfter(windowEnd) ? windowEnd : fin;
+      var d = inicio;
+      while (!d.isAfter(last)) {
+        if (days.contains(d.weekday)) justifiedDays.add(d);
+        d = DateTime(d.year, d.month, d.day + 1);
+      }
+    }
+
+    final absences = _countUnexcusedAbsences(
+      startFrom,
+      windowEnd,
+      days,
+      workedDays,
+      justifiedDays,
+    );
 
     final justificationCount = incidences.where((inc) =>
         inc.fechaInicio.month == _selectedMonth &&
         inc.fechaInicio.year == _selectedYear &&
-        (inc.type == IncidenceType.vacaciones ||
-         inc.type == IncidenceType.licenciaMedica ||
-         inc.type == IncidenceType.enfermedad ||
-         inc.type == IncidenceType.ausenciaJustificada)
+        _justificationTypes.contains(inc.type) &&
+        inc.estado == IncidenceEstado.aprobado
     ).length;
 
     final incidenceCount = incidences.where((inc) =>
@@ -198,8 +274,27 @@ class _EmployeeReportsScreenState extends ConsumerState<EmployeeReportsScreen> {
     );
   }
 
-  int _daysInMonth(int year, int month) {
-    return DateTime(year, month + 1, 0).day;
+  /// Cuenta los días laborables de la ventana que no fueron trabajados ni
+  /// cubiertos por una incidencia justificada (ausencias injustificadas).
+  int _countUnexcusedAbsences(
+    DateTime from,
+    DateTime to,
+    List<int> days,
+    Set<DateTime> workedDays,
+    Set<DateTime> justifiedDays,
+  ) {
+    if (from.isAfter(to)) return 0;
+    var count = 0;
+    var d = from;
+    while (!d.isAfter(to)) {
+      if (days.contains(d.weekday) &&
+          !workedDays.contains(d) &&
+          !justifiedDays.contains(d)) {
+        count++;
+      }
+      d = DateTime(d.year, d.month, d.day + 1);
+    }
+    return count;
   }
 
   Widget _buildContent(
@@ -248,7 +343,7 @@ class _EmployeeReportsScreenState extends ConsumerState<EmployeeReportsScreen> {
           ),
           _StatCard(
             icon: Icons.cancel_outlined,
-            label: 'Ausencias',
+            label: 'Ausencias injustificadas',
             value: stats.absences.toString(),
             color: stats.absences > 0 ? AppColors.error : AppColors.success,
           ),

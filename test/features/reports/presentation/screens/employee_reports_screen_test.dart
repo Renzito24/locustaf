@@ -1,8 +1,10 @@
+import 'package:app_locustaf/core/models/company_model.dart';
 import 'package:app_locustaf/core/models/user_model.dart';
 import 'package:app_locustaf/core/router/app_routes.dart';
 import 'package:app_locustaf/features/attendance/data/models/attendance_model.dart';
 import 'package:app_locustaf/features/attendance/presentation/providers/attendance_notifier.dart';
 import 'package:app_locustaf/features/authentication/presentation/providers/auth_provider.dart';
+import 'package:app_locustaf/features/companies/presentation/providers/company_providers.dart';
 import 'package:app_locustaf/features/dashboard/presentation/widgets/dashboard_layout.dart';
 import 'package:app_locustaf/features/incidences/data/models/incidence_model.dart';
 import 'package:app_locustaf/features/incidences/presentation/providers/incidences_provider.dart';
@@ -24,6 +26,8 @@ import 'package:go_router/go_router.dart';
 void main() {
   final now = DateTime.now();
   final todayIso = '${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}';
+  final monthStart = DateTime(now.year, now.month, 1);
+  final today = DateTime(now.year, now.month, now.day);
 
   final attendance = AttendanceModel(
     id: 'a1',
@@ -36,14 +40,119 @@ void main() {
     companyId: 'c1',
   );
 
+  String iso(DateTime d) =>
+      '${d.year}-${d.month.toString().padLeft(2, '0')}-${d.day.toString().padLeft(2, '0')}';
+
+  UserModel buildEmployeeUser({required DateTime createdAt}) => UserModel(
+        id: 'u1',
+        nombre: 'Juan',
+        apellido: 'Pérez',
+        email: 'juan@test.com',
+        dni: '12345678',
+        rol: UserRole.employee,
+        companyId: 'c1',
+        createdAt: createdAt,
+      );
+
+  CompanyModel buildCompany({List<int> days = const [1, 2, 3, 4, 5]}) => CompanyModel(
+        id: 'c1',
+        nombreComercial: 'ACME',
+        razonSocial: 'ACME SA',
+        cuit: '30-12345678-9',
+        createdAt: monthStart,
+        diasLaborables: days,
+      );
+
+  AttendanceModel attendanceOn(
+    DateTime day, {
+    AttendanceStatus status = AttendanceStatus.completed,
+  }) {
+    return AttendanceModel(
+      id: 'att-${iso(day)}',
+      userId: 'u1',
+      checkInTime: DateTime(day.year, day.month, day.day, 9),
+      checkOutTime: DateTime(day.year, day.month, day.day, 18),
+      durationMinutes: 480,
+      date: iso(day),
+      status: status,
+      companyId: 'c1',
+    );
+  }
+
+  AttendanceModel activeAttendanceOn(DateTime day) {
+    return AttendanceModel(
+      id: 'att-active-${iso(day)}',
+      userId: 'u1',
+      checkInTime: DateTime(day.year, day.month, day.day, 9),
+      date: iso(day),
+      status: AttendanceStatus.active,
+      companyId: 'c1',
+    );
+  }
+
+  IncidenceModel justifiedOn(DateTime day, {IncidenceEstado estado = IncidenceEstado.aprobado}) {
+    return IncidenceModel(
+      id: 'inc-${iso(day)}',
+      userId: 'u1',
+      type: IncidenceType.enfermedad,
+      fechaInicio: DateTime(day.year, day.month, day.day, 8),
+      fechaFin: DateTime(day.year, day.month, day.day, 18),
+      estado: estado,
+      companyId: 'c1',
+      createdAt: DateTime.now(),
+    );
+  }
+
+  bool isLaborable(DateTime d, List<int> days) => days.contains(d.weekday);
+
+  int countLaborableDays(DateTime from, DateTime to, List<int> days) {
+    if (from.isAfter(to)) return 0;
+    var count = 0;
+    var d = from;
+    while (!d.isAfter(to)) {
+      if (isLaborable(d, days)) count++;
+      d = DateTime(d.year, d.month, d.day + 1);
+    }
+    return count;
+  }
+
+  List<DateTime> laborableDatesInRange(DateTime from, DateTime to, List<int> days) {
+    final result = <DateTime>[];
+    var d = from;
+    while (!d.isAfter(to)) {
+      if (isLaborable(d, days)) result.add(d);
+      d = DateTime(d.year, d.month, d.day + 1);
+    }
+    return result;
+  }
+
+  // Valida el valor de una tarjeta de métricas buscando la etiqueta y
+  // verificando que el valor esté dentro de la misma columna de la tarjeta.
+  void expectCardValue(WidgetTester tester, String label, String value) {
+    final card =
+        find.ancestor(of: find.text(label), matching: find.byType(Column)).first;
+    expect(
+      find.descendant(of: card, matching: find.text(value)),
+      findsOneWidget,
+    );
+  }
+
   Future<void> pumpEmployeeReportsInShell(
     WidgetTester tester, {
     required Size size,
+    List<AttendanceModel>? attendances,
+    List<IncidenceModel> incidences = const [],
+    CompanyModel? company,
+    UserModel? currentUser,
   }) async {
     tester.view.physicalSize = size;
     tester.view.devicePixelRatio = 1.0;
     addTearDown(tester.view.resetPhysicalSize);
     addTearDown(tester.view.resetDevicePixelRatio);
+
+    final effectiveAttendances = attendances ?? [attendance];
+    final effectiveCompany = company ?? buildCompany();
+    final effectiveUser = currentUser ?? buildEmployeeUser(createdAt: monthStart);
 
     final router = GoRouter(
       initialLocation: RoutePaths.reports,
@@ -62,8 +171,10 @@ void main() {
         overrides: [
           currentUserIdProvider.overrideWithValue('u1'),
           userRoleProvider.overrideWithValue(UserRole.employee),
-          attendancesByUserProvider('u1').overrideWith((ref) => Stream.value([attendance])),
-          incidencesStreamProvider.overrideWith((ref) => Stream.value(<IncidenceModel>[])),
+          attendancesByUserProvider('u1').overrideWith((ref) => Stream.value(effectiveAttendances)),
+          incidencesStreamProvider.overrideWith((ref) => Stream.value(incidences)),
+          currentAppUserProvider.overrideWith((ref) => Stream.value(effectiveUser)),
+          currentCompanyProvider.overrideWith((ref) => Stream.value(effectiveCompany)),
         ],
         child: MaterialApp.router(
           routerConfig: router,
@@ -124,6 +235,140 @@ void main() {
       );
       await tester.pumpAndSettle();
       expect(tester.takeException(), isNull);
+    });
+  });
+
+  group('INC-2 — cálculo de ausencias', () {
+    testWidgets('no cuenta fines de semana ni días previos al alta', (tester) async {
+      final days = const [1, 2, 3, 4, 5];
+      await pumpEmployeeReportsInShell(
+        tester,
+        size: const Size(360, 640),
+        attendances: [],
+        company: buildCompany(days: days),
+        currentUser: buildEmployeeUser(createdAt: monthStart),
+      );
+
+      final expected = countLaborableDays(monthStart, today, days);
+      expect(tester.takeException(), isNull);
+      expectCardValue(tester, 'Ausencias injustificadas', '$expected');
+    });
+
+    testWidgets('ausencia justificada aprobada resta del conteo', (tester) async {
+      final days = const [1, 2, 3, 4, 5];
+      final laborables = laborableDatesInRange(monthStart, today, days);
+      final missed = laborables.first;
+      final attended = laborables.where((d) => d != missed).toList();
+
+      await pumpEmployeeReportsInShell(
+        tester,
+        size: const Size(360, 640),
+        attendances: attended.map(attendanceOn).toList(),
+        incidences: [justifiedOn(missed)],
+        company: buildCompany(days: days),
+        currentUser: buildEmployeeUser(createdAt: monthStart),
+      );
+
+      expect(tester.takeException(), isNull);
+      expectCardValue(tester, 'Ausencias injustificadas', '0');
+      expectCardValue(tester, 'Justificativos', '1');
+    });
+
+    testWidgets('la alta a mitad de mes limita los días contables', (tester) async {
+      final days = const [1, 2, 3, 4, 5];
+      await pumpEmployeeReportsInShell(
+        tester,
+        size: const Size(360, 640),
+        attendances: [],
+        company: buildCompany(days: days),
+        currentUser: buildEmployeeUser(createdAt: today),
+      );
+
+      final expected = isLaborable(today, days) ? 1 : 0;
+      expect(tester.takeException(), isNull);
+      expectCardValue(tester, 'Ausencias injustificadas', '$expected');
+    });
+
+    testWidgets('respeta los días laborables configurados de la empresa', (tester) async {
+      final days = const [1, 2, 3, 4, 5, 6];
+      await pumpEmployeeReportsInShell(
+        tester,
+        size: const Size(360, 640),
+        attendances: [],
+        company: buildCompany(days: days),
+        currentUser: buildEmployeeUser(createdAt: monthStart),
+      );
+
+      final expected = countLaborableDays(monthStart, today, days);
+      expect(tester.takeException(), isNull);
+      expectCardValue(tester, 'Ausencias injustificadas', '$expected');
+    });
+  });
+
+  group('INC-2 — contratos nuevos del ajuste', () {
+    testWidgets('justificativo rechazado NO resta ausencias', (tester) async {
+      final days = const [1, 2, 3, 4, 5];
+      final laborables = laborableDatesInRange(monthStart, today, days);
+      final missed = laborables.first;
+      final attended = laborables.where((d) => d != missed).toList();
+
+      await pumpEmployeeReportsInShell(
+        tester,
+        size: const Size(360, 640),
+        attendances: attended.map(attendanceOn).toList(),
+        incidences: [justifiedOn(missed, estado: IncidenceEstado.rechazado)],
+        company: buildCompany(days: days),
+        currentUser: buildEmployeeUser(createdAt: monthStart),
+      );
+
+      expect(tester.takeException(), isNull);
+      expectCardValue(tester, 'Ausencias injustificadas', '1');
+      expectCardValue(tester, 'Justificativos', '0');
+    });
+
+    testWidgets('mes futuro seleccionado da 0 ausencias', (tester) async {
+      if (now.month >= 12) return; // no hay mes futuro seleccionable
+      final days = const [1, 2, 3, 4, 5];
+      await pumpEmployeeReportsInShell(
+        tester,
+        size: const Size(360, 640),
+        attendances: [],
+        company: buildCompany(days: days),
+        currentUser: buildEmployeeUser(createdAt: monthStart),
+      );
+
+      const monthNames = [
+        'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
+        'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre',
+      ];
+      await tester.tap(find.text(monthNames[now.month - 1]).first);
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Diciembre').last);
+      await tester.pumpAndSettle();
+
+      expect(tester.takeException(), isNull);
+      expectCardValue(tester, 'Ausencias injustificadas', '0');
+    });
+
+    testWidgets('jornada activa cuenta como presente (D-4)', (tester) async {
+      final days = const [1, 2, 3, 4, 5];
+      final laborables = laborableDatesInRange(monthStart, today, days);
+      if (laborables.isEmpty) return; // ventana sin días laborables: D-4 no aplica
+      final activeDay = laborables.first;
+
+      await pumpEmployeeReportsInShell(
+        tester,
+        size: const Size(360, 640),
+        attendances: [activeAttendanceOn(activeDay)],
+        company: buildCompany(days: days),
+        currentUser: buildEmployeeUser(createdAt: monthStart),
+      );
+
+      expect(tester.takeException(), isNull);
+      // D-4: el día con jornada activa es presente; los demás días laborables
+      // de la ventana (desde el alta) quedan como ausencias injustificadas.
+      final expected = countLaborableDays(monthStart, today, days) - 1;
+      expectCardValue(tester, 'Ausencias injustificadas', '$expected');
     });
   });
 }
