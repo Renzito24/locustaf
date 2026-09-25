@@ -424,6 +424,30 @@ describe('VUL-4c: asistencias por rol', () => {
     await assertFails(ctx.firestore().collection('attendances').where('companyId', '==', 'emp-1').get());
   });
 
+  it('ATT-READ-E-LIST-ACTIVE: empleado SÍ puede listar sus jornadas activas (query real de getActiveAttendance, sin companyId)', async () => {
+    await seedUser('emp-1', { rol: 'employee', companyId: 'emp-1', isActive: true, isDeleted: false });
+    await seedAttendance('att-1', { userId: 'emp-1', companyId: 'emp-1', status: 'active' });
+    const ctx = testEnv.authenticatedContext('emp-1');
+    await assertSucceeds(
+      ctx.firestore().collection('attendances')
+        .where('userId', '==', 'emp-1')
+        .where('status', '==', 'active')
+        .get(),
+    );
+  });
+
+  it('ATT-READ-E-LIST-OWN-COMPANY: empleado SÍ puede listar con userId+companyId (query de getAttendancesByUser)', async () => {
+    await seedUser('emp-1', { rol: 'employee', companyId: 'emp-1', isActive: true, isDeleted: false });
+    await seedAttendance('att-1', { userId: 'emp-1', companyId: 'emp-1', status: 'completed' });
+    const ctx = testEnv.authenticatedContext('emp-1');
+    await assertSucceeds(
+      ctx.firestore().collection('attendances')
+        .where('userId', '==', 'emp-1')
+        .where('companyId', '==', 'emp-1')
+        .get(),
+    );
+  });
+
   it('ATT-READ-ADMIN-OWN-COMPANY: un admin SÍ puede leer asistencia de su empresa', async () => {
     await seedUser('admin-1', { rol: 'admin', companyId: 'emp-1', isActive: true, isDeleted: false });
     await seedAttendance('att-1', { userId: 'emp-2', companyId: 'emp-1', status: 'completed' });
