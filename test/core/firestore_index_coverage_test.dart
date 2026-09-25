@@ -26,6 +26,15 @@ void main() {
       collection: 'attendances',
       fields: [('userId', 'ASCENDING'), ('status', 'ASCENDING')],
     ),
+    // Asistencia activa del usuario en su empresa (triple igualdad sin orden).
+    (
+      collection: 'attendances',
+      fields: [
+        ('userId', 'ASCENDING'),
+        ('status', 'ASCENDING'),
+        ('companyId', 'ASCENDING'),
+      ],
+    ),
     // Asistencia activa de la empresa (doble filtro sin orden).
     (
       collection: 'attendances',

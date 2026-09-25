@@ -307,6 +307,29 @@ void main() {
       expect(none, isNotNull); // att-2 sigue activa
     });
 
+    test('getActiveAttendance filtra por empresa cuando tiene companyId', () async {
+      await seedAttendance(buildAttendance(id: 'att-own'));
+      await seedAttendance(
+        buildAttendance(id: 'att-other-company', company: 'company-2'),
+      );
+
+      final active = await repo.getActiveAttendance(userId).first;
+      expect(active, isNotNull);
+      final activeAttendance = active!;
+      expect(activeAttendance.id, 'att-own');
+      expect(activeAttendance.companyId, companyId);
+    });
+
+    test('getActiveAttendance sin companyId devuelve null (guard Opción B)', () async {
+      await seedAttendance(
+        buildAttendance(id: 'att-other-company', company: 'company-2'),
+      );
+      final repoNoCompany = AttendanceRepositoryImpl(service);
+
+      final active = await repoNoCompany.getActiveAttendance(userId).first;
+      expect(active, isNull);
+    });
+
     test('getAttendancesByUser filtra por usuario y empresa y ordena descendente', () async {
       await seedAttendance(
         buildAttendance(id: 'att-1', checkInTime: DateTime.now().subtract(const Duration(days: 1))),
