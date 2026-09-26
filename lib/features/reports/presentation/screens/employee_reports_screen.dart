@@ -5,6 +5,7 @@ import '../../../../core/constants/app_colors.dart';
 import '../../../../core/models/user_model.dart';
 import '../../../../core/services/report_exporter.dart';
 import '../../../../core/theme/app_theme.dart';
+import '../../../../core/widgets/widgets.dart';
 import '../../../attendance/data/models/attendance_model.dart';
 import '../../../attendance/presentation/providers/attendance_notifier.dart';
 import '../../../authentication/presentation/providers/auth_provider.dart';
@@ -81,8 +82,7 @@ class _EmployeeReportsScreenState extends ConsumerState<EmployeeReportsScreen> {
       'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre',
     ];
 
-    return Container(
-      decoration: AppTheme.cardDecoration(),
+    return AppCard(
       padding: const EdgeInsets.all(16),
       child: LayoutBuilder(
         builder: (context, constraints) {
@@ -181,9 +181,7 @@ class _EmployeeReportsScreenState extends ConsumerState<EmployeeReportsScreen> {
   ) {
     final monthName = _monthName(_selectedMonth);
 
-    return Container(
-      decoration: AppTheme.cardDecoration(),
-      padding: const EdgeInsets.all(20),
+    return AppCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [

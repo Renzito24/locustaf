@@ -5,6 +5,7 @@ import '../../../../core/config/app_version.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/models/user_model.dart';
 import '../../../../core/theme/app_theme.dart';
+import '../../../../core/widgets/widgets.dart';
 import '../../../attendance/presentation/providers/attendance_notifier.dart';
 import '../../../authentication/presentation/providers/auth_provider.dart';
 import '../../../companies/presentation/providers/company_providers.dart';
@@ -118,18 +119,13 @@ class EmployeeHomeScreen extends ConsumerWidget {
       );
     }
 
-    return Container(
-      decoration: AppTheme.cardDecoration(),
-      padding: const EdgeInsets.all(20),
+    return AppCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Row(
-            children: [
-              Icon(Icons.business_outlined, color: AppColors.gold, size: 20),
-              SizedBox(width: 8),
-              Text('Tu lugar de trabajo', style: AppTheme.headingMd),
-            ],
+          const AppCardHeader(
+            icon: Icons.business_outlined,
+            title: 'Tu lugar de trabajo',
           ),
           const SizedBox(height: 14),
           workplacesAsync.when(
@@ -145,39 +141,25 @@ class EmployeeHomeScreen extends ConsumerWidget {
                 return _infoCard(
                   icon: Icons.location_off_outlined,
                   color: AppColors.warning,
-                  title: 'Lugar de trabajo no disponible',
+                  title: 'Lugar no disponible',
                   subtitle: 'No pudimos encontrar tu lugar asignado. Contactá al administrador.',
                 );
               }
               return Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  _kvRow('Ubicación', found.nombre),
-                  if (found.direccion != null && found.direccion!.isNotEmpty) ...[
-                    Divider(
-                      height: 24,
-                      color: AppColors.gold.withValues(alpha: 0.1),
-                    ),
-                    _kvRow('Dirección', found.direccion!),
-                  ],
-                  Divider(
-                    height: 24,
-                    color: AppColors.gold.withValues(alpha: 0.1),
+                  AppDataRow(label: 'Ubicación', value: found.nombre),
+                  if (found.direccion != null && found.direccion!.isNotEmpty)
+                    AppDataRow(label: 'Dirección', value: found.direccion!),
+                  AppDataRow(
+                    label: 'Horario',
+                    value: '${found.horaInicio ?? '--:--'} - ${found.horaFin ?? '--:--'}',
                   ),
-                  _kvRow(
-                    'Horario',
-                    '${found.horaInicio ?? '--:--'} - ${found.horaFin ?? '--:--'}',
-                  ),
-                  if (found.radio != null) ...[
-                    Divider(
-                      height: 24,
-                      color: AppColors.gold.withValues(alpha: 0.1),
+                  if (found.radio != null)
+                    AppDataRow(
+                      label: 'Geocerca',
+                      value: '${found.radio!.toStringAsFixed(0)} m',
                     ),
-                    _kvRow(
-                      'Geocerca',
-                      '${found.radio!.toStringAsFixed(0)} m',
-                    ),
-                  ],
                 ],
               );
             },
@@ -200,9 +182,7 @@ class EmployeeHomeScreen extends ConsumerWidget {
     required String title,
     required String subtitle,
   }) {
-    return Container(
-      decoration: AppTheme.cardDecoration(),
-      padding: const EdgeInsets.all(20),
+    return AppCard(
       child: Row(
         children: [
           Container(
@@ -246,27 +226,6 @@ class EmployeeHomeScreen extends ConsumerWidget {
         letterSpacing: 1.2,
         color: AppColors.textMuted,
       ),
-    );
-  }
-
-  Widget _kvRow(String key, String value) {
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(key, style: AppTheme.bodyMd),
-        const SizedBox(width: 12),
-        Expanded(
-          child: Text(
-            value,
-            textAlign: TextAlign.right,
-            style: const TextStyle(
-              color: AppColors.textWhite,
-              fontWeight: FontWeight.w500,
-              fontFeatures: [FontFeature.tabularFigures()],
-            ),
-          ),
-        ),
-      ],
     );
   }
 
@@ -343,9 +302,7 @@ class _MetricCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      decoration: AppTheme.cardDecoration(),
-      padding: const EdgeInsets.all(20),
+    return AppCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisSize: MainAxisSize.min,

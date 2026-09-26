@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/theme/app_theme.dart';
+import '../../../../core/widgets/widgets.dart';
 import '../../../attendance/data/models/attendance_model.dart';
 import '../../../attendance/presentation/providers/attendance_notifier.dart';
 import '../../../authentication/presentation/providers/auth_provider.dart';
@@ -74,10 +75,10 @@ class EmployeeHistoryScreen extends ConsumerWidget {
     return Column(
       children: [
         for (final record in list)
-          Container(
-            margin: const EdgeInsets.only(bottom: 8),
-            decoration: AppTheme.cardDecoration(),
-            padding: const EdgeInsets.all(16),
+          Padding(
+            padding: const EdgeInsets.only(bottom: 8),
+            child: AppCard(
+              padding: const EdgeInsets.all(16),
             child: Row(
               children: [
                 Icon(
@@ -134,7 +135,7 @@ class EmployeeHistoryScreen extends ConsumerWidget {
                   ),
                 ),
                 const SizedBox(width: 8),
-                if (record.status == AttendanceStatus.active)
+if (record.status == AttendanceStatus.active)
                   AppTheme.badge(
                     label: 'Activo',
                     bgColor: AppColors.success.withValues(alpha: 0.15),
@@ -149,28 +150,16 @@ class EmployeeHistoryScreen extends ConsumerWidget {
               ],
             ),
           ),
-      ],
-    );
+        ),
+    ],
+  );
   }
 
   Widget _kvRow(String key, String value) {
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(key, style: AppTheme.bodyMd),
-        const SizedBox(width: 8),
-        Expanded(
-          child: Text(
-            value,
-            textAlign: TextAlign.right,
-            style: const TextStyle(
-              color: AppColors.textWhite,
-              fontWeight: FontWeight.w500,
-              fontFeatures: [FontFeature.tabularFigures()],
-            ),
-          ),
-        ),
-      ],
+    return AppDataRow(
+      label: key,
+      value: value,
+      divider: false,
     );
   }
 
