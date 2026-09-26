@@ -207,6 +207,48 @@ void main() {
       expect(done.get('checkOutTime'), isNotNull);
     });
 
+    testWidgets(
+        'jornada huérfana: la X descarta el aviso sin cerrar la jornada (B2)',
+        (tester) async {
+      await seedUser(id: employeeId, nombre: 'Juan Pérez');
+      await seedWorkplace();
+
+      final yesterday = DateTime.now().subtract(const Duration(days: 1));
+      final checkIn =
+          DateTime(yesterday.year, yesterday.month, yesterday.day, 8, 0);
+      final dateKey =
+          '${checkIn.year}-${checkIn.month.toString().padLeft(2, '0')}-${checkIn.day.toString().padLeft(2, '0')}';
+      await fake.collection('attendances').doc('att-orphan').set({
+        'id': 'att-orphan',
+        'userId': employeeId,
+        'companyId': companyId,
+        'workplaceId': workplaceId,
+        'checkInTime': Timestamp.fromDate(checkIn),
+        'date': dateKey,
+        'status': 'active',
+      });
+      await fake.collection('_attendance_locks').doc(employeeId).set({
+        'attendanceId': 'att-orphan',
+        'checkInTime': checkIn.toUtc().toIso8601String(),
+        'lockedAt': Timestamp.fromDate(DateTime.now().toUtc()),
+        'status': 'active',
+      });
+
+      await pumpAttendanceScreen(tester, role: UserRole.employee);
+
+      expect(find.text('Jornada huérfana detectada'), findsOneWidget);
+
+      await tester.tap(find.byTooltip('Descartar aviso'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Jornada huérfana detectada'), findsNothing);
+      final kept =
+          await fake.collection('attendances').doc('att-orphan').get();
+      final keptData = kept.data()!;
+      expect(keptData['status'], 'active');
+      expect(keptData.containsKey('checkOutTime'), isFalse);
+    });
+
     testWidgets('check-in con GPS apagado: snackbar de error GPS', (tester) async {
       await seedUser(id: employeeId, nombre: 'Juan Pérez');
       await seedWorkplace();

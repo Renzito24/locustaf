@@ -11,11 +11,18 @@ import '../../../workplaces/presentation/providers/workplace_notifier.dart';
 import '../../data/models/attendance_model.dart';
 import '../providers/attendance_notifier.dart';
 
-class AttendanceScreen extends ConsumerWidget {
+class AttendanceScreen extends ConsumerStatefulWidget {
   const AttendanceScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<AttendanceScreen> createState() => _AttendanceScreenState();
+}
+
+class _AttendanceScreenState extends ConsumerState<AttendanceScreen> {
+  final Set<String> _dismissedOrphanedIds = {};
+
+  @override
+  Widget build(BuildContext context) {
     final userId = ref.watch(currentUserIdProvider);
 
     final actionState = ref.watch(attendanceActionProvider);
@@ -63,7 +70,8 @@ class AttendanceScreen extends ConsumerWidget {
             style: AppTheme.bodyLg,
           ),
           const SizedBox(height: 24),
-          if (orphaned != null) ...[
+          if (orphaned != null &&
+              !_dismissedOrphanedIds.contains(orphaned.id)) ...[
             _buildOrphanedCard(context, ref, orphaned, userId, isActionLoading),
             const SizedBox(height: 16),
           ],
@@ -296,7 +304,16 @@ class AttendanceScreen extends ConsumerWidget {
               ],
             ),
           ),
-          const SizedBox(width: 12),
+          const SizedBox(width: 4),
+          IconButton(
+            onPressed: () {
+              setState(() => _dismissedOrphanedIds.add(orphaned.id));
+            },
+            tooltip: 'Descartar aviso',
+            icon: const Icon(Icons.close, color: AppColors.textMuted, size: 20),
+            visualDensity: VisualDensity.compact,
+          ),
+          const SizedBox(width: 4),
           OutlinedButton.icon(
             onPressed: isActionLoading
                 ? null
