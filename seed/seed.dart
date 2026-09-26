@@ -117,7 +117,10 @@ Future<void> main(List<String> args) async {
     data['createdAt'] = now;
     data['updatedAt'] = now;
     data['id'] = uid;
-    final docId = await _createFirestoreDocument('users', data, adminIdToken, documentId: uid);
+    // Upsert: si el doc ya existe (re-corrida del seed) se actualizan solo los
+    // campos declarados por el seed. Con create puro el POST devolvia 409 y los
+    // usuarios quedaban sin companyId/lugarDeTrabajoId para siempre.
+    final docId = await _upsertFirestoreDocument('users', data, adminIdToken, documentId: uid);
     if (docId != null) {
       print('  Created user: $email (id: $docId)');
     }
@@ -290,6 +293,76 @@ Future<String?> _createFirestoreDocument(
     stderr.writeln(
         '  Firestore error ($collection): ${response.statusCode} $raw');
     return null;
+  } finally {
+    client.close();
+  }
+}
+
+/// Crea el documento o, si ya existe, actualiza solo los campos de [data]
+/// (PATCH con updateMask). Hace idempotente el seed: re-correrlo repara los
+/// docs ya creados en vez de fallar con 409 ALREADY_EXISTS.
+Future<String?> _upsertFirestoreDocument(
+  String collection,
+  Map<String, dynamic> data,
+  String idToken, {
+  String? documentId,
+}) async {
+  if (documentId == null) {
+    return _createFirestoreDocument(collection, data, idToken);
+  }
+
+  final client = HttpClient();
+  try {
+    final exists = await _firestoreDocumentExists(collection, documentId, idToken);
+    if (!exists) {
+      client.close();
+      return await _createFirestoreDocument(
+        collection,
+        data,
+        idToken,
+        documentId: documentId,
+      );
+    }
+
+    final mask = data.keys
+        .map((k) => 'updateMask.fieldPaths=$k')
+        .join('&');
+    final uri = Uri.parse('$_firestoreBaseUrl/$collection/$documentId?$mask');
+    final request = await client.patchUrl(uri);
+    request.headers.contentType = ContentType.json;
+    request.headers.set('Authorization', 'Bearer $idToken');
+    request.write(jsonEncode({'fields': _toFirestoreFields(data)}));
+    final response = await request.close();
+    final raw = await response.transform(utf8.decoder).join();
+
+    if (response.statusCode == 200) {
+      print('  Updated existing document: $collection/$documentId');
+      return documentId;
+    }
+
+    stderr.writeln(
+        '  Firestore error ($collection/$documentId): ${response.statusCode} $raw');
+    return null;
+  } finally {
+    client.close();
+  }
+}
+
+/// Indica si el documento [documentId] de [collection] existe.
+Future<bool> _firestoreDocumentExists(
+  String collection,
+  String documentId,
+  String idToken,
+) async {
+  final client = HttpClient();
+  try {
+    final request = await client.getUrl(
+      Uri.parse('$_firestoreBaseUrl/$collection/$documentId'),
+    );
+    request.headers.set('Authorization', 'Bearer $idToken');
+    final response = await request.close();
+    await response.transform(utf8.decoder).join();
+    return response.statusCode == 200;
   } finally {
     client.close();
   }
