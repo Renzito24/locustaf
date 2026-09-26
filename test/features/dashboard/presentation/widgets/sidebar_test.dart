@@ -1,6 +1,7 @@
 import 'package:app_locustaf/core/models/user_model.dart';
 import 'package:app_locustaf/core/router/app_routes.dart';
 import 'package:app_locustaf/features/authentication/presentation/providers/auth_provider.dart';
+import 'package:app_locustaf/features/dashboard/presentation/widgets/sidebar_menu_item.dart';
 import 'package:app_locustaf/features/dashboard/presentation/widgets/sidebar.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -137,6 +138,27 @@ void main() {
       await pumpSidebar(tester, null);
       expectOnly(tester, {});
       expect(find.text('Cerrar sesión'), findsOneWidget);
+    });
+
+    testWidgets('admin: el orden de las solapas es el esperado', (tester) async {
+      await pumpSidebar(tester, UserRole.admin);
+      final labels = tester
+          .widgetList<SidebarMenuItem>(find.byType(SidebarMenuItem))
+          .map((item) => item.label)
+          .toList();
+      expect(labels, [
+        'Inicio',
+        'Empleados',
+        'Lugares',
+        'Asistencia',
+        'Historial',
+        'Documentación',
+        'Incidencias',
+        'Reportes',
+        'Configuración',
+        'Perfil',
+        'Cerrar sesión',
+      ]);
     });
   });
 }

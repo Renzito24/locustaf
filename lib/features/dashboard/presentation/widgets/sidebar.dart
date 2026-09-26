@@ -33,12 +33,6 @@ class Sidebar extends ConsumerWidget {
       visibleFor: {UserRole.superadmin},
     ),
     _MenuItem(
-      icon: Icons.tune_outlined,
-      label: 'Configuración',
-      route: RoutePaths.companySettings,
-      visibleFor: {UserRole.admin, UserRole.superadmin},
-    ),
-    _MenuItem(
       icon: Icons.people_outline,
       label: 'Empleados',
       route: RoutePaths.employees,
@@ -85,6 +79,12 @@ class Sidebar extends ConsumerWidget {
       label: 'Justificativos',
       route: RoutePaths.employeeJustificativos,
       visibleFor: {UserRole.employee},
+    ),
+    _MenuItem(
+      icon: Icons.tune_outlined,
+      label: 'Configuración',
+      route: RoutePaths.companySettings,
+      visibleFor: {UserRole.admin, UserRole.superadmin},
     ),
     _MenuItem(
       icon: Icons.person_outline,
