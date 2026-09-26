@@ -5,6 +5,7 @@ import 'package:app_locustaf/core/services/firestore_service.dart';
 import 'package:app_locustaf/features/attendance/presentation/providers/attendance_notifier.dart';
 import 'package:app_locustaf/features/attendance/presentation/screens/attendance_screen.dart';
 import 'package:app_locustaf/features/authentication/presentation/providers/auth_provider.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:fake_cloud_firestore/fake_cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -135,6 +136,10 @@ void main() {
       expect(find.text('Jornada activa'), findsOneWidget);
       expect(find.text('Finalizar jornada'), findsOneWidget);
 
+      expect(find.text('Lugar: '), findsOneWidget);
+      expect(find.text('Oficina Central'), findsWidgets);
+      expect(find.textContaining('Ubicación'), findsNothing);
+
       final attendanceDocs = await fake
           .collection('attendances')
           .where('userId', isEqualTo: employeeId)
@@ -156,6 +161,50 @@ void main() {
       expect(done.get('durationMinutes'), greaterThanOrEqualTo(0));
       final lockAfter = await fake.collection('_attendance_locks').doc(employeeId).get();
       expect(lockAfter.exists, isFalse);
+    });
+
+    testWidgets(
+        'jornada huérfana: aviso se muestra y desaparece tras el check-out (B7)',
+        (tester) async {
+      await seedUser(id: employeeId, nombre: 'Juan Pérez');
+      await seedWorkplace();
+
+      final yesterday = DateTime.now().subtract(const Duration(days: 1));
+      final checkIn =
+          DateTime(yesterday.year, yesterday.month, yesterday.day, 8, 0);
+      final dateKey =
+          '${checkIn.year}-${checkIn.month.toString().padLeft(2, '0')}-${checkIn.day.toString().padLeft(2, '0')}';
+      await fake.collection('attendances').doc('att-orphan').set({
+        'id': 'att-orphan',
+        'userId': employeeId,
+        'companyId': companyId,
+        'workplaceId': workplaceId,
+        'checkInTime': Timestamp.fromDate(checkIn),
+        'date': dateKey,
+        'status': 'active',
+      });
+      await fake.collection('_attendance_locks').doc(employeeId).set({
+        'attendanceId': 'att-orphan',
+        'checkInTime': checkIn.toUtc().toIso8601String(),
+        'lockedAt': Timestamp.fromDate(DateTime.now().toUtc()),
+        'status': 'active',
+      });
+      geolocator.position = at(oficinaLat, oficinaLng);
+
+      await pumpAttendanceScreen(tester, role: UserRole.employee);
+
+      expect(find.text('Jornada huérfana detectada'), findsOneWidget);
+      expect(find.text('Finalizar jornada'), findsOneWidget);
+
+      await tester.tap(find.text('Finalizar jornada'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Jornada huérfana detectada'), findsNothing);
+      expect(find.text('No has iniciado tu jornada'), findsOneWidget);
+      final done =
+          await fake.collection('attendances').doc('att-orphan').get();
+      expect(done.get('status'), 'completed');
+      expect(done.get('checkOutTime'), isNotNull);
     });
 
     testWidgets('check-in con GPS apagado: snackbar de error GPS', (tester) async {

@@ -28,37 +28,40 @@ final activeAttendanceProvider = StreamProvider.family<AttendanceModel?, String>
   return repo.getActiveAttendance(userId);
 });
 
-/// Asistencias activas de la empresa que superaron el fin de jornada de su
-/// lugar de trabajo sin registrar salida (jornadas huérfanas).
-/// Solo consulta asistencias con `status == 'active'` a nivel de Firestore
-/// para no descargar el historial completo en cada cambio.
-final orphanedAttendancesProvider = Provider<List<AttendanceModel>>((ref) {
-  final attendancesAsync = ref.watch(allActiveAttendancesStreamProvider);
-  final workplacesAsync = ref.watch(allWorkplacesStreamProvider);
-  final attendances = attendancesAsync.value ?? [];
-  final workplaces = workplacesAsync.value ?? [];
+/// Jornada huérfana del usuario: su asistencia ACTIVA que superó el fin de
+/// jornada de su lugar de trabajo sin registrar salida.
+///
+/// Se deriva de [activeAttendanceProvider] (no de la lista global de la
+/// empresa) para que el aviso desaparezca en cuanto la jornada se cierra —
+/// incluso si el snapshot global aún no se actualizó — y nunca persista al
+/// reabrir la app (Ronda 3A — B7).
+final orphanedAttendanceForUserProvider =
+    Provider.family<AttendanceModel?, String>((ref, userId) {
+  final active = ref.watch(activeAttendanceProvider(userId)).value;
+  if (active == null) return null;
 
-  final orphaned = <AttendanceModel>[];
-  for (final a in attendances) {
-    if (a.status != AttendanceStatus.active) continue;
-    WorkplaceModel? workplace;
-    for (final w in workplaces) {
-      if (w.id == a.workplaceId) {
-        workplace = w;
-        break;
-      }
-    }
-    if (workplace == null || workplace.horaFin == null) continue;
-    final shiftEnd = AttendanceCalculator.shiftTimeOn(a.checkInTime, workplace.horaFin!);
-    if (AttendanceCalculator.isOrphaned(
-      attendance: a,
-      shiftEnd: shiftEnd,
-      now: DateTime.now(),
-    )) {
-      orphaned.add(a);
+  final workplaces = ref.watch(allWorkplacesStreamProvider).value ?? [];
+  WorkplaceModel? workplace;
+  for (final w in workplaces) {
+    if (w.id == active.workplaceId) {
+      workplace = w;
+      break;
     }
   }
-  return orphaned;
+  if (workplace == null || workplace.horaFin == null) return null;
+
+  final shiftEnd = AttendanceCalculator.shiftTimeOn(
+    active.checkInTime,
+    workplace.horaFin!,
+  );
+  if (!AttendanceCalculator.isOrphaned(
+    attendance: active,
+    shiftEnd: shiftEnd,
+    now: DateTime.now(),
+  )) {
+    return null;
+  }
+  return active;
 });
 
 enum AttendanceActionStatus { idle, loading, success, error }

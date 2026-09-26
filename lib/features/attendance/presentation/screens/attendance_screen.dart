@@ -48,13 +48,10 @@ class AttendanceScreen extends ConsumerWidget {
     }
 
     final activeAttendanceAsync = ref.watch(activeAttendanceProvider(userId));
-    final attendancesAsync = ref.watch(attendancesByUserProvider(userId));
-    final orphaned = ref.watch(orphanedAttendancesProvider);
+    final orphaned = ref.watch(orphanedAttendanceForUserProvider(userId));
     final isActionLoading = actionState.status == AttendanceActionStatus.loading;
 
-    final myOrphaned = orphaned.where((a) => a.userId == userId).toList();
-
-    return Padding(
+    return SingleChildScrollView(
       padding: const EdgeInsets.all(24.0),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -66,24 +63,14 @@ class AttendanceScreen extends ConsumerWidget {
             style: AppTheme.bodyLg,
           ),
           const SizedBox(height: 24),
-          if (myOrphaned.isNotEmpty) ...[
-            _buildOrphanedCard(context, ref, myOrphaned.first, userId, isActionLoading),
+          if (orphaned != null) ...[
+            _buildOrphanedCard(context, ref, orphaned, userId, isActionLoading),
             const SizedBox(height: 16),
           ],
           activeAttendanceAsync.when(
             data: (active) => _buildActiveSection(context, ref, active, userId, isActionLoading),
             loading: () => AppTheme.loadingState(message: 'Cargando asistencia...'),
             error: (e, _) => AppTheme.errorState('Error al cargar: $e'),
-          ),
-          const SizedBox(height: 24),
-          Text('Historial', style: AppTheme.headingMd),
-          const SizedBox(height: 12),
-          Expanded(
-            child: attendancesAsync.when(
-              data: (list) => _buildHistoryList(list, ref),
-              loading: () => AppTheme.loadingState(message: 'Cargando historial...'),
-              error: (e, _) => AppTheme.errorState('Error al cargar: $e'),
-            ),
           ),
         ],
       ),
@@ -226,11 +213,6 @@ class AttendanceScreen extends ConsumerWidget {
             const SizedBox(height: 8),
             _infoRow('Lugar', workplaceName!),
           ],
-          if (active.checkInLatitud != null && active.checkInLongitud != null) ...[
-            const SizedBox(height: 8),
-            _infoRow('Ubicación',
-                '${active.checkInLatitud!.toStringAsFixed(6)}, ${active.checkInLongitud!.toStringAsFixed(6)}'),
-          ],
           const SizedBox(height: 20),
           SizedBox(
             width: double.infinity,
@@ -355,84 +337,8 @@ class AttendanceScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildHistoryList(List<AttendanceModel> list, WidgetRef ref) {
-    if (list.isEmpty) {
-      return AppTheme.emptyState(
-        icon: Icons.history,
-        title: 'Sin registros de asistencia',
-        subtitle: 'Aún no se registraron jornadas.',
-      );
-    }
-
-    final workplaceMap = <String, String>{};
-    ref.watch(activeWorkplacesProvider).whenData((list) {
-      for (final w in list) {
-        workplaceMap[w.id] = w.nombre;
-      }
-    });
-
-    return ListView.separated(
-      itemCount: list.length,
-      separatorBuilder: (_, _) => Divider(
-        height: 1,
-        color: AppColors.gold.withValues(alpha: 0.08),
-      ),
-      itemBuilder: (context, index) {
-        final record = list[index];
-        final isActive = record.status == AttendanceStatus.active;
-        final workplaceName = record.workplaceId != null
-            ? workplaceMap[record.workplaceId!]
-            : null;
-        return ListTile(
-          leading: Icon(
-            isActive ? Icons.play_circle_outline : Icons.check_circle_outline,
-            color: isActive ? AppColors.success : AppColors.textMuted,
-          ),
-          title: Text(
-            record.date,
-            style: TextStyle(
-              fontWeight: isActive ? FontWeight.w600 : FontWeight.normal,
-              color: AppColors.textWhite,
-            ),
-          ),
-          subtitle: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                'Entrada: ${_formatTime(record.checkInTime)}'
-                '${record.checkOutTime != null ? '  |  Salida: ${_formatTime(record.checkOutTime!)}' : ''}'
-                '${record.durationMinutes != null ? '  |  ${_formatDuration(record.durationMinutes!)}' : ''}',
-                style: AppTheme.bodyMd,
-              ),
-              if (workplaceName != null && !isActive)
-                Text(
-                  'Lugar: $workplaceName',
-                  style: AppTheme.bodyMd.copyWith(
-                    fontSize: 11,
-                    color: AppColors.textMuted.withValues(alpha: 0.7),
-                  ),
-                ),
-            ],
-          ),
-          isThreeLine: workplaceName != null && !isActive,
-        );
-      },
-    );
-  }
-
   String _formatDateTime(DateTime dt) {
     return '${dt.day}/${dt.month}/${dt.year} ${dt.hour.toString().padLeft(2, '0')}:${dt.minute.toString().padLeft(2, '0')}';
-  }
-
-  String _formatTime(DateTime dt) {
-    return '${dt.hour.toString().padLeft(2, '0')}:${dt.minute.toString().padLeft(2, '0')}';
-  }
-
-  String _formatDuration(int minutes) {
-    if (minutes < 60) return '${minutes}min';
-    final h = minutes ~/ 60;
-    final m = minutes % 60;
-    return '${h}h ${m}min';
   }
 }
 

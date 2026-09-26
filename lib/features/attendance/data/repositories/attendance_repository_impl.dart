@@ -89,8 +89,7 @@ class AttendanceRepositoryImpl implements AttendanceRepository {
 
   @override
   Stream<AttendanceModel?> getActiveAttendance(String userId) {
-    // R-QG-2: sin empresa en sesión no se consulta nada (Opción B,
-    // igual que allActiveAttendancesStreamProvider).
+    // R-QG-2: sin empresa en sesión no se consulta nada (Opción B).
     if (_companyId == null) return Stream.value(null);
     return _firestoreService.queryStreamWithFilters<AttendanceModel>(
       path: 'attendances',
