@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:http/http.dart' as http;
 import 'package:printing/printing.dart';
 
 import '../../../../core/constants/app_colors.dart';
+import '../../../../core/providers/firebase_providers.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../authentication/presentation/providers/auth_provider.dart';
 import '../../data/models/medical_document_model.dart';
@@ -306,14 +306,27 @@ class _ArchivoAdjunto extends StatelessWidget {
 }
 
 /// Vista previa real de una imagen adjunta (JPG/JPEG/PNG/...).
-class _ImageAdjunto extends StatelessWidget {
+class _ImageAdjunto extends ConsumerWidget {
   final String fileName;
   final String url;
 
   const _ImageAdjunto({required this.fileName, required this.url});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final bytesAsync = ref.watch(medicalAttachmentBytesProvider(url));
+
+    final preview = bytesAsync.when(
+      data: (bytes) => Image.memory(
+        bytes,
+        width: double.infinity,
+        fit: BoxFit.contain,
+        errorBuilder: (context, error, stackTrace) => _previewError(),
+      ),
+      error: (error, stackTrace) => _previewError(),
+      loading: _previewLoading,
+    );
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -323,52 +336,7 @@ class _ImageAdjunto extends StatelessWidget {
             color: Colors.black.withValues(alpha: 0.25),
             child: ConstrainedBox(
               constraints: const BoxConstraints(maxHeight: 260),
-              child: Image.network(
-                url,
-                width: double.infinity,
-                fit: BoxFit.contain,
-                loadingBuilder: (context, child, progress) {
-                  if (progress == null) return child;
-                  return const SizedBox(
-                    height: 120,
-                    child: Center(
-                      child: SizedBox(
-                        width: 24,
-                        height: 24,
-                        child: CircularProgressIndicator(
-                          strokeWidth: 2,
-                          color: AppColors.gold,
-                        ),
-                      ),
-                    ),
-                  );
-                },
-                errorBuilder: (context, error, stackTrace) {
-                  return const SizedBox(
-                    height: 120,
-                    child: Center(
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(
-                            Icons.broken_image_outlined,
-                            color: AppColors.textMuted,
-                            size: 32,
-                          ),
-                          SizedBox(height: 8),
-                          Text(
-                            'No se pudo cargar la vista previa',
-                            style: TextStyle(
-                              color: AppColors.textMuted,
-                              fontSize: 13,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  );
-                },
-              ),
+              child: preview,
             ),
           ),
         ),
@@ -403,29 +371,61 @@ class _ImageAdjunto extends StatelessWidget {
   }
 }
 
+Widget _previewLoading() {
+  return const SizedBox(
+    height: 120,
+    child: Center(
+      child: SizedBox(
+        width: 24,
+        height: 24,
+        child: CircularProgressIndicator(
+          strokeWidth: 2,
+          color: AppColors.gold,
+        ),
+      ),
+    ),
+  );
+}
+
+Widget _previewError() {
+  return const SizedBox(
+    height: 120,
+    child: Center(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(Icons.broken_image_outlined, color: AppColors.textMuted, size: 32),
+          SizedBox(height: 8),
+          Text(
+            'No se pudo cargar la vista previa',
+            style: TextStyle(color: AppColors.textMuted, fontSize: 13),
+          ),
+        ],
+      ),
+    ),
+  );
+}
+
 /// Adjunto PDF: permite abrirlo/compartirlo sin mostrar el URL como sustituto.
-class _PdfAdjunto extends StatefulWidget {
+class _PdfAdjunto extends ConsumerStatefulWidget {
   final String fileName;
   final String url;
 
   const _PdfAdjunto({required this.fileName, required this.url});
 
   @override
-  State<_PdfAdjunto> createState() => _PdfAdjuntoState();
+  ConsumerState<_PdfAdjunto> createState() => _PdfAdjuntoState();
 }
 
-class _PdfAdjuntoState extends State<_PdfAdjunto> {
+class _PdfAdjuntoState extends ConsumerState<_PdfAdjunto> {
   bool _busy = false;
 
   Future<void> _openPdf() async {
     setState(() => _busy = true);
     try {
-      final response = await http.get(Uri.parse(widget.url));
-      if (response.statusCode != 200) {
-        throw Exception('HTTP ${response.statusCode}');
-      }
+      final bytes = await ref.read(storageServiceProvider).readFileBytes(widget.url);
       await Printing.sharePdf(
-        bytes: response.bodyBytes,
+        bytes: bytes,
         filename: widget.fileName.endsWith('.pdf')
             ? widget.fileName
             : '${widget.fileName}.pdf',

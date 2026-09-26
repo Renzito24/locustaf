@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'dart:typed_data';
 
 import 'package:file_picker/file_picker.dart';
 import 'package:firebase_storage/firebase_storage.dart';
@@ -70,6 +71,21 @@ class StorageService {
     } on FirebaseException catch (_) {
       // Ignorar si el archivo ya no existe
     }
+  }
+
+  /// Descarga el contenido de un archivo de Firebase Storage a memoria.
+  ///
+  /// La descarga se hace con el SDK autenticado en lugar de una petición HTTP
+  /// directa a la URL: el bucket no envía cabeceras CORS, así que en web
+  /// `Image.network` / `http.get` fallan. Además valida las reglas de Storage
+  /// (la URL con token no las atraviesa).
+  Future<Uint8List> readFileBytes(String downloadUrl) async {
+    final ref = _storage.refFromURL(downloadUrl);
+    final bytes = await ref.getData();
+    if (bytes == null) {
+      throw StorageServiceException('El archivo no se pudo descargar.');
+    }
+    return bytes;
   }
 
   String _contentTypeFromExtension(String? ext) {

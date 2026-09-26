@@ -1,20 +1,28 @@
+import 'dart:convert';
+import 'dart:typed_data';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import 'package:app_locustaf/features/authentication/presentation/providers/auth_provider.dart';
 import 'package:app_locustaf/features/medical_documents/data/models/medical_document_model.dart';
+import 'package:app_locustaf/features/medical_documents/presentation/providers/medical_documents_provider.dart';
 import 'package:app_locustaf/features/medical_documents/presentation/widgets/medical_document_detail_dialog.dart';
 
 /// Fase B — Corrección: el detalle de un documento médico con adjunto debe
 /// previsualizar la imagen (o ofrecer abrir el PDF), NUNCA mostrar el URL de
 /// Storage como sustituto.
 ///
-/// Nota: en flutter_test el HttpClient de red devuelve 400, por lo que
-/// `Image.network` cae en el errorBuilder ("No se pudo cargar la vista
-/// previa") y "Abrir PDF" cae en el snackbar de error: ambas rutas se
-/// verifican como manejadas.
+/// La vista previa y el PDF se descargan con el SDK de Storage
+/// ([medicalAttachmentBytesProvider]) porque el bucket no envía cabeceras CORS
+/// y en web `Image.network` / `http.get` fallaban. Por eso los tests inyectan
+/// los bytes: sin override la descarga falla y se ejercita la ruta de error.
 void main() {
+  /// PNG 1x1 transparente válido.
+  Uint8List transparentPng() =>
+      base64Decode('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==');
+
   MedicalDocumentModel buildDoc({
     required String archivoUrl,
     String? archivoNombre,
@@ -34,10 +42,24 @@ void main() {
     );
   }
 
-  Future<void> pumpDialog(WidgetTester tester, MedicalDocumentModel doc) async {
+  Future<void> pumpDialog(
+    WidgetTester tester,
+    MedicalDocumentModel doc, {
+    String? downloadUrl,
+    Uint8List? bytes,
+  }) async {
+    final overrides = [isAdminProvider.overrideWithValue(false)];
+    if (downloadUrl != null && bytes != null) {
+      overrides.add(
+        medicalAttachmentBytesProvider(
+          downloadUrl,
+        ).overrideWith((ref) async => bytes),
+      );
+    }
+
     await tester.pumpWidget(
       ProviderScope(
-        overrides: [isAdminProvider.overrideWithValue(false)],
+        overrides: overrides,
         child: MaterialApp(
           home: Scaffold(
             body: Center(
@@ -55,7 +77,7 @@ void main() {
   }
 
   testWidgets(
-    'adjunto imagen: muestra vista previa y NUNCA el URL como texto',
+    'adjunto imagen: renderiza la vista previa descargada y NUNCA el URL como texto',
     (tester) async {
       const url = 'https://firebasestorage.googleapis.com/cert.jpg?token=abc';
       await pumpDialog(
@@ -65,19 +87,43 @@ void main() {
           archivoNombre: 'certificado.jpg',
           mimeType: 'image/jpeg',
         ),
+        downloadUrl: url,
+        bytes: transparentPng(),
       );
-
       // No se muestra el URL como texto.
       expect(find.text(url), findsNothing);
-      // Hay un widget Image de red (la vista previa real), no un enlace.
+      // Hay un widget Image (la vista previa real), no un enlace.
       expect(find.byType(Image), findsOneWidget);
+      // La imagen viene de memoria (descarga autenticada), no de la red.
+      expect(
+        find.byWidgetPredicate((w) => w is Image && w.image is MemoryImage),
+        findsOneWidget,
+      );
+      expect(find.text('No se pudo cargar la vista previa'), findsNothing);
       // El nombre del archivo sigue visible.
       expect(find.text('certificado.jpg'), findsOneWidget);
-      // El fallback de carga por red invalida está manejado.
-      expect(find.text('No se pudo cargar la vista previa'), findsOneWidget);
       expect(tester.takeException(), isNull);
     },
   );
+
+  testWidgets('adjunto imagen: fallo de descarga muestra mensaje de error (no una '
+      'imagen rota ni el URL)', (tester) async {
+    const url = 'https://firebasestorage.googleapis.com/cert.jpg?token=abc';
+    await pumpDialog(
+      tester,
+      buildDoc(
+        archivoUrl: url,
+        archivoNombre: 'certificado.jpg',
+        mimeType: 'image/jpeg',
+      ),
+    );
+
+    expect(find.text(url), findsNothing);
+    expect(find.byType(Image), findsNothing);
+    expect(find.text('No se pudo cargar la vista previa'), findsOneWidget);
+    expect(find.text('certificado.jpg'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
 
   testWidgets('adjunto PDF: botón "Abrir PDF" y NUNCA el URL como texto', (
     tester,

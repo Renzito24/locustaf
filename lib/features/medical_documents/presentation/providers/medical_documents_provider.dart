@@ -1,3 +1,5 @@
+import 'dart:typed_data';
+
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -29,6 +31,15 @@ final medicalDocumentRepositoryProvider = Provider<MedicalDocumentRepository>((r
 final medicalDocumentsStreamProvider = StreamProvider<List<MedicalDocumentModel>>((ref) {
   final repo = ref.read(medicalDocumentRepositoryProvider);
   return repo.getDocuments();
+});
+
+/// Bytes de un adjunto de Storage, descargados con el SDK autenticado.
+///
+/// Evita `Image.network` / `http.get`: el bucket no envía cabeceras CORS, por
+/// lo que la vista previa de imágenes y la apertura de PDF fallan en web.
+/// Queda cacheado por URL mientras el provider esté vivo.
+final medicalAttachmentBytesProvider = FutureProvider.family<Uint8List, String>((ref, url) {
+  return ref.watch(storageServiceProvider).readFileBytes(url);
 });
 
 class MedicalDocumentsFilterState {
