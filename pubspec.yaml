@@ -49,6 +49,7 @@ dependencies:
   http: ^1.6.0
   excel: ^4.0.6
   cloud_functions: ^6.4.0
+  google_fonts: ^8.2.1
 
 dev_dependencies:
   flutter_test:

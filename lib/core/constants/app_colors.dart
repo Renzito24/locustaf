@@ -2,26 +2,28 @@ import 'package:flutter/material.dart';
 
 /// Paleta oficial LOCUSTAF — Identidad visual unificada.
 ///
-/// Basada en el Login como referencia absoluta.
-/// TODA la aplicación debe usar exclusivamente estos tokens.
+/// Estilo corporativo NAVY + VERDE (Restyle Corporativo, TASK-RESTYLE-001).
+/// TODA la aplicación usa exclusivamente estos tokens: se redefinen los
+/// valores (no los nombres) para que las pantallas existentes adopten la
+/// nueva identidad sin migración archivo por archivo.
 class AppColors {
   AppColors._();
 
-  // ── Paleta principal (Login dark theme) ──────────────────────────────────
-  /// Fondo oscuro superior — gradientes, sidebar.
-  static const Color bgDarkTop = Color(0xFF0B0B0F);
+  // ── Paleta principal (dark navy) ─────────────────────────────────────────
+  /// Fondo navy profundo — superior de gradientes, sidebar.
+  static const Color bgDarkTop = Color(0xFF081420);
 
-  /// Fondo oscuro inferior — gradientes.
-  static const Color bgDarkBottom = Color(0xFF1A1710);
+  /// Fondo navy inferior — gradientes.
+  static const Color bgDarkBottom = Color(0xFF0E2236);
 
-  /// Acento dorado — botones primarios, bordes activos, íconos.
-  static const Color gold = Color(0xFFD4AF37);
+  /// Acento verde corporativo — botones primarios, bordes activos, íconos.
+  static const Color gold = Color(0xFF2FBF71);
 
-  /// Dorado claro — gradientes de botones, hover.
-  static const Color goldLight = Color(0xFFF3D98B);
+  /// Verde claro — gradientes de botones, hover.
+  static const Color goldLight = Color(0xFF77E0A3);
 
-  /// Superficie de cards oscuras.
-  static const Color cardDark = Color(0xFF17161C);
+  /// Superficie de cards navy.
+  static const Color cardDark = Color(0xFF0F2438);
 
   // ── Colores semánticos ───────────────────────────────────────────────────
   static const Color error = Color(0xFFE57373);
@@ -31,22 +33,22 @@ class AppColors {
 
   // ── Texto ────────────────────────────────────────────────────────────────
   static const Color textWhite = Colors.white;
-  static const Color textMuted = Color(0xFFCBCBD1);
-  static const Color textPrimary = Color(0xFF0F172A);
-  static const Color textSecondary = Color(0xFF64748B);
+  static const Color textMuted = Color(0xFFAFC3D4);
+  static const Color textPrimary = Color(0xFF0B1B2A);
+  static const Color textSecondary = Color(0xFF8FA8BB);
   static const Color textDisabled = Color(0xFF94A3B8);
 
   // ── Bordes y divisores ───────────────────────────────────────────────────
   static const Color border = Color(0xFFE2E8F0);
   static const Color divider = Color(0xFFF1F5F9);
-  static const Color borderGold = Color(0xFFD4AF37);
+  static const Color borderGold = Color(0xFF2FBF71);
 
   // ── Sidebar ──────────────────────────────────────────────────────────────
-  static const Color sidebar = Color(0xFF0B0B0F);
-  static const Color sidebarText = Color(0xFFCBCBD1);
+  static const Color sidebar = Color(0xFF081420);
+  static const Color sidebarText = Color(0xFFB9C9D8);
   static const Color sidebarTextActive = Color(0xFFFFFFFF);
-  static const Color sidebarItemActive = Color(0xFFD4AF37);
-  static const Color sidebarItemHover = Color(0xFF1A1710);
+  static const Color sidebarItemActive = Color(0xFF2FBF71);
+  static const Color sidebarItemHover = Color(0xFF122B42);
 
   // ── Estados de badge ─────────────────────────────────────────────────────
   static const Color badgePendingBg = Color(0xFFFEF3C7);
@@ -55,8 +57,8 @@ class AppColors {
   static const Color badgeApprovedText = Color(0xFF065F46);
   static const Color badgeRejectedBg = Color(0xFFFEE2E2);
   static const Color badgeRejectedText = Color(0xFF991B1B);
-  static const Color badgeActiveBg = Color(0xFFD4AF37);
-  static const Color badgeActiveText = Color(0xFF1A1710);
-  static const Color badgeInactiveBg = Color(0xFF1A1710);
-  static const Color badgeInactiveText = Color(0xFFCBCBD1);
+  static const Color badgeActiveBg = Color(0xFF2FBF71);
+  static const Color badgeActiveText = Color(0xFF081420);
+  static const Color badgeInactiveBg = Color(0xFF122B42);
+  static const Color badgeInactiveText = Color(0xFFB9C9D8);
 }

@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
+
 import '../constants/app_colors.dart';
 
 /// Sistema de diseño compartido — LOCUSTAF.
@@ -8,10 +10,29 @@ import '../constants/app_colors.dart';
 class AppTheme {
   AppTheme._();
 
+  /// Tipografía corporativa — IBM Plex (Sans para UI, Mono para datos).
+  ///
+  /// Se aplica al `textTheme` del material app; los estilos tipográficos
+  /// específicos ([corpSans]/[corpMono]) se usan en pantallas rediseñadas.
+  static TextStyle sans({TextStyle? base, double? fontSize, FontWeight? fontWeight, Color? color}) =>
+      GoogleFonts.ibmPlexSans(
+        textStyle: (base ?? const TextStyle()).copyWith(
+          fontSize: fontSize,
+          fontWeight: fontWeight,
+          color: color,
+        ),
+      );
+
   // ── ThemeData for MaterialApp ─────────────────────────────────────────────
   static ThemeData get light => ThemeData(
     brightness: Brightness.dark,
     scaffoldBackgroundColor: AppColors.bgDarkTop,
+    textTheme: GoogleFonts.ibmPlexSansTextTheme(
+      ThemeData.dark().textTheme.apply(
+            bodyColor: AppColors.textMuted,
+            displayColor: AppColors.textWhite,
+          ),
+    ),
     colorScheme: const ColorScheme.dark(
       primary: AppColors.gold,
       secondary: AppColors.goldLight,
@@ -22,15 +43,16 @@ class AppTheme {
       onSurface: AppColors.textWhite,
       onError: Colors.white,
     ),
-    appBarTheme: const AppBarTheme(
+    appBarTheme: AppBarTheme(
       backgroundColor: AppColors.sidebar,
       elevation: 0,
-      iconTheme: IconThemeData(color: AppColors.gold),
+      iconTheme: const IconThemeData(color: AppColors.gold),
       titleTextStyle: TextStyle(
         color: AppColors.textWhite,
         fontSize: 18,
         fontWeight: FontWeight.bold,
         letterSpacing: 2,
+        fontFamily: GoogleFonts.ibmPlexSans().fontFamily,
       ),
     ),
     dividerTheme: const DividerThemeData(
@@ -58,10 +80,10 @@ class AppTheme {
       MediaQuery.sizeOf(context).width >= laptop;
 
   // ── Border Radius ────────────────────────────────────────────────────────
-  static const double radiusSm = 8.0;
-  static const double radiusMd = 12.0;
-  static const double radiusLg = 14.0;
-  static const double radiusXl = 24.0;
+  static const double radiusSm = 4.0;
+  static const double radiusMd = 8.0;
+  static const double radiusLg = 10.0;
+  static const double radiusXl = 16.0;
 
   // ── Spacing ──────────────────────────────────────────────────────────────
   static const double spaceXs = 4.0;
@@ -166,7 +188,7 @@ class AppTheme {
   static BoxDecoration cardDecoration({bool isHovered = false}) {
     return BoxDecoration(
       color: AppColors.cardDark.withValues(alpha: 0.9),
-      borderRadius: BorderRadius.circular(radiusXl),
+      borderRadius: BorderRadius.circular(radiusLg),
       border: Border.all(
         color: isHovered
             ? AppColors.gold.withValues(alpha: 0.4)
@@ -175,14 +197,10 @@ class AppTheme {
       ),
       boxShadow: [
         BoxShadow(
-          color: AppColors.gold.withValues(alpha: isHovered ? 0.1 : 0.06),
-          blurRadius: isHovered ? 50 : 40,
-          spreadRadius: isHovered ? 6 : 4,
-        ),
-        BoxShadow(
-          color: Colors.black.withValues(alpha: 0.5),
-          blurRadius: 30,
-          offset: const Offset(0, 20),
+          color: Colors.black.withValues(alpha: isHovered ? 0.35 : 0.25),
+          blurRadius: isHovered ? 24 : 16,
+          spreadRadius: 0,
+          offset: const Offset(0, 8),
         ),
       ],
     );
