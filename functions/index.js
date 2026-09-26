@@ -26,6 +26,8 @@ const {
   DEFAULT_MAX_ATTEMPTS,
   DEFAULT_WINDOW_MILLIS,
 } = require('./rateLimit');
+const { decideFinalizeOrphaned } = require('./orphaned');
+const { decideManualCheckIn } = require('./manualCheckIn');
 
 initializeApp();
 
@@ -337,3 +339,203 @@ exports.checkOutGeo = onCall(
     };
   }
 );
+
+/**
+ * Callable de cierre de jornada huérfana (server-side, sin geocerca).
+ *
+ * Un empleado cierra una asistencia 'active' que superó la hora de fin de
+ * jornada de su lugar de trabajo. Todo se deriva en el servidor:
+ * - checkOutTime = reloj del SERVIDOR (el cliente no aporta tiempo).
+ * - durationMinutes acotada a checkInTime -> (horaFin + tolerancia).
+ * - isOrphaned = true.
+ * - Elimina el lock `_attendance_locks/{uid}` en la misma transacción (Admin
+ *   SDK, sin depender de reglas del cliente).
+ */
+exports.finalizeOrphaned = onCall(
+  {
+    region: 'southamerica-east1',
+  },
+  async (request) => {
+    if (!request.auth) {
+      throw new HttpsError('unauthenticated', 'Debés iniciar sesión para finalizar la jornada.');
+    }
+    const uid = request.auth.uid;
+    const attendanceId = request.data?.attendanceId;
+    if (typeof attendanceId !== 'string' || attendanceId.length === 0) {
+      throw new HttpsError('failed-precondition', 'Falta el identificador de la asistencia.');
+    }
+
+    const userSnap = await _db.doc(`users/${uid}`).get();
+    const user = userSnap.exists ? { ...userSnap.data(), id: uid } : null;
+
+    let workplace = null;
+    const workplaceId = user && user.lugarDeTrabajoId;
+    if (user && workplaceId) {
+      const wpSnap = await _db.doc(`workplaces/${workplaceId}`).get();
+      if (wpSnap.exists) {
+        workplace = { ...wpSnap.data(), id: workplaceId };
+      }
+    }
+
+    const attSnap = await _db.doc(`attendances/${attendanceId}`).get();
+    const attendance = attSnap.exists ? { ...attSnap.data(), id: attendanceId } : null;
+
+    const now = new Date();
+    const decision = decideFinalizeOrphaned({ user, workplace, attendance, now });
+    if (!decision.ok) {
+      throw new HttpsError('failed-precondition', decision.message);
+    }
+
+    const lockRef = _db.doc(`_attendance_locks/${uid}`);
+    try {
+      await _db.runTransaction(async (tx) => {
+        const attRef = _db.doc(`attendances/${attendanceId}`);
+        const inTx = await tx.get(attRef);
+        if (!inTx.exists) {
+          throw new HttpsError('failed-precondition', 'Registro de asistencia no encontrado.');
+        }
+        const inTxData = inTx.data();
+        if (inTxData.userId !== uid) {
+          throw new HttpsError('failed-precondition', 'Este registro no te pertenece.');
+        }
+        if (inTxData.companyId !== (user ? user.companyId || null : null)) {
+          throw new HttpsError('failed-precondition', 'Este registro no te pertenece.');
+        }
+        if (inTxData.status === 'completed') {
+          throw new HttpsError('failed-precondition', 'Esta asistencia ya fue finalizada.');
+        }
+        tx.update(attRef, {
+          checkOutTime: Timestamp.fromDate(now),
+          durationMinutes: decision.durationMinutes,
+          status: 'completed',
+          isOrphaned: true,
+        });
+        tx.delete(lockRef);
+      });
+    } catch (err) {
+      if (err instanceof HttpsError) throw err;
+      console.error('Error al finalizar jornada huérfana:', err);
+      throw new HttpsError('internal', 'Error al finalizar la jornada.');
+    }
+
+    return {
+      attendanceId,
+      checkOutTime: now.toISOString(),
+      durationMinutes: decision.durationMinutes,
+    };
+  }
+);
+
+/**
+ * Callable de check-in manual de un empleado (admin/superadmin, AUI-06).
+ *
+ * Recepción: `{ targetUserId, checkInTime? }`. El workplace del empleado se
+ * resuelve desde su documento (nunca del cliente). date e isLate se derivan
+ * server-side en UTC-3. La asistencia y su lock se crean con Admin SDK en una
+ * transacción (una sola jornada activa por empleado).
+ */
+exports.manualCheckIn = onCall(
+  {
+    region: 'southamerica-east1',
+  },
+  async (request) => {
+    if (!request.auth) {
+      throw new HttpsError('unauthenticated', 'Debés iniciar sesión para registrar asistencia.');
+    }
+    const callerId = request.auth.uid;
+    const targetUserId = request.data?.targetUserId;
+    if (typeof targetUserId !== 'string' || targetUserId.length === 0) {
+      throw new HttpsError('failed-precondition', 'Falta el identificador del empleado.');
+    }
+
+    const callerSnap = await _db.doc(`users/${callerId}`).get();
+    const caller = callerSnap.exists ? { ...callerSnap.data(), id: callerId } : null;
+
+    const targetSnap = await _db.doc(`users/${targetUserId}`).get();
+    const target = targetSnap.exists ? { ...targetSnap.data(), id: targetUserId } : null;
+
+    let workplace = null;
+    const workplaceId = target && target.lugarDeTrabajoId;
+    if (target && workplaceId) {
+      const wpSnap = await _db.doc(`workplaces/${workplaceId}`).get();
+      if (wpSnap.exists) {
+        workplace = { ...wpSnap.data(), id: workplaceId };
+      }
+    }
+
+    const proposedCheckInTime = parseProposedCheckInTime(request.data?.checkInTime);
+    if (request.data?.checkInTime != null && !isValidDate(proposedCheckInTime)) {
+      throw new HttpsError('failed-precondition', 'Hora de ingreso inválida.');
+    }
+
+    const now = new Date();
+    const decision = decideManualCheckIn({ caller, target, workplace, now, proposedCheckInTime });
+    if (!decision.ok) {
+      throw new HttpsError('failed-precondition', decision.message);
+    }
+
+    const lockRef = _db.doc(`_attendance_locks/${targetUserId}`);
+    let attendanceId;
+    try {
+      await _db.runTransaction(async (tx) => {
+        const lockSnap = await tx.get(lockRef);
+        if (lockSnap.exists) {
+          const lock = lockSnap.data();
+          let reclaimable = isStaleLock(lock, now);
+          if (!reclaimable && lock.attendanceId) {
+            const attSnap = await tx.get(_db.doc(`attendances/${lock.attendanceId}`));
+            reclaimable = !attSnap.exists || attSnap.data().status === 'completed';
+          }
+          if (!reclaimable) {
+            throw new HttpsError(
+              'failed-precondition',
+              `Ya tenés una asistencia activa desde las ${lock.checkInTime || 'desconocido'}. Finalizala antes de registrar una nueva.`
+            );
+          }
+        }
+
+        const attRef = _db.collection('attendances').doc();
+        attendanceId = attRef.id;
+        tx.set(attRef, {
+          id: attRef.id,
+          userId: targetUserId,
+          companyId: decision.companyId,
+          workplaceId: decision.workplaceId,
+          date: decision.date,
+          checkInTime: Timestamp.fromDate(decision.checkInTime),
+          status: 'active',
+          isLate: decision.isLate,
+        });
+        tx.set(lockRef, {
+          attendanceId: attRef.id,
+          checkInTime: decision.checkInTime.toISOString(),
+          lockedAt: Timestamp.fromDate(now),
+          status: 'active',
+        });
+      });
+    } catch (err) {
+      if (err instanceof HttpsError) throw err;
+      console.error('Error al registrar ingreso manual:', err);
+      throw new HttpsError('internal', 'Error al registrar la asistencia.');
+    }
+
+    return {
+      attendanceId,
+      checkInTime: decision.checkInTime.toISOString(),
+      date: decision.date,
+      isLate: decision.isLate,
+    };
+  }
+);
+
+/** Convierte el checkInTime propuesto (ISO o epoch millis) a Date. */
+function parseProposedCheckInTime(value) {
+  if (value == null) return null;
+  if (typeof value === 'number') return new Date(value);
+  if (typeof value === 'string') return new Date(value);
+  return null;
+}
+
+function isValidDate(value) {
+  return value instanceof Date && !Number.isNaN(value.getTime());
+}

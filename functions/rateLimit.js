@@ -55,7 +55,7 @@ function decideRateLimitAllow({
     .sort((a, b) => a - b);
 
   const allow = recent.length < maxAttempts;
-  const remaining = Math.max(0, maxAttempts - recent.lengthWikimedia);
+  const remaining = Math.max(0, maxAttempts - recent.length);
 
   let retryAfterMillis = 0;
   if (!allow && recent.length > 0) {

@@ -8,8 +8,9 @@
 //                          maxAttempts = DEFAULT_MAX_ATTEMPTS,
 //                          windowMillis = DEFAULT_WINDOW_MILLIS })
 //       -> { allow, remaining, retryAfterMillis, timestamps }
-//       NOTE: `remaining` is null in this contract (NOT a usable number).
-//       The blocking value is `retryAfterMillis`:
+//       `remaining` es un número usable: = maxAttempts - recientes en ventana
+//         (nunca negativa, 0 cuando la ventana está llena).
+//       El bloqueo se expresa en `retryAfterMillis`:
 //         allow=false  -> retryAfterMillis = oldestRecent + windowMillis - nowMillis
 //         allow=true   -> retryAfterMillis = 0
 //       `timestamps` in result = only recent, not mutated, new array.
@@ -42,6 +43,7 @@ test('A1. primer intento (historial vacio) permitido', () => {
   const r = decideRateLimitAllow(defin);
   assert.equal(r.allow, true);
   assert.equal(r.retryAfterMillis, 0);
+  assert.equal(r.remaining, MAX);
   assert.deepEqual(r.timestamps, []);
 });
 
@@ -49,6 +51,7 @@ test('A2. debajo del limite (2 recientes) permitido', () => {
   const r = decideRateLimitAllow({ timestamps: [1, 2], nowMillis: NOW });
   assert.equal(r.allow, true);
   assert.equal(r.retryAfterMillis, 0);
+  assert.equal(r.remaining, MAX - 2);
 });
 
 test('A3. en el tope (6 recientes) rechazado con retryAfter real', () => {
@@ -59,6 +62,7 @@ test('A3. en el tope (6 recientes) rechazado con retryAfter real', () => {
   assert.equal(r.allow, false);
   assert.equal(r.retryAfterMillis, 1 + WIN - NOW);
   assert.ok(r.retryAfterMillis > 0);
+  assert.equal(r.remaining, 0);
   assert.equal(r.timestamps.length, 6);
 });
 
@@ -89,6 +93,16 @@ test('A6. rechazo no muta historial (la decision es pura)', () => {
   const r = decideRateLimitAllow({ timestamps: ts, nowMillis: NOW });
   assert.equal(r.allow, false);
   assert.deepEqual(ts, input); // el array de entrada NO fue modificado
+});
+
+test('A8. remaining degrada con cada intento y nunca es negativo', () => {
+  assert.equal(decideRateLimitAllow({ timestamps: [], nowMillis: NOW }).remaining, MAX);
+  assert.equal(decideRateLimitAllow({ timestamps: [1], nowMillis: NOW }).remaining, MAX - 1);
+  assert.equal(decideRateLimitAllow({ timestamps: [1, 2, 3], nowMillis: NOW }).remaining, MAX - 3);
+  assert.equal(
+    decideRateLimitAllow({ timestamps: [1, 2, 3, 4, 5, 6, 7, 8], nowMillis: NOW }).remaining,
+    0, // clamp: nunca negativo aunque el historial supere el tope
+  );
 });
 
 test('A7. append devuelve array nuevo, no muta input', () => {
