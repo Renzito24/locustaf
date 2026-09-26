@@ -176,7 +176,7 @@ describe('VUL-3: campos server-only en asistencias', () => {
     );
   });
 
-  it('un empleado SÍ puede finalizar una jornada huérfana marcada como isOrphaned', async () => {
+  it('un empleado YA NO puede finalizar una jornada huérfana directo (cierre vía callable finalizeOrphaned)', async () => {
     await seedUser('emp-1', { rol: 'employee', companyId: 'emp-1', isActive: true, isDeleted: false });
     await seedAttendance('att-1', {
       userId: 'emp-1',
@@ -190,7 +190,7 @@ describe('VUL-3: campos server-only en asistencias', () => {
       status: 'active',
     });
     const ctx = testEnv.authenticatedContext('emp-1');
-    await assertSucceeds(
+    await assertFails(
       ctx.firestore().doc('attendances/att-1').update({
         checkOutTime: new Date('2026-08-26T16:00:00.000Z'),
         status: 'completed',
@@ -511,15 +511,43 @@ describe('VUL-2: locks con ownership', () => {
     await assertFails(ctx.firestore().doc('_attendance_locks/emp-2').get());
   });
 
-  it('un empleado SÍ puede tocar su propio lock', async () => {
+  it('un empleado YA NO puede leer su propio lock (cierre ALTO-2: default deny)', async () => {
     await seedUser('emp-1', { rol: 'employee', companyId: 'emp-1', isActive: true, isDeleted: false });
     await seedLock('emp-1', { attendanceId: 'att-1', status: 'active' });
     const ctx = testEnv.authenticatedContext('emp-1');
-    await assertSucceeds(ctx.firestore().doc('_attendance_locks/emp-1').get());
+    await assertFails(ctx.firestore().doc('_attendance_locks/emp-1').get());
+  });
+
+  it('un empleado YA NO puede crear un lock (cierre ALTO-2: default deny)', async () => {
+    await seedUser('emp-1', { rol: 'employee', companyId: 'emp-1', isActive: true, isDeleted: false });
+    const ctx = testEnv.authenticatedContext('emp-1');
+    await assertFails(
+      ctx.firestore().doc('_attendance_locks/emp-1').set({
+        attendanceId: 'att-1',
+        status: 'active',
+        issuedAt: new Date(),
+      }),
+    );
+  });
+
+  it('un empleado YA NO puede actualizar un lock (cierre ALTO-2: default deny)', async () => {
+    await seedUser('emp-1', { rol: 'employee', companyId: 'emp-1', isActive: true, isDeleted: false });
+    await seedLock('emp-1', { attendanceId: 'att-1', status: 'active' });
+    const ctx = testEnv.authenticatedContext('emp-1');
+    await assertFails(
+      ctx.firestore().doc('_attendance_locks/emp-1').update({ status: 'released' }),
+    );
+  });
+
+  it('un empleado YA NO puede eliminar un lock (cierre ALTO-2: default deny)', async () => {
+    await seedUser('emp-1', { rol: 'employee', companyId: 'emp-1', isActive: true, isDeleted: false });
+    await seedLock('emp-1', { attendanceId: 'att-1', status: 'active' });
+    const ctx = testEnv.authenticatedContext('emp-1');
+    await assertFails(ctx.firestore().doc('_attendance_locks/emp-1').delete());
   });
 });
 
-describe('VUL-3: create de asistencias con tolerancia', () => {
+describe('VUL-3: create de asistencias (solo superadmin, resto server-side)', () => {
   async function seedBase(tol = 60) {
     await seedUser('admin-1', { rol: 'admin', companyId: 'emp-1', isActive: true, isDeleted: false });
     await seedUser('emp-1', { rol: 'employee', companyId: 'emp-1', isActive: true, isDeleted: false });
@@ -543,8 +571,9 @@ describe('VUL-3: create de asistencias con tolerancia', () => {
     });
   }
 
-  // La tolerancia de checkInTime se sigue validando en la vía que permanece
-  // abierta: el alta manual del admin (AUI-06).
+  // La tolerancia de checkInTime ya no se valida en rules: el alta manual del
+  // admin pasó a la callable `manualCheckIn` (server-side). Estos tests
+  // documentan que NINGÚN admin crea asistencias directas.
   function manualSet(docId, extra = {}) {
     return testEnv.authenticatedContext('admin-1').firestore().doc(`attendances/${docId}`).set({
       userId: 'emp-1',
@@ -563,9 +592,9 @@ describe('VUL-3: create de asistencias con tolerancia', () => {
     await assertFails(employeeDirectSet('att-direct'));
   });
 
-  it('un admin SÍ puede hacer un alta manual con checkInTime cerca de request.time', async () => {
+  it('un admin YA NO puede crear la asistencia directo (debe usar la callable manualCheckIn)', async () => {
     await seedBase(60);
-    await assertSucceeds(manualSet('att-ok'));
+    await assertFails(manualSet('att-ok'));
   });
 
   it('un admin NO puede hacer un alta manual con checkInTime muy pasado (fuerza tolerancia)', async () => {
@@ -915,9 +944,33 @@ describe('AUI-02 (Fase 2): el alta directa del empleado queda bloqueada', () => 
     const ctx = testEnv.authenticatedContext('superadmin-1');
     await assertSucceeds(validAttendance(ctx));
   });
+
+  it('un superadmin SÍ puede actualizar una asistencia (cierre de jornada, gestión interna)', async () => {
+    await seedBase();
+    await seedUser('superadmin-1', { rol: 'superadmin', companyId: null, isActive: true, isDeleted: false });
+    await seedAttendance('att-sa-upd', {
+      userId: 'emp-1',
+      companyId: 'emp-1',
+      checkInTime: new Date('2026-09-07T08:00:00.000Z'),
+      date: '2026-09-07',
+      isLate: false,
+      workplaceId: 'wp-1',
+      checkInLatitud: -34.6,
+      checkInLongitud: -58.4,
+      status: 'active',
+    });
+    const ctx = testEnv.authenticatedContext('superadmin-1');
+    await assertSucceeds(
+      ctx.firestore().doc('attendances/att-sa-upd').update({
+        status: 'completed',
+        checkOutTime: new Date('2026-09-07T16:00:00.000Z'),
+        durationMinutes: 480,
+      }),
+    );
+  });
 });
 
-describe('AUI-06: alta manual de asistencia por admin', () => {
+describe('AUI-06: alta manual de asistencia (solo vía callable manualCheckIn)', () => {
   async function seedBase() {
     await seedUser('admin-1', { rol: 'admin', companyId: 'emp-1', isActive: true, isDeleted: false });
     await seedUser('emp-1', { rol: 'employee', companyId: 'emp-1', isActive: true, isDeleted: false });
@@ -938,10 +991,10 @@ describe('AUI-06: alta manual de asistencia por admin', () => {
     });
   }
 
-  it('un admin SÍ puede registrar un ingreso manual de un empleado', async () => {
+  it('un admin YA NO puede registrar un ingreso manual directo (debe usar la callable manualCheckIn)', async () => {
     await seedBase();
     const ctx = testEnv.authenticatedContext('admin-1');
-    await assertSucceeds(manualAttendance(ctx));
+    await assertFails(manualAttendance(ctx));
   });
 
   it('un admin NO puede registrarse un ingreso manual a sí mismo', async () => {

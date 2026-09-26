@@ -63,41 +63,13 @@ service cloud.firestore {
       return isAuthenticated() && getCompanyId() == null;
     }
 
-    // Tolerancia (en milisegundos) que permite el check-in respecto del tiempo
-    // del servidor. Se lee de la configuración de la empresa (campo
-    // `toleranciaCheckIn` en minutos, editable por el admin). Default 15 min.
-    function getCompanyToleranceMinutes(companyId) {
-      return get(/databases/$(database)/documents/companies/$(companyId)).data.toleranciaCheckIn;
-    }
-
-    function getCheckInToleranceMillis(companyId) {
-      return (companyId != null
-          && exists(/databases/$(database)/documents/companies/$(companyId))
-          && getCompanyToleranceMinutes(companyId) != null
-              ? getCompanyToleranceMinutes(companyId)
-              : 15) * 60000;
-    }
-
-    // VUL-3: en el alta de una asistencia directa escrita en Firestore, el
-    // cliente no puede fijar una hora de entrada arbitraria. checkInTime debe
-    // ser un timestamp dentro de la tolerancia configurada vs el tiempo del
-    // servidor, y la asistencia debe crearse siempre como 'active' sin campos
-    // de cierre.
-    // AUI-02 (Fase 2): la geocerca YA NO se valida en rules (Firestore Rules
-    // no soporta trigonometría). El self check-in pasa obligatoriamente por la
-    // callable `checkInGeo` (Cloud Function) que calcula la distancia Haversine
-    // en el servidor. Por eso el alta directa del empleado quedó bloqueada:
-    // solo se permiten aquí el alta del superadmin y la manual del admin
-    // (AUI-06, que no exige ubicación).
-    function validAttendanceConstraints(companyId, checkInTime) {
-      let diff = checkInTime.toMillis() - request.time.toMillis();
-      let toleranceMillis = getCheckInToleranceMillis(companyId);
-      return request.resource.data.status == 'active'
-        && !('checkOutTime' in request.resource.data)
-        && !('durationMinutes' in request.resource.data)
-        && diff >= -toleranceMillis
-        && diff <= toleranceMillis;
-    }
+    // AUI-02 (Fase 2): el check-in pasa por la callable `checkInGeo` (Cloud
+    // Function) que valida geocerca (Haversine) y tolerancia de checkInTime en
+    // el servidor; el ingreso manual del admin pasa por `manualCheckIn`. Las
+    // reglas ya no aceptan altas de asistencias desde el cliente (ni empleado
+    // ni admin): el alta queda solo para superadmin. La validación de
+    // tolerancia que vivía en rules (VUL-3) se eliminó por completo y ahora es
+    // responsabilidad exclusiva del servidor.
 
     function validWorkplace(companyId, workplaceId) {
       return exists(/databases/$(database)/documents/workplaces/$(workplaceId))
@@ -105,15 +77,9 @@ service cloud.firestore {
         && get(/databases/$(database)/documents/workplaces/$(workplaceId)).data.isActive == true;
     }
 
-    // Alta manual (admin en nombre de un empleado, AUI-06): control de lugar de
-    // trabajo y tolerancia, sin exigir ubicación ni geocerca (el empleado puede
-    // no estar presente físicamente).
-    function validManualAttendanceCreate() {
-      return validAttendanceConstraints(
-          request.resource.data.companyId, request.resource.data.checkInTime)
-        && validWorkplace(
-          request.resource.data.companyId, request.resource.data.workplaceId);
-    }
+    // AUI-06: el alta manual del admin pasó a la callable `manualCheckIn`
+    // (server-side). Ya no queda ninguna vía de create de asistencias desde el
+    // cliente.
 
     // En updates, los campos sensibles no pueden cambiar. Compara la identidad
     // del documento según la colección ([identityField]): 'id' para
@@ -134,15 +100,10 @@ service cloud.firestore {
 
     // AUI-02 (Fase 3): el check-out del empleado pasa por la callable
     // `checkOutGeo` (geocerca server-side). Por eso el self check-out directo
-    // quedó bloqueado en Firestore. Única excepción: la finalización de una
-    // jornada huérfana (isOrphaned = true), caso documentado donde el empleado
-    // no está en el lugar de trabajo porque la jornada ya superó su fin.
-    function isEmployeeCompletionAllowed() {
-      return resource.data.status == 'active'
-        && request.resource.data.status == 'completed'
-        && 'checkOutTime' in request.resource.data
-        && request.resource.data.isOrphaned == true;
-    }
+    // quedó bloqueado en Firestore. La finalización de una jornada huérfana
+    // (isOrphaned = true) también es server-side: pasa por la callable
+    // `finalizeOrphaned`. El update de asistencias queda exclusivamente para el
+    // superadmin (Admin SDK); ningún cliente escribe cierres directos.
 
     // En updates de asistencias, los campos fijados en el check-in y la identidad
     // no pueden cambiar (evita falsificar hora de entrada, fecha, lugar o
@@ -152,8 +113,8 @@ service cloud.firestore {
     //  - Un checkOutTime existente no puede modificarse ni eliminarse.
     //  - durationMinutes se deriva del servidor (checkOutTime - checkInTime);
     //    el cliente no puede fijar una duración arbitraria.
-    //  - isOrphaned solo puede marcarse como true (jornada huérfana), nunca
-    //    borrarse ni pasarse a false desde el cliente.
+    //  - isOrphaned es server-only (callable finalizeOrphaned); en updates solo
+    //    puede marcarse como true o dejar su valor existente.
     function noAttendanceServerFieldChanges() {
       let identityOk = request.resource.data.userId == resource.data.userId
         && request.resource.data.companyId == resource.data.companyId;
@@ -226,7 +187,7 @@ service cloud.firestore {
     }
     // R-CR-7 (Vector A): el lugarDeTrabajoId de un usuario solo puede cambiar
     // hacia un workplace de SU propia empresa (existe, companyId coincide y
-    // activo, reutiliza validWorkplace del alta manual AUI-06). Si el campo no
+    // activo, reutiliza validWorkplace). Si el campo no
     // cambia o se desasigna a null, no se exige nada: los admins siguen
     // pudiendo editar empleados con workplaces legacy inactivos.
     function userWorkplaceId(data) {
@@ -245,7 +206,7 @@ service cloud.firestore {
 
     // R-CR-8 (Vector A en el alta): al crear un usuario, el lugarDeTrabajoId
     // inicial (si viene) debe apuntar a un workplace de la misma empresa del
-    // alta: existe, companyId coincide y activo (validWorkplace de AUI-06).
+    // alta: existe, companyId coincide y activo (validWorkplace).
     // Un alta sin sede sigue siendo válida: asignarla después es un update.
     function validWorkplaceForCreate() {
       let next = userWorkplaceId(request.resource.data);
@@ -347,7 +308,7 @@ service cloud.firestore {
     // ATTENDANCES
     // Superadmin : full access
     // Admin/Superv: read de su empresa
-    // Empl       : read own, manage own check-in/out
+    // Empl       : read own (check-in/out vía callables checkInGeo/checkOutGeo)
     // ====================================================================
     match /attendances/{docId} {
       allow read: if isAuthenticated()
@@ -360,22 +321,16 @@ service cloud.firestore {
             // admin/supervisor NO cambia. El bloque gemelo de medical_documents
             // SÍ conserva inCompany: sus queries de app filtran companyId.
             || (isEmployee() && isOwner(resource.data.userId)));
+      // El alta queda exclusivamente server-side (superadmin + Admin SDK).
+      // AUI-02 (Fase 2): el self check-in pasa por la callable `checkInGeo`
+      // (geocerca Haversine); el ingreso manual del admin por la callable
+      // `manualCheckIn`. Ni el empleado ni el admin crean asistencias directas
+      // en Firestore.
       allow create: if isAuthenticated()
-        && (isSuperadmin()
-            // AUI-06: alta manual de un ingreso (admin en nombre de un
-            // empleado), sin exigir ubicación.
-            // AUI-02 (Fase 2): el self check-in ya NO se puede crear directo
-            // desde el cliente; pasa por la callable `checkInGeo` que valida
-            // la geocerca (Haversine) en el servidor.
-            || (isAdmin() && inCompany(request.resource.data.companyId)
-                && request.resource.data.userId != request.auth.uid
-                && validManualAttendanceCreate()));
+        && isSuperadmin();
       allow update: if isAuthenticated()
-        && (isSuperadmin()
-            || (isEmployee() && resource.data.userId == request.auth.uid
-                && inCompany(resource.data.companyId)
-                && isEmployeeCompletionAllowed()))
-        && (isSuperadmin() || noAttendanceServerFieldChanges());
+        && isSuperadmin()
+        && noAttendanceServerFieldChanges();
       allow delete: if isSuperadmin();
     }
 
@@ -457,12 +412,10 @@ service cloud.firestore {
 
     // ====================================================================
     // ATTENDANCE LOCKS (internal concurrency control)
+    // Los locks se gestionan exclusivamente desde el servidor (callables
+    // checkInGeo/checkOutGeo + Admin SDK), que no pasan por estas reglas. Sin
+    // match declarado, el acceso de cualquier cliente queda cubierto por el
+    // default deny de Firestore.
     // ====================================================================
-    match /_attendance_locks/{lockId} {
-      allow read: if isAuthenticated()
-        && (isSuperadmin() || lockId == request.auth.uid);
-      allow write: if isAuthenticated()
-        && (isSuperadmin() || lockId == request.auth.uid);
-    }
   }
 }
