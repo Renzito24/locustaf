@@ -6,6 +6,7 @@ import '../../../../core/constants/app_colors.dart';
 import '../../../../core/providers/async_action_state.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/models/user_model.dart';
+import '../../../../core/widgets/widgets.dart';
 import '../../../authentication/presentation/providers/auth_provider.dart';
 import '../../data/models/workplace_model.dart';
 import '../providers/workplace_notifier.dart';
@@ -231,12 +232,10 @@ class _WorkplaceCardState extends ConsumerState<_WorkplaceCard> {
     return MouseRegion(
       onEnter: (_) => setState(() => _isHovered = true),
       onExit: (_) => setState(() => _isHovered = false),
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
-        decoration: AppTheme.cardDecoration(isHovered: _isHovered),
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Row(
+      child: AppCard(
+        isHovered: _isHovered,
+        padding: const EdgeInsets.all(16),
+        child: Row(
             children: [
               Container(
                 width: 48,
@@ -376,7 +375,6 @@ class _WorkplaceCardState extends ConsumerState<_WorkplaceCard> {
             ],
           ),
         ),
-      ),
     );
   }
 

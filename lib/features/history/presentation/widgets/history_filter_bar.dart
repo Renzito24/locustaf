@@ -5,6 +5,7 @@ import '../../../../core/constants/app_colors.dart';
 import '../../../../core/providers/data_providers.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/models/user_model.dart';
+import '../../../../core/widgets/widgets.dart';
 import '../../../workplaces/data/models/workplace_model.dart';
 import '../providers/history_provider.dart';
 
@@ -17,8 +18,7 @@ class HistoryFilterBar extends ConsumerWidget {
     final usersAsync = ref.watch(allUsersStreamProvider);
     final workplacesAsync = ref.watch(allWorkplacesStreamProvider);
 
-    return Container(
-      decoration: AppTheme.cardDecoration(),
+    return AppCard(
       padding: const EdgeInsets.all(16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,

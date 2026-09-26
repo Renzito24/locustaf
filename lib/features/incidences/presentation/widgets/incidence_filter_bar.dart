@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/models/user_model.dart';
+import '../../../../core/widgets/widgets.dart';
 import '../../../employees/presentation/providers/users_provider.dart';
 import '../../data/models/incidence_model.dart';
 import '../providers/incidences_provider.dart';
@@ -16,8 +17,7 @@ class IncidenceFilterBar extends ConsumerWidget {
     final filter = ref.watch(incidencesFilterProvider);
     final usersAsync = ref.watch(usersStreamProvider);
 
-    return Container(
-      decoration: AppTheme.cardDecoration(),
+    return AppCard(
       padding: const EdgeInsets.all(16),
       child: LayoutBuilder(
         builder: (context, constraints) {

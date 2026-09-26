@@ -7,6 +7,7 @@ import '../../../../core/providers/async_action_state.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/router/app_routes.dart';
 import '../../../../core/models/user_model.dart';
+import '../../../../core/widgets/widgets.dart';
 import '../providers/delete_employee_notifier.dart';
 import '../providers/reset_password_notifier.dart';
 import '../providers/update_employee_notifier.dart';
@@ -103,9 +104,8 @@ class EmployeesScreen extends ConsumerWidget {
             ),
             const SizedBox(height: 24),
 
-            Container(
+            AppCard(
               padding: const EdgeInsets.all(16),
-              decoration: AppTheme.cardDecoration(),
               child: LayoutBuilder(
                 builder: (context, constraints) {
                   if (constraints.maxWidth > 700) {

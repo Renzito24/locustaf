@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/theme/app_theme.dart';
+import '../../../../core/widgets/widgets.dart';
 import '../../data/models/medical_document_model.dart';
 
 class MedicalDocumentCard extends StatelessWidget {
@@ -20,114 +21,108 @@ class MedicalDocumentCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      decoration: AppTheme.cardDecoration(),
-      child: InkWell(
-        borderRadius: BorderRadius.circular(AppTheme.radiusXl),
-        onTap: onTap,
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+    return AppCard(
+      padding: const EdgeInsets.all(16),
+      onTap: onTap,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
             children: [
-              Row(
-                children: [
-                  Expanded(
-                    child: Text(
-                      employeeName,
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                        fontWeight: FontWeight.w600,
-                        fontSize: 15,
-                        color: AppColors.textWhite,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  Flexible(
-                    child: Wrap(
-                      spacing: 8,
-                      runSpacing: 4,
-                      alignment: WrapAlignment.end,
-                      crossAxisAlignment: WrapCrossAlignment.center,
-                      children: [
-                        _EstadoAprobacionBadge(estado: document.estado),
-                        _VigenciaBadge(vigencia: document.vigencia),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 8),
-              Wrap(
-                spacing: 12,
-                runSpacing: 6,
-                crossAxisAlignment: WrapCrossAlignment.center,
-                children: [
-                  _InfoChip(icon: Icons.description, text: document.tipo.label),
-                  _InfoChip(
-                    icon: Icons.event,
-                    text: _formatDate(document.fechaInicio),
-                  ),
-                  _InfoChip(
-                    icon: Icons.event_busy,
-                    text: _formatDate(document.fechaFin),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 6),
-              if (document.archivoUrl != null)
-                Padding(
-                  padding: const EdgeInsets.only(top: 6),
-                  child: Row(
-                    children: [
-                      const Icon(
-                        Icons.attach_file,
-                        size: 14,
-                        color: AppColors.gold,
-                      ),
-                      const SizedBox(width: 4),
-                      Expanded(
-                        child: Text(
-                          document.archivoNombre ?? 'Archivo adjunto',
-                          style: const TextStyle(
-                            fontSize: 12,
-                            color: AppColors.gold,
-                          ),
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              if (document.motivo.isNotEmpty)
-                Text(
-                  document.motivo,
-                  style: const TextStyle(
-                    fontSize: 13,
-                    color: AppColors.textMuted,
-                  ),
+              Expanded(
+                child: Text(
+                  employeeName,
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
-                ),
-              if (onDelete != null)
-                Align(
-                  alignment: Alignment.centerRight,
-                  child: IconButton(
-                    icon: const Icon(
-                      Icons.delete_outline,
-                      size: 18,
-                      color: AppColors.error,
-                    ),
-                    onPressed: onDelete,
-                    tooltip: 'Eliminar',
-                    visualDensity: VisualDensity.compact,
+                  style: const TextStyle(
+                    fontWeight: FontWeight.w600,
+                    fontSize: 15,
+                    color: AppColors.textWhite,
                   ),
                 ),
+              ),
+              const SizedBox(width: 8),
+              Flexible(
+                child: Wrap(
+                  spacing: 8,
+                  runSpacing: 4,
+                  alignment: WrapAlignment.end,
+                  crossAxisAlignment: WrapCrossAlignment.center,
+                  children: [
+                    _EstadoAprobacionBadge(estado: document.estado),
+                    _VigenciaBadge(vigencia: document.vigencia),
+                  ],
+                ),
+              ),
             ],
           ),
-        ),
+          const SizedBox(height: 8),
+          Wrap(
+            spacing: 12,
+            runSpacing: 6,
+            crossAxisAlignment: WrapCrossAlignment.center,
+            children: [
+              _InfoChip(icon: Icons.description, text: document.tipo.label),
+              _InfoChip(
+                icon: Icons.event,
+                text: _formatDate(document.fechaInicio),
+              ),
+              _InfoChip(
+                icon: Icons.event_busy,
+                text: _formatDate(document.fechaFin),
+              ),
+            ],
+          ),
+          const SizedBox(height: 6),
+          if (document.archivoUrl != null)
+            Padding(
+              padding: const EdgeInsets.only(top: 6),
+              child: Row(
+                children: [
+                  const Icon(
+                    Icons.attach_file,
+                    size: 14,
+                    color: AppColors.gold,
+                  ),
+                  const SizedBox(width: 4),
+                  Expanded(
+                    child: Text(
+                      document.archivoNombre ?? 'Archivo adjunto',
+                      style: const TextStyle(
+                        fontSize: 12,
+                        color: AppColors.gold,
+                      ),
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          if (document.motivo.isNotEmpty)
+            Text(
+              document.motivo,
+              style: const TextStyle(
+                fontSize: 13,
+                color: AppColors.textMuted,
+              ),
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+            ),
+          if (onDelete != null)
+            Align(
+              alignment: Alignment.centerRight,
+              child: IconButton(
+                icon: const Icon(
+                  Icons.delete_outline,
+                  size: 18,
+                  color: AppColors.error,
+                ),
+                onPressed: onDelete,
+                tooltip: 'Eliminar',
+                visualDensity: VisualDensity.compact,
+              ),
+            ),
+        ],
       ),
     );
   }

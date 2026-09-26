@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/models/user_model.dart';
+import '../../../../core/widgets/widgets.dart';
 import '../../../employees/presentation/providers/users_provider.dart';
 import '../../../medical_documents/data/models/medical_document_model.dart';
 import '../providers/medical_documents_provider.dart';
@@ -16,8 +17,7 @@ class MedicalDocumentFilterBar extends ConsumerWidget {
     final filter = ref.watch(medicalDocumentsFilterProvider);
     final usersAsync = ref.watch(usersStreamProvider);
 
-    return Container(
-      decoration: AppTheme.cardDecoration(),
+    return AppCard(
       padding: const EdgeInsets.all(16),
       child: LayoutBuilder(
         builder: (context, constraints) {

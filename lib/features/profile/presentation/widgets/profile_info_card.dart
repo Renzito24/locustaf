@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../../core/constants/app_colors.dart';
-import '../../../../core/theme/app_theme.dart';
+import '../../../../core/widgets/widgets.dart';
 
 class ProfileInfoCard extends StatelessWidget {
   final String title;
@@ -17,26 +17,11 @@ class ProfileInfoCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      decoration: AppTheme.cardDecoration(),
-      padding: const EdgeInsets.all(20),
+    return AppCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            children: [
-              Icon(titleIcon, size: 18, color: AppColors.gold),
-              const SizedBox(width: 8),
-              Text(
-                title,
-                style: const TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w600,
-                  color: AppColors.textWhite,
-                ),
-              ),
-            ],
-          ),
+          AppCardHeader(icon: titleIcon, title: title),
           const SizedBox(height: 16),
           ...rows.fold<List<Widget>>([], (list, row) {
             if (list.isNotEmpty) {

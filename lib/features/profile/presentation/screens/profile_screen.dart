@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/config/app_version.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/theme/app_theme.dart';
+import '../../../../core/widgets/widgets.dart';
 import '../../../authentication/presentation/providers/auth_provider.dart';
 import '../../../../core/models/user_model.dart';
 import '../../../workplaces/presentation/providers/workplace_notifier.dart';
@@ -221,23 +222,15 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
   }
 
   Widget _buildEditForm(UserModel user, ProfileUpdateState updateState) {
-    return Container(
-      decoration: AppTheme.cardDecoration(),
-      padding: const EdgeInsets.all(20),
+    return AppCard(
       child: Form(
         key: _formKey,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Row(
-              children: [
-                Icon(Icons.edit_outlined, size: 18, color: AppColors.gold),
-                const SizedBox(width: 8),
-                const Text(
-                  'Editar información',
-                  style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: AppColors.textWhite),
-                ),
-              ],
+            const AppCardHeader(
+              icon: Icons.edit_outlined,
+              title: 'Editar información',
             ),
             const SizedBox(height: 20),
             TextFormField(
@@ -342,9 +335,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
   }
 
   Widget _buildSecuritySection(UserModel user) {
-    return Container(
-      decoration: AppTheme.cardDecoration(),
-      padding: const EdgeInsets.all(20),
+    return AppCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -352,7 +343,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
             onTap: () => setState(() => _showPasswordSection = !_showPasswordSection),
             child: Row(
               children: [
-                Icon(Icons.lock_outline, size: 18, color: AppColors.gold),
+                const Icon(Icons.lock_outline, size: 18, color: AppColors.gold),
                 const SizedBox(width: 8),
                 const Expanded(
                   child: Text(

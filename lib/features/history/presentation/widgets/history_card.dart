@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/theme/app_theme.dart';
+import '../../../../core/widgets/widgets.dart';
 import '../../../attendance/data/models/attendance_model.dart';
 import '../../data/models/history_record_model.dart';
 
@@ -13,56 +14,46 @@ class HistoryCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      decoration: AppTheme.cardDecoration(),
-      child: Material(
-        color: Colors.transparent,
-        borderRadius: BorderRadius.circular(AppTheme.radiusXl),
-        child: InkWell(
-          borderRadius: BorderRadius.circular(AppTheme.radiusXl),
-          onTap: onTap,
-          child: Padding(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    Expanded(
-                      child: Text(
-                        record.employeeName,
-                        style: const TextStyle(
-                          fontWeight: FontWeight.w600,
-                          fontSize: 15,
-                          color: AppColors.textWhite,
-                        ),
-                      ),
-                    ),
-                    _StatusBadge(status: record.status),
-                  ],
+    return AppCard(
+      padding: const EdgeInsets.all(16),
+      onTap: onTap,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  record.employeeName,
+                  style: const TextStyle(
+                    fontWeight: FontWeight.w600,
+                    fontSize: 15,
+                    color: AppColors.textWhite,
+                  ),
                 ),
-                const SizedBox(height: 8),
-                Row(
-                  children: [
-                    _InfoChip(icon: Icons.work, text: record.workplaceName ?? '-'),
-                    const SizedBox(width: 12),
-                    _InfoChip(icon: Icons.calendar_today, text: record.date),
-                  ],
-                ),
-                const SizedBox(height: 6),
-                Row(
-                  children: [
-                    _InfoChip(icon: Icons.login, text: record.checkInFormatted),
-                    const SizedBox(width: 12),
-                    _InfoChip(icon: Icons.logout, text: record.checkOutFormatted),
-                    const SizedBox(width: 12),
-                    _InfoChip(icon: Icons.timer, text: record.durationFormatted),
-                  ],
-                ),
-              ],
-            ),
+              ),
+              _StatusBadge(status: record.status),
+            ],
           ),
-        ),
+          const SizedBox(height: 8),
+          Row(
+            children: [
+              _InfoChip(icon: Icons.work, text: record.workplaceName ?? '-'),
+              const SizedBox(width: 12),
+              _InfoChip(icon: Icons.calendar_today, text: record.date),
+            ],
+          ),
+          const SizedBox(height: 6),
+          Row(
+            children: [
+              _InfoChip(icon: Icons.login, text: record.checkInFormatted),
+              const SizedBox(width: 12),
+              _InfoChip(icon: Icons.logout, text: record.checkOutFormatted),
+              const SizedBox(width: 12),
+              _InfoChip(icon: Icons.timer, text: record.durationFormatted),
+            ],
+          ),
+        ],
       ),
     );
   }
