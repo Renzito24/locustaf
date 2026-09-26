@@ -21,6 +21,12 @@ class Sidebar extends ConsumerWidget {
       visibleFor: {UserRole.admin, UserRole.supervisor, UserRole.superadmin},
     ),
     _MenuItem(
+      icon: Icons.space_dashboard_outlined,
+      label: 'Principal',
+      route: RoutePaths.employeePrincipal,
+      visibleFor: {UserRole.employee},
+    ),
+    _MenuItem(
       icon: Icons.business_outlined,
       label: 'Empresas',
       route: RoutePaths.companies,
@@ -54,7 +60,7 @@ class Sidebar extends ConsumerWidget {
       icon: Icons.history_outlined,
       label: 'Historial',
       route: RoutePaths.history,
-      visibleFor: {UserRole.admin, UserRole.supervisor},
+      visibleFor: {UserRole.admin, UserRole.supervisor, UserRole.employee},
     ),
     _MenuItem(
       icon: Icons.medical_services_outlined,
@@ -195,13 +201,14 @@ class Sidebar extends ConsumerWidget {
           ),
           const SizedBox(height: 8),
           // Pie con la versión instalada: permite confirmar en el dispositivo
-          // físico qué build del APK está corriendo (Fase B — Corrección).
+          // físico qué build del APK está corriendo. (Ronda 3A — B8: la
+          // constante ya incluye la "v": 'v2.1'.)
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 20),
             child: Align(
               alignment: Alignment.centerLeft,
               child: Text(
-                'v$appVersion · $appBuildLabel',
+                '$appVersion · $appBuildLabel',
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
                 style: TextStyle(

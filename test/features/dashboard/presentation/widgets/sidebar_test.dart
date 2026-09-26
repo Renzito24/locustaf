@@ -13,6 +13,7 @@ import 'package:go_router/go_router.dart';
 void main() {
   const allLabels = [
     'Inicio',
+    'Principal',
     'Empresas',
     'Configuración',
     'Empleados',
@@ -41,6 +42,7 @@ void main() {
       routes: [
         for (final r in [
           RoutePaths.dashboard,
+          RoutePaths.employeePrincipal,
           RoutePaths.companies,
           RoutePaths.companySettings,
           RoutePaths.employees,
@@ -121,7 +123,14 @@ void main() {
 
     testWidgets('employee: solo sus rutas', (tester) async {
       await pumpSidebar(tester, UserRole.employee);
-      expectOnly(tester, {'Asistencia', 'Reportes', 'Justificativos', 'Perfil'});
+      expectOnly(tester, {
+        'Principal',
+        'Asistencia',
+        'Historial',
+        'Reportes',
+        'Justificativos',
+        'Perfil',
+      });
     });
 
     testWidgets('sin rol (no autenticado dentro de la app): menú vacío', (tester) async {

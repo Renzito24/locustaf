@@ -1,374 +1,336 @@
-import 'package:app_locustaf/core/models/company_model.dart';
 import 'package:app_locustaf/core/models/user_model.dart';
-import 'package:app_locustaf/core/router/app_routes.dart';
+import 'package:app_locustaf/core/services/report_exporter.dart';
 import 'package:app_locustaf/features/attendance/data/models/attendance_model.dart';
 import 'package:app_locustaf/features/attendance/presentation/providers/attendance_notifier.dart';
 import 'package:app_locustaf/features/authentication/presentation/providers/auth_provider.dart';
-import 'package:app_locustaf/features/companies/presentation/providers/company_providers.dart';
-import 'package:app_locustaf/features/dashboard/presentation/widgets/dashboard_layout.dart';
-import 'package:app_locustaf/features/incidences/data/models/incidence_model.dart';
-import 'package:app_locustaf/features/incidences/presentation/providers/incidences_provider.dart';
+import 'package:app_locustaf/features/reports/presentation/providers/reports_provider.dart';
 import 'package:app_locustaf/features/reports/presentation/screens/employee_reports_screen.dart';
+import 'package:app_locustaf/features/workplaces/data/models/workplace_model.dart';
+import 'package:app_locustaf/features/workplaces/presentation/providers/workplace_notifier.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:go_router/go_router.dart';
 
-/// Regresión del flujo real del usuario común (Fase B — 3ª corrección).
+/// Regresión de la empresa de Reportes del empleado (Ronda 3A — B5).
 ///
-/// El usuario reportó `BOTTOM OVERFLOWED` en Reportes entrando con rol
-/// empleado. A diferencia de Incidencias/Documentación, la causa está en la
-/// grilla de métricas personales de [EmployeeReportsScreen], que usa 2
-/// columnas fijas con `childAspectRatio` en pantallas angostas. Este test
-/// monta la composición real (GoRouter → ShellRoute → DashboardLayout →
-/// [EmployeeReportsScreen]) con teléfono chico y textScale 1.3, y el rol del
-/// usuario común.
-void main() {
-  final now = DateTime.now();
-  final todayIso = '${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}';
-  final monthStart = DateTime(now.year, now.month, 1);
-  final today = DateTime(now.year, now.month, now.day);
+/// La pantalla ya no muestra métricas personales ni historial: solo filtro por
+/// mes/año y exportación a PDF/Excel de las jornadas completadas del período.
+/// Se prueba el estado vacío, el conteo del período, la interacción con el
+/// dropdown de mes y las tres ramas de la exportación (éxito/cancelación/error)
+/// con un exportador falso, además de la regresión de overflow en pantallas
+/// chicas que antes reportó el usuario.
+class _FakeReportExporter extends ReportExporter {
+  _FakeReportExporter({
+    required this.excelOutcome,
+    required this.pdfOutcome,
+    this.excelError = false,
+    this.pdfError = false,
+  });
 
-  final attendance = AttendanceModel(
-    id: 'a1',
-    userId: 'u1',
-    checkInTime: now,
-    checkOutTime: now.add(const Duration(hours: 8)),
-    durationMinutes: 480,
-    date: todayIso,
-    status: AttendanceStatus.completed,
+  final bool excelOutcome;
+  final bool pdfOutcome;
+  final bool excelError;
+  final bool pdfError;
+
+  @override
+  Future<bool> exportExcel(
+    List<AttendanceReportRow> rows, {
+    required String fileName,
+  }) async {
+    if (excelError) throw StateError('falla xlsx');
+    return excelOutcome;
+  }
+
+  @override
+  Future<bool> exportPdf(
+    List<AttendanceReportRow> rows, {
+    required String fileName,
+  }) async {
+    if (pdfError) throw StateError('falla pdf');
+    return pdfOutcome;
+  }
+}
+
+void main() {
+  const months = [
+    'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
+    'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre',
+  ];
+  const monthsLower = [
+    'enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio',
+    'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre',
+  ];
+
+  final now = DateTime.now();
+  final todayIso =
+      '${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}';
+
+  final user = UserModel(
+    id: 'u1',
+    nombre: 'Juan',
+    apellido: 'Pérez',
+    email: 'juan@test.com',
+    dni: '33445566',
+    rol: UserRole.employee,
     companyId: 'c1',
+    createdAt: DateTime(now.year, 1, 1),
   );
 
-  String iso(DateTime d) =>
-      '${d.year}-${d.month.toString().padLeft(2, '0')}-${d.day.toString().padLeft(2, '0')}';
+  final workplace = WorkplaceModel(
+    id: 'w1',
+    nombre: 'Sucursal Central',
+    direccion: 'Av. Siempre Viva 123',
+    latitud: -34.5,
+    longitud: -58.6,
+    radio: 200,
+    isActive: true,
+    createdAt: DateTime(now.year, 1, 1),
+  );
 
-  UserModel buildEmployeeUser({required DateTime createdAt}) => UserModel(
-        id: 'u1',
-        nombre: 'Juan',
-        apellido: 'Pérez',
-        email: 'juan@test.com',
-        dni: '12345678',
-        rol: UserRole.employee,
-        companyId: 'c1',
-        createdAt: createdAt,
-      );
-
-  CompanyModel buildCompany({List<int> days = const [1, 2, 3, 4, 5]}) => CompanyModel(
-        id: 'c1',
-        nombreComercial: 'ACME',
-        razonSocial: 'ACME SA',
-        cuit: '30-12345678-9',
-        createdAt: monthStart,
-        diasLaborables: days,
-      );
-
-  AttendanceModel attendanceOn(
-    DateTime day, {
-    AttendanceStatus status = AttendanceStatus.completed,
-  }) {
+  AttendanceModel attendanceIn({required DateTime time}) {
     return AttendanceModel(
-      id: 'att-${iso(day)}',
+      id: 'a-${time.month}-${time.day}',
       userId: 'u1',
-      checkInTime: DateTime(day.year, day.month, day.day, 9),
-      checkOutTime: DateTime(day.year, day.month, day.day, 18),
+      checkInTime: time,
+      checkOutTime: time.add(const Duration(hours: 8)),
       durationMinutes: 480,
-      date: iso(day),
-      status: status,
+      date: todayIso,
+      status: AttendanceStatus.completed,
+      workplaceId: 'w1',
       companyId: 'c1',
     );
   }
 
-  AttendanceModel activeAttendanceOn(DateTime day) {
-    return AttendanceModel(
-      id: 'att-active-${iso(day)}',
-      userId: 'u1',
-      checkInTime: DateTime(day.year, day.month, day.day, 9),
-      date: iso(day),
-      status: AttendanceStatus.active,
-      companyId: 'c1',
-    );
-  }
-
-  IncidenceModel justifiedOn(DateTime day, {IncidenceEstado estado = IncidenceEstado.aprobado}) {
-    return IncidenceModel(
-      id: 'inc-${iso(day)}',
-      userId: 'u1',
-      type: IncidenceType.enfermedad,
-      fechaInicio: DateTime(day.year, day.month, day.day, 8),
-      fechaFin: DateTime(day.year, day.month, day.day, 18),
-      estado: estado,
-      companyId: 'c1',
-      createdAt: DateTime.now(),
-    );
-  }
-
-  bool isLaborable(DateTime d, List<int> days) => days.contains(d.weekday);
-
-  int countLaborableDays(DateTime from, DateTime to, List<int> days) {
-    if (from.isAfter(to)) return 0;
-    var count = 0;
-    var d = from;
-    while (!d.isAfter(to)) {
-      if (isLaborable(d, days)) count++;
-      d = DateTime(d.year, d.month, d.day + 1);
-    }
-    return count;
-  }
-
-  List<DateTime> laborableDatesInRange(DateTime from, DateTime to, List<int> days) {
-    final result = <DateTime>[];
-    var d = from;
-    while (!d.isAfter(to)) {
-      if (isLaborable(d, days)) result.add(d);
-      d = DateTime(d.year, d.month, d.day + 1);
-    }
-    return result;
-  }
-
-  // Valida el valor de una tarjeta de métricas buscando la etiqueta y
-  // verificando que el valor esté dentro de la misma columna de la tarjeta.
-  void expectCardValue(WidgetTester tester, String label, String value) {
-    final card =
-        find.ancestor(of: find.text(label), matching: find.byType(Column)).first;
-    expect(
-      find.descendant(of: card, matching: find.text(value)),
-      findsOneWidget,
-    );
-  }
-
-  Future<void> pumpEmployeeReportsInShell(
+  Future<void> pumpScreen(
     WidgetTester tester, {
-    required Size size,
+    Size size = const Size(800, 1200),
     List<AttendanceModel>? attendances,
-    List<IncidenceModel> incidences = const [],
-    CompanyModel? company,
-    UserModel? currentUser,
+    ReportExporter? exporter,
   }) async {
     tester.view.physicalSize = size;
     tester.view.devicePixelRatio = 1.0;
     addTearDown(tester.view.resetPhysicalSize);
     addTearDown(tester.view.resetDevicePixelRatio);
 
-    final effectiveAttendances = attendances ?? [attendance];
-    final effectiveCompany = company ?? buildCompany();
-    final effectiveUser = currentUser ?? buildEmployeeUser(createdAt: monthStart);
-
-    final router = GoRouter(
-      initialLocation: RoutePaths.reports,
-      routes: [
-        ShellRoute(
-          builder: (context, state, child) => DashboardLayout(child: child),
-          routes: [
-            GoRoute(path: RoutePaths.reports, builder: (_, _) => const EmployeeReportsScreen()),
-          ],
-        ),
-      ],
-    );
-
     await tester.pumpWidget(
       ProviderScope(
         overrides: [
           currentUserIdProvider.overrideWithValue('u1'),
           userRoleProvider.overrideWithValue(UserRole.employee),
-          attendancesByUserProvider('u1').overrideWith((ref) => Stream.value(effectiveAttendances)),
-          incidencesStreamProvider.overrideWith((ref) => Stream.value(incidences)),
-          currentAppUserProvider.overrideWith((ref) => Stream.value(effectiveUser)),
-          currentCompanyProvider.overrideWith((ref) => Stream.value(effectiveCompany)),
+          attendancesByUserProvider('u1')
+              .overrideWith((ref) => Stream.value(attendances ?? <AttendanceModel>[])),
+          currentAppUserProvider.overrideWith((ref) => Stream.value(user)),
+          activeWorkplacesProvider
+              .overrideWith((ref) => AsyncValue.data([workplace])),
+          if (exporter != null)
+            reportExporterProvider.overrideWithValue(exporter),
         ],
-        child: MaterialApp.router(
-          routerConfig: router,
-          builder: (context, child) {
-            final mq = MediaQuery.of(context);
-            return MediaQuery(
-              data: mq.copyWith(
-                padding: mq.padding.copyWith(top: 24, bottom: 24),
-                viewPadding: mq.viewPadding.copyWith(top: 24, bottom: 24),
-                textScaler: const TextScaler.linear(1.3),
-              ),
-              child: child!,
-            );
-          },
+        child: MaterialApp(
+          home: Scaffold(
+            body: Builder(
+              builder: (context) {
+                final mq = MediaQuery.of(context);
+                return MediaQuery(
+                  data: mq.copyWith(
+                    padding: mq.padding.copyWith(top: 24, bottom: 24),
+                    viewPadding: mq.viewPadding.copyWith(top: 24, bottom: 24),
+                    textScaler: const TextScaler.linear(1.3),
+                  ),
+                  child: const EmployeeReportsScreen(),
+                );
+              },
+            ),
+          ),
         ),
       ),
     );
     await tester.pumpAndSettle();
   }
 
-  group('Reportes del usuario común en el shell real (360px, textScale 1.3)', () {
-    testWidgets('con métricas y asistencias no produce BOTTOM OVERFLOWED y el contenido scrollea', (
-      tester,
-    ) async {
-      await pumpEmployeeReportsInShell(tester, size: const Size(360, 640));
+  Future<void> tapExportButton(WidgetTester tester, String label) async {
+    await tester.ensureVisible(find.text(label));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text(label));
+    await tester.pump();
+    await tester.pump();
+  }
+
+  Future<void> selectMonth(WidgetTester tester, String label) async {
+    await tester.tap(find.text(months[now.month - 1]).first);
+    await tester.pumpAndSettle();
+    await tester.tap(find.text(label).last);
+    await tester.pumpAndSettle();
+  }
+
+  group('Reportes del empleado — regresión de overflow', () {
+    testWidgets('pantalla angosta (360x640, textScale 1.3) sin BOTTOM OVERFLOWED', (tester) async {
+      await pumpScreen(
+        tester,
+        size: const Size(360, 640),
+        attendances: [attendanceIn(time: now)],
+      );
 
       expect(tester.takeException(), isNull);
-
-      // Los controles del filtro siguen accesibles.
       expect(find.text('Mes'), findsOneWidget);
       expect(find.text('Año'), findsOneWidget);
-      // Las métricas personales están presentes.
-      expect(find.text('Días trabajados'), findsOneWidget);
-      expect(find.text('Horas trabajadas'), findsOneWidget);
-
-      // El historial (debajo de las tarjetas) es alcanzable con scroll.
-      await tester.scrollUntilVisible(
-        find.text('Historial personal'),
-        400,
-        maxScrolls: 30,
-        scrollable: find.byType(Scrollable).first,
+      expect(
+        find.text('Reporte de asistencia de ${monthsLower[now.month - 1]} de ${now.year}'),
+        findsOneWidget,
       );
-      await tester.pumpAndSettle();
-      expect(tester.takeException(), isNull);
-      expect(find.text('Historial personal'), findsOneWidget);
     });
 
-    testWidgets('pantalla muy baja (360x568) con métricas no produce overflow', (tester) async {
-      await pumpEmployeeReportsInShell(tester, size: const Size(360, 568));
-
-      expect(tester.takeException(), isNull);
-
-      await tester.scrollUntilVisible(
-        find.text('Historial personal'),
-        400,
-        maxScrolls: 30,
-        scrollable: find.byType(Scrollable).first,
+    testWidgets('pantalla muy baja (360x568) sin overflow', (tester) async {
+      await pumpScreen(
+        tester,
+        size: const Size(360, 568),
+        attendances: [attendanceIn(time: now)],
       );
-      await tester.pumpAndSettle();
+
       expect(tester.takeException(), isNull);
+      expect(find.text('Excel'), findsOneWidget);
+      expect(find.text('PDF'), findsOneWidget);
     });
   });
 
-  group('INC-2 — cálculo de ausencias', () {
-    testWidgets('no cuenta fines de semana ni días previos al alta', (tester) async {
-      final days = const [1, 2, 3, 4, 5];
-      await pumpEmployeeReportsInShell(
+  group('Reportes del empleado — exportación', () {
+    testWidgets('Excel guardado correctamente muestra éxito', (tester) async {
+      await pumpScreen(
         tester,
-        size: const Size(360, 640),
-        attendances: [],
-        company: buildCompany(days: days),
-        currentUser: buildEmployeeUser(createdAt: monthStart),
+        attendances: [attendanceIn(time: now)],
+        exporter: _FakeReportExporter(excelOutcome: true, pdfOutcome: true),
       );
 
-      final expected = countLaborableDays(monthStart, today, days);
-      expect(tester.takeException(), isNull);
-      expectCardValue(tester, 'Ausencias injustificadas', '$expected');
+      expect(find.text('1 jornada(s) completadas.'), findsOneWidget);
+
+      await tapExportButton(tester, 'Excel');
+
+      expect(find.text('Reporte Excel exportado correctamente'), findsOneWidget);
+      expect(
+        find.text('Descarga cancelada. No se generó ningún archivo.'),
+        findsNothing,
+      );
+      expect(find.textContaining('Error al exportar Excel'), findsNothing);
     });
 
-    testWidgets('ausencia justificada aprobada resta del conteo', (tester) async {
-      final days = const [1, 2, 3, 4, 5];
-      final laborables = laborableDatesInRange(monthStart, today, days);
-      final missed = laborables.first;
-      final attended = laborables.where((d) => d != missed).toList();
-
-      await pumpEmployeeReportsInShell(
+    testWidgets('Excel cancelado informa que no se generó ningún archivo', (tester) async {
+      await pumpScreen(
         tester,
-        size: const Size(360, 640),
-        attendances: attended.map(attendanceOn).toList(),
-        incidences: [justifiedOn(missed)],
-        company: buildCompany(days: days),
-        currentUser: buildEmployeeUser(createdAt: monthStart),
+        attendances: [attendanceIn(time: now)],
+        exporter: _FakeReportExporter(excelOutcome: false, pdfOutcome: true),
       );
 
-      expect(tester.takeException(), isNull);
-      expectCardValue(tester, 'Ausencias injustificadas', '0');
-      expectCardValue(tester, 'Justificativos', '1');
+      await tapExportButton(tester, 'Excel');
+
+      expect(
+        find.text('Descarga cancelada. No se generó ningún archivo.'),
+        findsOneWidget,
+      );
+      expect(find.text('Reporte Excel exportado correctamente'), findsNothing);
     });
 
-    testWidgets('la alta a mitad de mes limita los días contables', (tester) async {
-      final days = const [1, 2, 3, 4, 5];
-      await pumpEmployeeReportsInShell(
+    testWidgets('error real al exportar Excel muestra error y nunca éxito', (tester) async {
+      await pumpScreen(
         tester,
-        size: const Size(360, 640),
-        attendances: [],
-        company: buildCompany(days: days),
-        currentUser: buildEmployeeUser(createdAt: today),
+        attendances: [attendanceIn(time: now)],
+        exporter: _FakeReportExporter(
+          excelOutcome: false,
+          pdfOutcome: true,
+          excelError: true,
+        ),
       );
 
-      final expected = isLaborable(today, days) ? 1 : 0;
-      expect(tester.takeException(), isNull);
-      expectCardValue(tester, 'Ausencias injustificadas', '$expected');
+      await tapExportButton(tester, 'Excel');
+
+      expect(find.textContaining('Error al exportar Excel'), findsOneWidget);
+      expect(find.text('Reporte Excel exportado correctamente'), findsNothing);
     });
 
-    testWidgets('respeta los días laborables configurados de la empresa', (tester) async {
-      final days = const [1, 2, 3, 4, 5, 6];
-      await pumpEmployeeReportsInShell(
+    testWidgets('PDF guardado correctamente muestra éxito', (tester) async {
+      await pumpScreen(
         tester,
-        size: const Size(360, 640),
-        attendances: [],
-        company: buildCompany(days: days),
-        currentUser: buildEmployeeUser(createdAt: monthStart),
+        attendances: [attendanceIn(time: now)],
+        exporter: _FakeReportExporter(excelOutcome: true, pdfOutcome: true),
       );
 
-      final expected = countLaborableDays(monthStart, today, days);
-      expect(tester.takeException(), isNull);
-      expectCardValue(tester, 'Ausencias injustificadas', '$expected');
+      await tapExportButton(tester, 'PDF');
+
+      expect(find.text('Reporte PDF exportado correctamente'), findsOneWidget);
+      expect(
+        find.text('Descarga cancelada. No se generó ningún archivo.'),
+        findsNothing,
+      );
+    });
+
+    testWidgets('PDF cancelado informa que no se generó ningún archivo', (tester) async {
+      await pumpScreen(
+        tester,
+        attendances: [attendanceIn(time: now)],
+        exporter: _FakeReportExporter(excelOutcome: true, pdfOutcome: false),
+      );
+
+      await tapExportButton(tester, 'PDF');
+
+      expect(
+        find.text('Descarga cancelada. No se generó ningún archivo.'),
+        findsOneWidget,
+      );
+      expect(find.text('Reporte PDF exportado correctamente'), findsNothing);
+      expect(find.textContaining('Error al exportar PDF'), findsNothing);
+    });
+
+    testWidgets('error real al exportar PDF muestra error y nunca éxito', (tester) async {
+      await pumpScreen(
+        tester,
+        attendances: [attendanceIn(time: now)],
+        exporter: _FakeReportExporter(
+          excelOutcome: true,
+          pdfOutcome: false,
+          pdfError: true,
+        ),
+      );
+
+      await tapExportButton(tester, 'PDF');
+
+      expect(find.textContaining('Error al exportar PDF'), findsOneWidget);
+      expect(find.text('Reporte PDF exportado correctamente'), findsNothing);
     });
   });
 
-  group('INC-2 — contratos nuevos del ajuste', () {
-    testWidgets('justificativo rechazado NO resta ausencias', (tester) async {
-      final days = const [1, 2, 3, 4, 5];
-      final laborables = laborableDatesInRange(monthStart, today, days);
-      final missed = laborables.first;
-      final attended = laborables.where((d) => d != missed).toList();
-
-      await pumpEmployeeReportsInShell(
+  group('Reportes del empleado — período sin registros', () {
+    testWidgets('sin asistencias: estado vacío y botones deshabilitados', (tester) async {
+      await pumpScreen(
         tester,
-        size: const Size(360, 640),
-        attendances: attended.map(attendanceOn).toList(),
-        incidences: [justifiedOn(missed, estado: IncidenceEstado.rechazado)],
-        company: buildCompany(days: days),
-        currentUser: buildEmployeeUser(createdAt: monthStart),
-      );
-
-      expect(tester.takeException(), isNull);
-      expectCardValue(tester, 'Ausencias injustificadas', '1');
-      expectCardValue(tester, 'Justificativos', '0');
-    });
-
-    testWidgets('mes futuro seleccionado da 0 ausencias', (tester) async {
-      if (now.month >= 12) return; // no hay mes futuro seleccionable
-      final days = const [1, 2, 3, 4, 5];
-      await pumpEmployeeReportsInShell(
-        tester,
-        size: const Size(360, 640),
         attendances: [],
-        company: buildCompany(days: days),
-        currentUser: buildEmployeeUser(createdAt: monthStart),
+        exporter: _FakeReportExporter(excelOutcome: true, pdfOutcome: true),
       );
 
-      const monthNames = [
-        'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
-        'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre',
-      ];
-      await tester.tap(find.text(monthNames[now.month - 1]).first);
-      await tester.pumpAndSettle();
-      await tester.tap(find.text('Diciembre').last);
-      await tester.pumpAndSettle();
+      expect(find.text('Sin registros para el período seleccionado.'), findsOneWidget);
+      expect(
+        find.text('No se pueden exportar reportes si no hay asistencias completadas.'),
+        findsOneWidget,
+      );
 
-      expect(tester.takeException(), isNull);
-      expectCardValue(tester, 'Ausencias injustificadas', '0');
+      final excelBtn = tester.widget<OutlinedButton>(
+        find.ancestor(of: find.text('Excel'), matching: find.byType(OutlinedButton)),
+      );
+      final pdfBtn = tester.widget<OutlinedButton>(
+        find.ancestor(of: find.text('PDF'), matching: find.byType(OutlinedButton)),
+      );
+      expect(excelBtn.onPressed, isNull);
+      expect(pdfBtn.onPressed, isNull);
     });
 
-    testWidgets('jornada activa cuenta como presente (D-4)', (tester) async {
-      final days = const [1, 2, 3, 4, 5];
-      final laborables = laborableDatesInRange(monthStart, today, days);
-      if (laborables.isEmpty) return; // ventana sin días laborables: D-4 no aplica
-      final activeDay = laborables.first;
-
-      await pumpEmployeeReportsInShell(
+    testWidgets('cambiar de mes descarta las asistencias de otro período', (tester) async {
+      final target = now.month == 1 ? 'Febrero' : 'Enero';
+      await pumpScreen(
         tester,
-        size: const Size(360, 640),
-        attendances: [activeAttendanceOn(activeDay)],
-        company: buildCompany(days: days),
-        currentUser: buildEmployeeUser(createdAt: monthStart),
+        attendances: [attendanceIn(time: now)],
       );
 
-      expect(tester.takeException(), isNull);
-      // D-4: el día con jornada activa es presente; los demás días laborables
-      // de la ventana (desde el alta) quedan como ausencias injustificadas.
-      final expected = countLaborableDays(monthStart, today, days) - 1;
-      expectCardValue(tester, 'Ausencias injustificadas', '$expected');
+      await selectMonth(tester, target);
+
+      expect(find.text('Sin registros para el período seleccionado.'), findsOneWidget);
+      expect(find.text('1 jornada(s) completadas.'), findsNothing);
     });
   });
 }

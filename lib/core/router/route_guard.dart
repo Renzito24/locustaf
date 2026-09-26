@@ -63,25 +63,32 @@ String? resolveRedirect(RouteGuardState s, String location) {
 
   // Ya no necesita onboarding y está ahí: salir hacia la home del rol.
   if (s.isLoggedIn && location == '/onboarding') {
-    return s.isEmployee ? '/attendance' : '/dashboard';
+    return s.isEmployee ? '/principal' : '/dashboard';
   }
 
   final role = s.role;
 
   // Autenticado en /login o splash: ir a la home del rol.
   if (s.isLoggedIn && (goingToLogin || goingToSplash)) {
-    return role == UserRole.employee ? '/attendance' : '/dashboard';
+    return role == UserRole.employee ? '/principal' : '/dashboard';
   }
 
   final path = location;
 
   // Empleado: solo sus rutas permitidas.
   if (role == UserRole.employee) {
-    const allowed = ['/attendance', '/reports', '/profile', '/justificativos'];
+    const allowed = [
+      '/principal',
+      '/attendance',
+      '/history',
+      '/reports',
+      '/justificativos',
+      '/profile',
+    ];
     if (!allowed.any((r) => path.startsWith(r)) &&
         path != '/' &&
         !path.startsWith('/login')) {
-      return '/attendance';
+      return '/principal';
     }
   }
 

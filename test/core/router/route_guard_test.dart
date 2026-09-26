@@ -74,15 +74,15 @@ void main() {
       );
     });
 
-    test('logueado (employee) en /onboarding sin necesidades: /attendance', () {
+    test('logueado (employee) en /onboarding sin necesidades: /principal', () {
       expect(
         resolveRedirect(guard(role: UserRole.employee), '/onboarding'),
-        '/attendance',
+        '/principal',
       );
     });
 
-    test('logueado (employee) en /login: /attendance', () {
-      expect(resolveRedirect(guard(role: UserRole.employee), '/login'), '/attendance');
+    test('logueado (employee) en /login: /principal', () {
+      expect(resolveRedirect(guard(role: UserRole.employee), '/login'), '/principal');
     });
 
     test('logueado (admin) en /: /dashboard', () {
@@ -150,7 +150,14 @@ void main() {
 
   group('resolveRedirect — rutas permitidas (sin redirección)', () {
     test('empleado en sus rutas: null', () {
-      for (final r in ['/attendance', '/reports', '/profile', '/justificativos']) {
+      for (final r in [
+        '/principal',
+        '/attendance',
+        '/history',
+        '/reports',
+        '/profile',
+        '/justificativos',
+      ]) {
         expect(resolveRedirect(guard(role: UserRole.employee), r), isNull,
             reason: 'empleado debería poder ver $r');
       }
@@ -207,11 +214,10 @@ void main() {
         '/employees/create',
         '/workplaces',
         '/workplaces/create',
-        '/history',
         '/medical_documents',
         '/incidences',
       ]) {
-        expect(resolveRedirect(guard(role: UserRole.employee), r), '/attendance',
+        expect(resolveRedirect(guard(role: UserRole.employee), r), '/principal',
             reason: 'empleado no debería ver $r');
       }
     });
@@ -255,8 +261,8 @@ void main() {
       );
     });
 
-    test('empleado logueado en /login: redirige a su home /attendance', () {
-      expect(resolveRedirect(guard(role: UserRole.employee), '/login'), '/attendance');
+    test('empleado logueado en /login: redirige a su home /principal', () {
+      expect(resolveRedirect(guard(role: UserRole.employee), '/login'), '/principal');
     });
   });
 }

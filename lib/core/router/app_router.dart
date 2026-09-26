@@ -8,6 +8,7 @@ import '../../core/models/user_model.dart';
 import '../../features/profile/presentation/screens/profile_screen.dart';
 import '../../features/dashboard/presentation/widgets/dashboard_layout.dart';
 import '../../features/dashboard/presentation/screens/home_screen.dart';
+import '../../features/dashboard/presentation/screens/employee_home_screen.dart';
 import '../../features/employees/presentation/screens/employees_screen.dart';
 import '../../features/employees/presentation/screens/create_employee_screen.dart';
 import '../../features/employees/presentation/screens/edit_employee_screen.dart';
@@ -15,6 +16,7 @@ import '../../features/workplaces/presentation/screens/workplaces_screen.dart';
 import '../../features/workplaces/presentation/screens/workplace_form_screen.dart';
 import '../../features/attendance/presentation/screens/attendance_screen.dart';
 import '../../features/history/presentation/screens/history_screen.dart';
+import '../../features/history/presentation/screens/employee_history_screen.dart';
 import '../../features/incidences/data/models/incidence_model.dart';
 import '../../features/incidences/presentation/screens/create_incidence_screen.dart';
 import '../../features/incidences/presentation/screens/edit_incidence_screen.dart';
@@ -27,7 +29,6 @@ import '../../features/reports/presentation/screens/reports_screen.dart';
 import '../../features/reports/presentation/screens/employee_reports_screen.dart';
 import '../../features/justificativos/presentation/screens/employee_justificativos_screen.dart';
 import '../../features/justificativos/presentation/screens/employee_create_incidence_screen.dart';
-import '../../features/justificativos/presentation/screens/employee_create_medical_document_screen.dart';
 import '../../features/companies/presentation/screens/companies_screen.dart';
 import '../../features/companies/presentation/screens/company_form_screen.dart';
 import '../../features/companies/presentation/screens/company_settings_screen.dart';
@@ -78,6 +79,10 @@ class AppRouter {
             builder: (context, state) => const HomeScreen(),
           ),
           GoRoute(
+            path: RoutePaths.employeePrincipal,
+            builder: (context, state) => const EmployeeHomeScreen(),
+          ),
+          GoRoute(
             path: RoutePaths.companies,
             builder: (context, state) => const CompaniesScreen(),
           ),
@@ -109,7 +114,13 @@ class AppRouter {
           ),
           GoRoute(
             path: RoutePaths.history,
-            builder: (context, state) => const HistoryScreen(),
+            builder: (context, state) {
+              final role = _auth.role;
+              if (role == UserRole.employee) {
+                return const EmployeeHistoryScreen();
+              }
+              return const HistoryScreen();
+            },
           ),
           GoRoute(
             path: RoutePaths.medicalDocuments,
@@ -162,10 +173,6 @@ class AppRouter {
           GoRoute(
             path: RoutePaths.employeeCreateIncidence,
             builder: (context, state) => const EmployeeCreateIncidenceScreen(),
-          ),
-          GoRoute(
-            path: RoutePaths.employeeCreateMedicalDocument,
-            builder: (context, state) => const EmployeeCreateMedicalDocumentScreen(),
           ),
           GoRoute(
             path: RoutePaths.createEmployee,
