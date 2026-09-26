@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../../core/theme/app_theme.dart';
+import '../../../../core/widgets/widgets.dart';
 import '../providers/users_provider.dart';
 import '../widgets/employee_form.dart';
 
@@ -69,9 +70,8 @@ class CreateEmployeeScreen extends ConsumerWidget {
             const SizedBox(height: 24),
             Expanded(
               child: SingleChildScrollView(
-                child: Container(
+                child: AppCard(
                   padding: const EdgeInsets.all(24),
-                  decoration: AppTheme.cardDecoration(),
                   child: const EmployeeForm(),
                 ),
               ),

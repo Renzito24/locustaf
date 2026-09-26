@@ -7,6 +7,7 @@ import '../../../../core/models/company_model.dart';
 import '../../../../core/providers/async_action_state.dart';
 import '../../../../core/router/app_routes.dart';
 import '../../../../core/theme/app_theme.dart';
+import '../../../../core/widgets/widgets.dart';
 import '../providers/company_action_provider.dart';
 import '../providers/company_providers.dart';
 import '../widgets/register_payment_dialog.dart';
@@ -205,43 +206,44 @@ class _MetricCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
+    return SizedBox(
       width: isMobile ? (MediaQuery.sizeOf(context).width - 32) / 2 - 6 : 200,
-      padding: const EdgeInsets.all(16),
-      decoration: AppTheme.cardDecoration(),
-      child: Row(
-        children: [
-          Container(
-            width: 40,
-            height: 40,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              color: data.color.withValues(alpha: 0.15),
+      child: AppCard(
+        padding: const EdgeInsets.all(16),
+        child: Row(
+          children: [
+            Container(
+              width: 40,
+              height: 40,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: data.color.withValues(alpha: 0.15),
+              ),
+              child: Icon(data.icon, color: data.color, size: 20),
             ),
-            child: Icon(data.icon, color: data.color, size: 20),
-          ),
-          const SizedBox(width: 12),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                '${data.value}',
-                style: const TextStyle(
-                  fontSize: 22,
-                  fontWeight: FontWeight.w700,
-                  color: AppColors.textWhite,
+            const SizedBox(width: 12),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  '${data.value}',
+                  style: const TextStyle(
+                    fontSize: 22,
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.textWhite,
+                  ),
                 ),
-              ),
-              Text(
-                data.label,
-                style: const TextStyle(
-                  color: AppColors.textMuted,
-                  fontSize: 12,
+                Text(
+                  data.label,
+                  style: const TextStyle(
+                    color: AppColors.textMuted,
+                    fontSize: 12,
+                  ),
                 ),
-              ),
-            ],
-          ),
-        ],
+              ],
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -299,9 +301,7 @@ class _CompanyCard extends ConsumerWidget {
     final isActive = company.estado == CompanyEstado.activa;
     final isToggling = ref.watch(toggleCompanyStateProvider).isLoading;
 
-    return Container(
-      decoration: AppTheme.cardDecoration(),
-      padding: const EdgeInsets.all(20),
+    return AppCard(
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [

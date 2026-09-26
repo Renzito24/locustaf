@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/providers/async_action_state.dart';
 import '../../../../core/theme/app_theme.dart';
+import '../../../../core/widgets/widgets.dart';
 import '../../../../core/models/user_model.dart';
 import '../providers/update_employee_notifier.dart';
 import '../widgets/employee_form.dart';
@@ -59,9 +60,8 @@ class EditEmployeeScreen extends ConsumerWidget {
             const SizedBox(height: 24),
             Expanded(
               child: SingleChildScrollView(
-                child: Container(
+                child: AppCard(
                   padding: const EdgeInsets.all(24),
-                  decoration: AppTheme.cardDecoration(),
                   child: EmployeeForm(
                     isEditing: true,
                     initialData: employee,

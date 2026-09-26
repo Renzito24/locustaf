@@ -6,6 +6,7 @@ import '../../../../core/constants/app_colors.dart';
 import '../../../../core/providers/data_providers.dart';
 import '../../../../core/providers/async_action_state.dart';
 import '../../../../core/theme/app_theme.dart';
+import '../../../../core/widgets/widgets.dart';
 import '../../../../core/utils/validators.dart';
 import '../../data/models/workplace_model.dart';
 import '../providers/workplace_notifier.dart';
@@ -226,8 +227,7 @@ class _WorkplaceFormState extends ConsumerState<_WorkplaceForm> {
         const SizedBox(height: 24),
         Expanded(
           child: SingleChildScrollView(
-            child: Container(
-              decoration: AppTheme.cardDecoration(),
+            child: AppCard(
               padding: EdgeInsets.all(isMobile ? 16 : 24),
               child: Form(
                 key: _formKey,

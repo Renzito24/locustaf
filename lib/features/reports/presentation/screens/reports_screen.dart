@@ -6,6 +6,7 @@ import '../../../../core/providers/data_providers.dart';
 import '../../../../core/services/report_exporter.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/utils/date_formatter.dart';
+import '../../../../core/widgets/widgets.dart';
 import '../../../workplaces/data/models/workplace_model.dart';
 import '../../../workplaces/presentation/providers/workplace_notifier.dart';
 import '../providers/reports_provider.dart';
@@ -179,8 +180,7 @@ class ReportsScreen extends ConsumerWidget {
     AttendanceReportFilter filter,
     AsyncValue<List<WorkplaceModel>> workplacesAsync,
   ) {
-    return Container(
-      decoration: AppTheme.cardDecoration(),
+    return AppCard(
       padding: const EdgeInsets.all(16),
       child: LayoutBuilder(
         builder: (context, constraints) {
@@ -410,9 +410,7 @@ class _MetricCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      decoration: AppTheme.cardDecoration(),
-      padding: const EdgeInsets.all(20),
+    return AppCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisAlignment: MainAxisAlignment.center,

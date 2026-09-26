@@ -6,6 +6,7 @@ import '../../../../core/constants/app_colors.dart';
 import '../../../../core/models/company_model.dart';
 import '../../../../core/models/user_model.dart';
 import '../../../../core/theme/app_theme.dart';
+import '../../../../core/widgets/widgets.dart';
 import '../../../authentication/presentation/providers/auth_provider.dart';
 import '../providers/onboarding_provider.dart';
 
@@ -138,8 +139,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
           padding: EdgeInsets.all(isMobile ? 16 : 32),
           child: ConstrainedBox(
             constraints: const BoxConstraints(maxWidth: 560),
-            child: Container(
-              decoration: AppTheme.cardDecoration(),
+            child: AppCard(
               padding: const EdgeInsets.all(28),
               child: Form(
                 key: _formKey,

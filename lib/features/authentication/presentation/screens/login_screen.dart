@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/providers/firebase_providers.dart';
 import '../../../../core/theme/app_theme.dart';
+import '../../../../core/widgets/widgets.dart';
 import '../providers/auth_provider.dart';
 
 class LoginScreen extends ConsumerStatefulWidget {
@@ -277,9 +278,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
                     position: _slideAnim,
                     child: ConstrainedBox(
                       constraints: const BoxConstraints(maxWidth: 420),
-                      child: Container(
+                      child: AppCard(
                         padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 36),
-                        decoration: AppTheme.cardDecoration(),
                         child: Form(
                           key: _formKey,
                           child: Column(

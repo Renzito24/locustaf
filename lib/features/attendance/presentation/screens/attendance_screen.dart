@@ -6,6 +6,7 @@ import '../../../../core/models/user_model.dart';
 import '../../../../core/providers/data_providers.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/utils/string_utils.dart';
+import '../../../../core/widgets/widgets.dart';
 import '../../../authentication/presentation/providers/auth_provider.dart';
 import '../../../workplaces/presentation/providers/workplace_notifier.dart';
 import '../../data/models/attendance_model.dart';
@@ -93,8 +94,7 @@ class _AttendanceScreenState extends ConsumerState<AttendanceScreen> {
     bool isActionLoading,
   ) {
     if (active == null) {
-      return Container(
-        decoration: AppTheme.cardDecoration(),
+      return AppCard(
         padding: const EdgeInsets.all(24),
         child: Column(
           children: [
@@ -187,9 +187,7 @@ class _AttendanceScreenState extends ConsumerState<AttendanceScreen> {
       }
     });
 
-    return Container(
-      decoration: AppTheme.cardDecoration(),
-      padding: const EdgeInsets.all(20),
+    return AppCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -272,9 +270,7 @@ class _AttendanceScreenState extends ConsumerState<AttendanceScreen> {
     String userId,
     bool isActionLoading,
   ) {
-    return Container(
-      decoration: AppTheme.cardDecoration(),
-      padding: const EdgeInsets.all(20),
+    return AppCard(
       child: Row(
         children: [
           Container(
@@ -440,8 +436,7 @@ class _AdminAttendanceViewState extends ConsumerState<_AdminAttendanceView> {
             style: AppTheme.bodyLg,
           ),
           const SizedBox(height: 24),
-          Container(
-            decoration: AppTheme.cardDecoration(),
+          AppCard(
             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
             child: Row(
               children: [
@@ -520,60 +515,61 @@ class _AdminAttendanceViewState extends ConsumerState<_AdminAttendanceView> {
               final workplaceName =
                   a.workplaceId != null ? workplaceMap[a.workplaceId!] : null;
               final isActive = a.status == AttendanceStatus.active;
-              return Container(
-                margin: const EdgeInsets.only(bottom: 8),
-                decoration: AppTheme.cardDecoration(),
-                padding: const EdgeInsets.all(16),
-                child: Row(
-                  children: [
-                    Icon(
-                      isActive
-                          ? Icons.play_circle_outline
-                          : Icons.check_circle_outline,
-                      color:
-                          isActive ? AppColors.success : AppColors.textMuted,
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            name,
-                            style: const TextStyle(
-                              fontWeight: FontWeight.w600,
-                              color: AppColors.textWhite,
-                            ),
-                          ),
-                          const SizedBox(height: 4),
-                          Text(
-                            'Entrada: ${_formatTime(a.checkInTime)}'
-                            '${a.checkOutTime != null ? '  |  Salida: ${_formatTime(a.checkOutTime!)}' : ''}'
-                            '${a.durationMinutes != null ? '  |  ${_formatDuration(a.durationMinutes!)}' : ''}',
-                            style: AppTheme.bodyMd,
-                          ),
-                          if (workplaceName != null)
+              return Padding(
+                padding: const EdgeInsets.only(bottom: 8),
+                child: AppCard(
+                  padding: const EdgeInsets.all(16),
+                  child: Row(
+                    children: [
+                      Icon(
+                        isActive
+                            ? Icons.play_circle_outline
+                            : Icons.check_circle_outline,
+                        color:
+                            isActive ? AppColors.success : AppColors.textMuted,
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
                             Text(
-                              'Lugar: $workplaceName',
-                              style: AppTheme.bodyMd.copyWith(
-                                fontSize: 11,
-                                color: AppColors.textMuted
-                                    .withValues(alpha: 0.7),
+                              name,
+                              style: const TextStyle(
+                                fontWeight: FontWeight.w600,
+                                color: AppColors.textWhite,
                               ),
                             ),
-                        ],
-                      ),
-                    ),
-                    if (isActive)
-                      Text(
-                        'Activo',
-                        style: TextStyle(
-                          color: AppColors.success,
-                          fontSize: 12,
-                          fontWeight: FontWeight.w600,
+                            const SizedBox(height: 4),
+                            Text(
+                              'Entrada: ${_formatTime(a.checkInTime)}'
+                              '${a.checkOutTime != null ? '  |  Salida: ${_formatTime(a.checkOutTime!)}' : ''}'
+                              '${a.durationMinutes != null ? '  |  ${_formatDuration(a.durationMinutes!)}' : ''}',
+                              style: AppTheme.bodyMd,
+                            ),
+                            if (workplaceName != null)
+                              Text(
+                                'Lugar: $workplaceName',
+                                style: AppTheme.bodyMd.copyWith(
+                                  fontSize: 11,
+                                  color: AppColors.textMuted
+                                      .withValues(alpha: 0.7),
+                                ),
+                              ),
+                          ],
                         ),
                       ),
-                  ],
+                      if (isActive)
+                        Text(
+                          'Activo',
+                          style: TextStyle(
+                            color: AppColors.success,
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                    ],
+                  ),
                 ),
               );
             }),

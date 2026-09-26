@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/theme/app_theme.dart';
+import '../../../../core/widgets/widgets.dart';
 import '../../../attendance/data/models/attendance_model.dart';
 import '../../data/models/history_record_model.dart';
 import '../providers/history_provider.dart';
@@ -168,8 +169,7 @@ class HistoryScreen extends ConsumerWidget {
           scrollDirection: Axis.vertical,
           child: SingleChildScrollView(
             scrollDirection: Axis.horizontal,
-            child: Container(
-              decoration: AppTheme.cardDecoration(),
+            child: AppCard(
               padding: const EdgeInsets.all(2),
               child: DataTable(
               columnSpacing: 20,
@@ -328,8 +328,7 @@ class _IndicatorCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      decoration: AppTheme.cardDecoration(),
+    return AppCard(
       padding: const EdgeInsets.all(16),
       child: Row(
         children: [

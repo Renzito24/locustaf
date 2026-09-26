@@ -7,6 +7,7 @@ import '../../../../core/models/company_model.dart';
 import '../../../../core/models/payment_model.dart';
 import '../../../../core/router/app_routes.dart';
 import '../../../../core/theme/app_theme.dart';
+import '../../../../core/widgets/widgets.dart';
 import '../providers/company_providers.dart';
 import 'register_payment_dialog.dart';
 
@@ -199,9 +200,8 @@ class _MetricChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
+    return AppCard(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-      decoration: AppTheme.cardDecoration(),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
@@ -246,64 +246,64 @@ class _PaymentTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      width: double.infinity,
-      margin: const EdgeInsets.only(bottom: 10),
-      padding: const EdgeInsets.all(14),
-      decoration: AppTheme.cardDecoration(),
-      child: Row(
-        children: [
-          Container(
-            width: 40,
-            height: 40,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              color: AppColors.gold.withValues(alpha: 0.15),
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 10),
+      child: AppCard(
+        padding: const EdgeInsets.all(14),
+        child: Row(
+          children: [
+            Container(
+              width: 40,
+              height: 40,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: AppColors.gold.withValues(alpha: 0.15),
+              ),
+              child: const Icon(Icons.payment, color: AppColors.gold, size: 20),
             ),
-            child: const Icon(Icons.payment, color: AppColors.gold, size: 20),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  payment.companyName,
-                  style: const TextStyle(
-                    color: AppColors.textWhite,
-                    fontWeight: FontWeight.w600,
-                    fontSize: 14,
-                  ),
-                ),
-                const SizedBox(height: 2),
-                Text(
-                  '${payment.plan.label} · Vence ${_fmtDate(payment.paidUntil)} · '
-                  '${_fmtDate(payment.createdAt)}',
-                  style: const TextStyle(
-                    color: AppColors.textMuted,
-                    fontSize: 12,
-                  ),
-                ),
-                if (payment.nota != null && payment.nota!.isNotEmpty) ...[
-                  const SizedBox(height: 2),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
                   Text(
-                    payment.nota!,
+                    payment.companyName,
                     style: const TextStyle(
-                      color: AppColors.textSecondary,
-                      fontSize: 12,
-                      fontStyle: FontStyle.italic,
+                      color: AppColors.textWhite,
+                      fontWeight: FontWeight.w600,
+                      fontSize: 14,
                     ),
                   ),
+                  const SizedBox(height: 2),
+                  Text(
+                    '${payment.plan.label} · Vence ${_fmtDate(payment.paidUntil)} · '
+                    '${_fmtDate(payment.createdAt)}',
+                    style: const TextStyle(
+                      color: AppColors.textMuted,
+                      fontSize: 12,
+                    ),
+                  ),
+                  if (payment.nota != null && payment.nota!.isNotEmpty) ...[
+                    const SizedBox(height: 2),
+                    Text(
+                      payment.nota!,
+                      style: const TextStyle(
+                        color: AppColors.textSecondary,
+                        fontSize: 12,
+                        fontStyle: FontStyle.italic,
+                      ),
+                    ),
+                  ],
                 ],
-              ],
+              ),
             ),
-          ),
-          AppTheme.badge(
-            label: payment.plan.label,
-            bgColor: AppColors.gold.withValues(alpha: 0.12),
-            textColor: AppColors.gold,
-          ),
-        ],
+            AppTheme.badge(
+              label: payment.plan.label,
+              bgColor: AppColors.gold.withValues(alpha: 0.12),
+              textColor: AppColors.gold,
+            ),
+          ],
+        ),
       ),
     );
   }

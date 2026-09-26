@@ -8,6 +8,7 @@ import 'package:geolocator/geolocator.dart';
 
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/theme/app_theme.dart';
+import '../../../../core/widgets/widgets.dart';
 import '../../data/services/geocoding_service.dart';
 
 class WorkplaceMapPicker extends StatefulWidget {
@@ -249,8 +250,7 @@ class _WorkplaceMapPickerState extends State<WorkplaceMapPicker> {
   }
 
   Widget _buildWebLocationPicker() {
-    return Container(
-      decoration: AppTheme.cardDecoration(),
+    return AppCard(
       padding: const EdgeInsets.all(16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,

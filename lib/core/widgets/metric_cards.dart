@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../constants/app_colors.dart';
-import '../theme/app_theme.dart';
+import 'app_card.dart';
 
 /// Dato estático de una tarjeta de métrica.
 class MetricCardData {
@@ -71,8 +71,7 @@ class _MetricCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      decoration: AppTheme.cardDecoration(),
+    return AppCard(
       padding: const EdgeInsets.all(16),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.center,
