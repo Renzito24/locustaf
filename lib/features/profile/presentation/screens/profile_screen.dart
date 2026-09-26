@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../../core/config/app_version.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../authentication/presentation/providers/auth_provider.dart';
@@ -332,6 +333,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
       title: 'Sistema',
       titleIcon: Icons.settings_outlined,
       rows: [
+        ProfileInfoRow(icon: Icons.info_outline, label: 'Versión', value: appVersion),
         ProfileInfoRow(icon: Icons.calendar_today_outlined, label: 'Fecha de creación', value: _formatDate(user.createdAt)),
         if (user.updatedAt != null)
           ProfileInfoRow(icon: Icons.update_outlined, label: 'Última actualización', value: _formatDate(user.updatedAt!)),
