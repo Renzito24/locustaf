@@ -192,10 +192,31 @@ class _EmployeeReportsScreenState extends ConsumerState<EmployeeReportsScreen> {
             style: AppTheme.headingMd,
           ),
           const SizedBox(height: 4),
-          Text(
-            rows.isEmpty ? 'Sin registros para el período seleccionado.' : '${rows.length} jornada(s) completadas.',
-            style: AppTheme.bodyMd,
-          ),
+          if (rows.isEmpty)
+            Text(
+              'Sin registros para el período seleccionado.',
+              style: AppTheme.bodyMd,
+            )
+          else
+            Row(
+              children: [
+                Text(
+                  '${rows.length}',
+                  style: const TextStyle(
+                    fontSize: 22,
+                    fontWeight: FontWeight.bold,
+                    color: AppColors.goldLight,
+                  ),
+                ),
+                const SizedBox(width: 6),
+                Expanded(
+                  child: Text(
+                    'jornada(s) completadas.',
+                    style: AppTheme.bodyMd,
+                  ),
+                ),
+              ],
+            ),
           if (rows.isEmpty) ...[
             const SizedBox(height: 12),
             Text(

@@ -136,7 +136,7 @@ void main() {
       expect(find.text('Jornada activa'), findsOneWidget);
       expect(find.text('Finalizar jornada'), findsOneWidget);
 
-      expect(find.text('Lugar: '), findsOneWidget);
+      expect(find.text('Lugar'), findsOneWidget);
       expect(find.text('Oficina Central'), findsWidgets);
       expect(find.textContaining('Ubicación'), findsNothing);
 

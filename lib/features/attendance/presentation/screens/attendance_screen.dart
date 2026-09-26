@@ -216,10 +216,13 @@ class _AttendanceScreenState extends ConsumerState<AttendanceScreen> {
             ],
           ),
           const SizedBox(height: 16),
-          _infoRow('Inicio', _formatDateTime(active.checkInTime)),
+          _kvRow('Inicio', _formatDateTime(active.checkInTime)),
           if (workplaceName != null) ...[
-            const SizedBox(height: 8),
-            _infoRow('Lugar', workplaceName!),
+            Divider(
+              height: 24,
+              color: AppColors.gold.withValues(alpha: 0.1),
+            ),
+            _kvRow('Lugar', workplaceName!),
           ],
           const SizedBox(height: 20),
           SizedBox(
@@ -333,21 +336,22 @@ class _AttendanceScreenState extends ConsumerState<AttendanceScreen> {
     );
   }
 
-  Widget _infoRow(String label, String value) {
+  Widget _kvRow(String key, String value) {
     return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          '$label: ',
-          style: AppTheme.bodyMd,
-        ),
+        Text(key, style: AppTheme.bodyMd),
+        const SizedBox(width: 12),
         Expanded(
           child: Text(
             value,
-            style: const TextStyle(
-              fontWeight: FontWeight.w600,
-              color: AppColors.textWhite,
-            ),
+            textAlign: TextAlign.right,
             overflow: TextOverflow.ellipsis,
+            style: const TextStyle(
+              fontWeight: FontWeight.w500,
+              color: AppColors.textWhite,
+              fontFeatures: [FontFeature.tabularFigures()],
+            ),
           ),
         ),
       ],

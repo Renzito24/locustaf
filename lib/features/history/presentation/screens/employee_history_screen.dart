@@ -100,22 +100,34 @@ class EmployeeHistoryScreen extends ConsumerWidget {
                           color: AppColors.textWhite,
                         ),
                       ),
-                      const SizedBox(height: 4),
-                      Text(
-                        'Entrada: ${_formatTime(record.checkInTime)}'
-                        '${record.checkOutTime != null ? '  |  Salida: ${_formatTime(record.checkOutTime!)}' : ''}'
-                        '${record.durationMinutes != null ? '  |  ${_formatDuration(record.durationMinutes!)}' : ''}',
-                        style: AppTheme.bodyMd,
-                      ),
+                      const SizedBox(height: 6),
+                      _kvRow('Entrada', _formatTime(record.checkInTime)),
+                      if (record.checkOutTime != null) ...[
+                        Divider(
+                          height: 14,
+                          color: AppColors.gold.withValues(alpha: 0.1),
+                        ),
+                        _kvRow('Salida', _formatTime(record.checkOutTime!)),
+                      ],
+                      if (record.durationMinutes != null) ...[
+                        Divider(
+                          height: 14,
+                          color: AppColors.gold.withValues(alpha: 0.1),
+                        ),
+                        _kvRow(
+                          'Duración',
+                          _formatDuration(record.durationMinutes!),
+                        ),
+                      ],
                       if (record.workplaceId != null &&
                           workplaceMap[record.workplaceId!] != null) ...[
-                        const SizedBox(height: 2),
-                        Text(
-                          'Lugar: ${workplaceMap[record.workplaceId!]}',
-                          style: AppTheme.bodyMd.copyWith(
-                            fontSize: 11,
-                            color: AppColors.textMuted.withValues(alpha: 0.7),
-                          ),
+                        Divider(
+                          height: 14,
+                          color: AppColors.gold.withValues(alpha: 0.1),
+                        ),
+                        _kvRow(
+                          'Lugar',
+                          workplaceMap[record.workplaceId!]!,
                         ),
                       ],
                     ],
@@ -137,6 +149,27 @@ class EmployeeHistoryScreen extends ConsumerWidget {
               ],
             ),
           ),
+      ],
+    );
+  }
+
+  Widget _kvRow(String key, String value) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(key, style: AppTheme.bodyMd),
+        const SizedBox(width: 8),
+        Expanded(
+          child: Text(
+            value,
+            textAlign: TextAlign.right,
+            style: const TextStyle(
+              color: AppColors.textWhite,
+              fontWeight: FontWeight.w500,
+              fontFeatures: [FontFeature.tabularFigures()],
+            ),
+          ),
+        ),
       ],
     );
   }

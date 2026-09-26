@@ -200,7 +200,8 @@ void main() {
         exporter: _FakeReportExporter(excelOutcome: true, pdfOutcome: true),
       );
 
-      expect(find.text('1 jornada(s) completadas.'), findsOneWidget);
+      expect(find.text('jornada(s) completadas.'), findsOneWidget);
+      expect(find.text('1'), findsOneWidget);
 
       await tapExportButton(tester, 'Excel');
 
@@ -330,7 +331,7 @@ void main() {
       await selectMonth(tester, target);
 
       expect(find.text('Sin registros para el período seleccionado.'), findsOneWidget);
-      expect(find.text('1 jornada(s) completadas.'), findsNothing);
+      expect(find.text('jornada(s) completadas.'), findsNothing);
     });
   });
 }

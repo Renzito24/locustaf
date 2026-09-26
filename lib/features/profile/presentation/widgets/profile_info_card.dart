@@ -61,26 +61,25 @@ class ProfileInfoCard extends StatelessWidget {
         Icon(icon, size: 20, color: AppColors.textMuted),
         const SizedBox(width: 12),
         Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                label,
-                style: const TextStyle(
-                  fontSize: 12,
-                  color: AppColors.textMuted,
-                ),
-              ),
-              const SizedBox(height: 2),
-              Text(
-                value,
-                style: const TextStyle(
-                  fontSize: 15,
-                  color: AppColors.textWhite,
-                  fontWeight: FontWeight.w500,
-                ),
-              ),
-            ],
+          child: Text(
+            label,
+            style: const TextStyle(
+              fontSize: 12,
+              color: AppColors.textMuted,
+            ),
+          ),
+        ),
+        const SizedBox(width: 12),
+        Flexible(
+          child: Text(
+            value,
+            textAlign: TextAlign.right,
+            style: const TextStyle(
+              fontSize: 15,
+              color: AppColors.textWhite,
+              fontWeight: FontWeight.w500,
+              fontFeatures: [FontFeature.tabularFigures()],
+            ),
           ),
         ),
       ],

@@ -161,9 +161,17 @@ class _SectionHeader extends StatelessWidget {
   Widget build(BuildContext context) {
     return Row(
       children: [
-        Icon(icon, size: 20, color: AppColors.gold),
+        Icon(icon, size: 18, color: AppColors.gold),
         const SizedBox(width: 8),
-        Text(title, style: AppTheme.headingMd),
+        Text(
+          title.toUpperCase(),
+          style: const TextStyle(
+            fontSize: 12,
+            fontWeight: FontWeight.w600,
+            letterSpacing: 1.2,
+            color: AppColors.textMuted,
+          ),
+        ),
         const Spacer(),
         FilledButton.icon(
           onPressed: onAdd,

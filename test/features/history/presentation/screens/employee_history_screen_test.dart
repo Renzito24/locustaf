@@ -91,17 +91,20 @@ void main() {
     expect(find.text('Activo'), findsOneWidget);
     expect(find.text('Completado'), findsOneWidget);
 
-    expect(find.textContaining('Lugar: Sucursal Central'), findsNWidgets(2));
-    expect(find.textContaining('Entrada: 09:00'), findsOneWidget);
-    expect(find.textContaining('Entrada: 09:30'), findsOneWidget);
+    expect(find.text('Lugar'), findsNWidgets(2));
+    expect(find.text('Sucursal Central'), findsNWidgets(2));
+    expect(find.text('Entrada'), findsNWidgets(2));
+    expect(find.text('09:00'), findsOneWidget);
+    expect(find.text('09:30'), findsOneWidget);
     expect(find.textContaining('8h 0min'), findsOneWidget);
   });
 
   testWidgets('jornada activa no muestra salida ni duración', (tester) async {
     await pumpHistory(tester, attendances: [activeRecord()]);
 
-    expect(find.textContaining('Entrada: 09:30'), findsOneWidget);
-    expect(find.textContaining('Salida:'), findsNothing);
+    expect(find.text('Entrada'), findsOneWidget);
+    expect(find.text('09:30'), findsOneWidget);
+    expect(find.text('Salida'), findsNothing);
     expect(find.textContaining('min'), findsNothing);
   });
 

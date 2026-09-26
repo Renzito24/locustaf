@@ -70,7 +70,7 @@ class EmployeeHomeScreen extends ConsumerWidget {
           const SizedBox(height: 24),
           _buildWorkplaceCard(user, workplacesAsync),
           const SizedBox(height: 24),
-          Text('Tus métricas de ${_months[now.month - 1]}', style: AppTheme.headingMd),
+          _sectionLabel('Tus métricas de ${_months[now.month - 1]}'),
           const SizedBox(height: 12),
           attendancesAsync.when(
             data: (allAttendances) {
@@ -152,21 +152,30 @@ class EmployeeHomeScreen extends ConsumerWidget {
               return Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  _workplaceRow(Icons.location_on_outlined, found.nombre),
+                  _kvRow('Ubicación', found.nombre),
                   if (found.direccion != null && found.direccion!.isNotEmpty) ...[
-                    const SizedBox(height: 8),
-                    _workplaceRow(Icons.route_outlined, found.direccion!),
+                    Divider(
+                      height: 24,
+                      color: AppColors.gold.withValues(alpha: 0.1),
+                    ),
+                    _kvRow('Dirección', found.direccion!),
                   ],
-                  const SizedBox(height: 8),
-                  _workplaceRow(
-                    Icons.schedule,
-                    'Horario: ${found.horaInicio ?? '--:--'} - ${found.horaFin ?? '--:--'}',
+                  Divider(
+                    height: 24,
+                    color: AppColors.gold.withValues(alpha: 0.1),
+                  ),
+                  _kvRow(
+                    'Horario',
+                    '${found.horaInicio ?? '--:--'} - ${found.horaFin ?? '--:--'}',
                   ),
                   if (found.radio != null) ...[
-                    const SizedBox(height: 8),
-                    _workplaceRow(
-                      Icons.radio_button_checked_outlined,
-                      'Radio de geocerca: ${found.radio!.toStringAsFixed(0)} m',
+                    Divider(
+                      height: 24,
+                      color: AppColors.gold.withValues(alpha: 0.1),
+                    ),
+                    _kvRow(
+                      'Geocerca',
+                      '${found.radio!.toStringAsFixed(0)} m',
                     ),
                   ],
                 ],
@@ -228,17 +237,32 @@ class EmployeeHomeScreen extends ConsumerWidget {
     );
   }
 
-  Widget _workplaceRow(IconData icon, String value) {
+  Widget _sectionLabel(String text) {
+    return Text(
+      text.toUpperCase(),
+      style: const TextStyle(
+        fontSize: 12,
+        fontWeight: FontWeight.w600,
+        letterSpacing: 1.2,
+        color: AppColors.textMuted,
+      ),
+    );
+  }
+
+  Widget _kvRow(String key, String value) {
     return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Icon(icon, size: 18, color: AppColors.textMuted),
-        const SizedBox(width: 8),
+        Text(key, style: AppTheme.bodyMd),
+        const SizedBox(width: 12),
         Expanded(
           child: Text(
             value,
+            textAlign: TextAlign.right,
             style: const TextStyle(
               color: AppColors.textWhite,
               fontWeight: FontWeight.w500,
+              fontFeatures: [FontFeature.tabularFigures()],
             ),
           ),
         ),
@@ -252,7 +276,7 @@ class EmployeeHomeScreen extends ConsumerWidget {
         icon: Icons.calendar_today,
         label: 'Días trabajados',
         value: stats.daysWorked.toString(),
-        color: AppColors.gold,
+        color: AppColors.goldLight,
       ),
       _MetricCard(
         icon: Icons.access_time,
