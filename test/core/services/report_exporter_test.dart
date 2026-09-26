@@ -42,7 +42,7 @@ void main() {
       expect(text(rows[1][4]), '480');
     });
 
-    test('genera celdas vacías cuando no hay salida ni duración', () {
+    test('marca el lugar de trabajo como "-" cuando no se pudo resolver', () {
       final bytes = ReportExporter.buildAttendanceExcelBytes([
         AttendanceReportRow(
           employeeName: 'Juan Pérez',
@@ -59,7 +59,8 @@ void main() {
       final rows = sheet!.rows;
 
       expect(rows.length, 2);
-      expect(text(rows[1][1]), '');
+      // Nunca una celda en blanco: indistinguishable de un dato faltante.
+      expect(text(rows[1][1]), '-');
       expect(text(rows[1][3]), '');
       expect(text(rows[1][4]), '');
     });

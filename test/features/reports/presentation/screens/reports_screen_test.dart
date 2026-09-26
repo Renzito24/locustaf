@@ -87,12 +87,18 @@ void main() {
   Future<void> pumpScreen(
     WidgetTester tester, {
     ReportExporter? exporter,
+    bool workplacesPending = false,
+    bool settle = true,
   }) async {
     await tester.pumpWidget(
       ProviderScope(
         overrides: [
           allUsersStreamProvider.overrideWith((ref) => Stream.value([user])),
-          allWorkplacesStreamProvider.overrideWith((ref) => Stream.value([workplace])),
+          allWorkplacesStreamProvider.overrideWith(
+            (ref) => workplacesPending
+                ? const Stream<List<WorkplaceModel>>.empty()
+                : Stream.value([workplace]),
+          ),
           allAttendancesStreamProvider.overrideWith((ref) => Stream.value([attendance])),
           workplacesStreamProvider.overrideWith((ref) => Stream.value([workplace])),
           currentCompanyProvider.overrideWith((ref) => Stream.value(null)),
@@ -104,7 +110,14 @@ void main() {
         ),
       ),
     );
-    await tester.pumpAndSettle();
+    // Con el stream de lugares pendiente queda un spinner girando: en ese caso
+    // pumpAndSettle nunca converge.
+    if (settle) {
+      await tester.pumpAndSettle();
+    } else {
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 100));
+    }
   }
 
   // Los botones de exportación viven debajo del pliegue en la pantalla de
@@ -230,6 +243,48 @@ void main() {
 
       expect(find.textContaining('Error al exportar PDF'), findsOneWidget);
       expect(find.text('Reporte PDF exportado correctamente'), findsNothing);
+    },
+  );
+
+  testWidgets(
+    'con el stream de lugares sin emitir la exportación queda bloqueada (evita '
+    'un reporte con "Lugar de trabajo" vacío)',
+    (tester) async {
+      await pumpScreen(
+        tester,
+        exporter: _FakeReportExporter(excelOutcome: true, pdfOutcome: true),
+        workplacesPending: true,
+        settle: false,
+      );
+
+      final excel = tester.widget<OutlinedButton>(
+        find.widgetWithText(OutlinedButton, 'Excel'),
+      );
+      final pdf = tester.widget<OutlinedButton>(
+        find.widgetWithText(OutlinedButton, 'PDF'),
+      );
+      expect(excel.onPressed, isNull);
+      expect(pdf.onPressed, isNull);
+      expect(
+        find.textContaining('Cargando lugares de trabajo'),
+        findsOneWidget,
+      );
+    },
+  );
+
+  testWidgets(
+    'con lugares cargados la exportación queda habilitada',
+    (tester) async {
+      await pumpScreen(
+        tester,
+        exporter: _FakeReportExporter(excelOutcome: true, pdfOutcome: true),
+      );
+
+      final excel = tester.widget<OutlinedButton>(
+        find.widgetWithText(OutlinedButton, 'Excel'),
+      );
+      expect(excel.onPressed, isNotNull);
+      expect(find.textContaining('Cargando lugares de trabajo'), findsNothing);
     },
   );
 }

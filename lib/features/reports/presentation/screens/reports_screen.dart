@@ -29,6 +29,7 @@ class ReportsScreen extends ConsumerWidget {
     final currentPage = ref.watch(attendanceReportPageProvider);
     final filter = ref.watch(attendanceReportFilterProvider);
     final workplacesListAsync = ref.watch(workplacesStreamProvider);
+    final workplacesReady = ref.watch(workplacesNamesReadyProvider);
     final exporter = ref.watch(reportExporterProvider);
 
     final anyLoaded = usersAsync.hasValue || workplacesAsync.hasValue || attendancesAsync.hasValue;
@@ -59,7 +60,7 @@ class ReportsScreen extends ConsumerWidget {
                 const SizedBox(height: 24),
                 _buildFilters(ref, filter, workplacesListAsync),
                 const SizedBox(height: 16),
-                _buildReportHeader(context, reportRows, exporter),
+                _buildReportHeader(context, reportRows, exporter, workplacesReady),
                 const SizedBox(height: 12),
                 _buildReportTable(reportRows),
                 if (totalPages > 1) ...[
@@ -122,12 +123,17 @@ class ReportsScreen extends ConsumerWidget {
     BuildContext context,
     List<AttendanceReportRow> rows,
     ReportExporter exporter,
+    bool workplacesReady,
   ) {
+    // Nunca exportar mientras falte el stream de lugares: las filas saldrían
+    // con "Lugar de trabajo" sin resolver.
+    final canExport = rows.isNotEmpty && workplacesReady;
+
     return LayoutBuilder(
       builder: (context, constraints) {
         final isNarrow = constraints.maxWidth < 480;
         final excelButton = OutlinedButton.icon(
-          onPressed: rows.isEmpty ? null : () => _exportExcel(context, rows, exporter),
+          onPressed: canExport ? () => _exportExcel(context, rows, exporter) : null,
           icon: const Icon(Icons.grid_on, size: 18),
           label: const Text('Excel'),
           style: OutlinedButton.styleFrom(
@@ -136,7 +142,7 @@ class ReportsScreen extends ConsumerWidget {
           ),
         );
         final pdfButton = OutlinedButton.icon(
-          onPressed: rows.isEmpty ? null : () => _exportPdf(context, rows, exporter),
+          onPressed: canExport ? () => _exportPdf(context, rows, exporter) : null,
           icon: const Icon(Icons.picture_as_pdf, size: 18),
           label: const Text('PDF'),
           style: OutlinedButton.styleFrom(
@@ -158,20 +164,56 @@ class ReportsScreen extends ConsumerWidget {
                   Expanded(child: pdfButton),
                 ],
               ),
+              if (_needsWorkplacesHint(rows, workplacesReady)) ...[
+                const SizedBox(height: 8),
+                _workplacesPendingHint(),
+              ],
             ],
           );
         }
 
-        return Row(
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('Reporte de asistencia', style: AppTheme.headingMd),
-            const Spacer(),
-            excelButton,
-            const SizedBox(width: 8),
-            pdfButton,
+            Row(
+              children: [
+                Text('Reporte de asistencia', style: AppTheme.headingMd),
+                const Spacer(),
+                excelButton,
+                const SizedBox(width: 8),
+                pdfButton,
+              ],
+            ),
+            if (_needsWorkplacesHint(rows, workplacesReady)) ...[
+              const SizedBox(height: 8),
+              _workplacesPendingHint(),
+            ],
           ],
         );
       },
+    );
+  }
+
+  bool _needsWorkplacesHint(List<AttendanceReportRow> rows, bool ready) {
+    return !ready && rows.isNotEmpty;
+  }
+
+  Widget _workplacesPendingHint() {
+    return Row(
+      children: [
+        const SizedBox(
+          width: 12,
+          height: 12,
+          child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.gold),
+        ),
+        const SizedBox(width: 8),
+        Expanded(
+          child: Text(
+            'Cargando lugares de trabajo... La exportación se habilita al terminar.',
+            style: AppTheme.bodyMd.copyWith(color: AppColors.textMuted),
+          ),
+        ),
+      ],
     );
   }
 

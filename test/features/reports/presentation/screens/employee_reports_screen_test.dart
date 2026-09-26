@@ -106,6 +106,8 @@ void main() {
     Size size = const Size(800, 1200),
     List<AttendanceModel>? attendances,
     ReportExporter? exporter,
+    bool workplacesPending = false,
+    bool settle = true,
   }) async {
     tester.view.physicalSize = size;
     tester.view.devicePixelRatio = 1.0;
@@ -120,8 +122,11 @@ void main() {
           attendancesByUserProvider('u1')
               .overrideWith((ref) => Stream.value(attendances ?? <AttendanceModel>[])),
           currentAppUserProvider.overrideWith((ref) => Stream.value(user)),
-          activeWorkplacesProvider
-              .overrideWith((ref) => AsyncValue.data([workplace])),
+          activeWorkplacesProvider.overrideWith(
+            (ref) => workplacesPending
+                ? const AsyncValue<Never>.loading()
+                : AsyncValue.data([workplace]),
+          ),
           if (exporter != null)
             reportExporterProvider.overrideWithValue(exporter),
         ],
@@ -144,7 +149,14 @@ void main() {
         ),
       ),
     );
-    await tester.pumpAndSettle();
+    // Con los lugares pendientes queda un spinner girando: pumpAndSettle no
+    // converge en ese caso.
+    if (settle) {
+      await tester.pumpAndSettle();
+    } else {
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 100));
+    }
   }
 
   Future<void> tapExportButton(WidgetTester tester, String label) async {
@@ -332,6 +344,43 @@ void main() {
 
       expect(find.text('Sin registros para el período seleccionado.'), findsOneWidget);
       expect(find.text('jornada(s) completadas.'), findsNothing);
+    });
+  });
+
+  group('Reportes del empleado — lugares de trabajo pendientes', () {
+    testWidgets('con el stream de lugares sin emitir la exportación queda '
+        'bloqueada (evita un reporte con "Lugar de trabajo" vacío)', (tester) async {
+      await pumpScreen(
+        tester,
+        attendances: [attendanceIn(time: now)],
+        exporter: _FakeReportExporter(excelOutcome: true, pdfOutcome: true),
+        workplacesPending: true,
+        settle: false,
+      );
+
+      final excelBtn = tester.widget<OutlinedButton>(
+        find.ancestor(of: find.text('Excel'), matching: find.byType(OutlinedButton)),
+      );
+      final pdfBtn = tester.widget<OutlinedButton>(
+        find.ancestor(of: find.text('PDF'), matching: find.byType(OutlinedButton)),
+      );
+      expect(excelBtn.onPressed, isNull);
+      expect(pdfBtn.onPressed, isNull);
+      expect(find.textContaining('Cargando lugares de trabajo'), findsOneWidget);
+    });
+
+    testWidgets('con lugares cargados la exportación queda habilitada', (tester) async {
+      await pumpScreen(
+        tester,
+        attendances: [attendanceIn(time: now)],
+        exporter: _FakeReportExporter(excelOutcome: true, pdfOutcome: true),
+      );
+
+      final excelBtn = tester.widget<OutlinedButton>(
+        find.ancestor(of: find.text('Excel'), matching: find.byType(OutlinedButton)),
+      );
+      expect(excelBtn.onPressed, isNotNull);
+      expect(find.textContaining('Cargando lugares de trabajo'), findsNothing);
     });
   });
 }

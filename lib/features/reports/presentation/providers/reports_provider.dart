@@ -20,6 +20,17 @@ final activeWorkplacesCountProvider = Provider<int>((ref) {
   return data.where((w) => w.isActive).length;
 });
 
+/// `true` cuando el stream de lugares ya emitió y los nombres de "Lugar de
+/// trabajo" del reporte se pueden resolver.
+///
+/// El nombre se arma con el snapshot del stream; si se exportara antes de la
+/// primera emisión, todas las filas saldrían sin lugar (el síntoma del
+/// workplace vacío en PDF/Excel). Las pantallas de exportación usan esto para
+/// bloquear el botón en vez de emitir un reporte incompleto en silencio.
+final workplacesNamesReadyProvider = Provider<bool>((ref) {
+  return ref.watch(allWorkplacesStreamProvider).hasValue;
+});
+
 String _todayDate() {
   final now = DateTime.now();
   return '${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}';

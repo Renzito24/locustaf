@@ -183,7 +183,7 @@ class ReportExporter {
     for (final row in rows) {
       excelFile.appendRow('Sheet1', [
         TextCellValue(row.employeeName),
-        TextCellValue(row.workplaceName ?? ''),
+        TextCellValue(row.workplaceName ?? '-'),
         TextCellValue(_formatDateTime(row.checkInTime)),
         TextCellValue(
           row.checkOutTime != null ? _formatDateTime(row.checkOutTime!) : '',

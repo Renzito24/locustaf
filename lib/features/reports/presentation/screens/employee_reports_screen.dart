@@ -66,7 +66,12 @@ class _EmployeeReportsScreenState extends ConsumerState<EmployeeReportsScreen> {
             data: (allAttendances) {
               final filtered = _filterByMonth(allAttendances);
               final rows = _buildRows(filtered, userAsync.value, workplacesAsync);
-              return _buildExportSection(context, rows, exporter);
+              return _buildExportSection(
+                context,
+                rows,
+                exporter,
+                workplacesAsync.hasValue,
+              );
             },
             loading: () => AppTheme.loadingState(message: 'Cargando reportes...'),
             error: (e, _) => AppTheme.errorState('Error al cargar reportes: $e'),
@@ -178,8 +183,12 @@ class _EmployeeReportsScreenState extends ConsumerState<EmployeeReportsScreen> {
     BuildContext context,
     List<AttendanceReportRow> rows,
     ReportExporter exporter,
+    bool workplacesReady,
   ) {
     final monthName = _monthName(_selectedMonth);
+    // Nunca exportar mientras falte el stream de lugares: las filas saldrían
+    // con "Lugar de trabajo" sin resolver.
+    final canExport = rows.isNotEmpty && workplacesReady;
 
     return AppCard(
       child: Column(
@@ -221,13 +230,34 @@ class _EmployeeReportsScreenState extends ConsumerState<EmployeeReportsScreen> {
               'No se pueden exportar reportes si no hay asistencias completadas.',
               style: AppTheme.bodyMd.copyWith(color: AppColors.warning),
             ),
+          ] else if (!workplacesReady) ...[
+            const SizedBox(height: 12),
+            Row(
+              children: [
+                const SizedBox(
+                  width: 12,
+                  height: 12,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    color: AppColors.gold,
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    'Cargando lugares de trabajo... La exportación se habilita al terminar.',
+                    style: AppTheme.bodyMd.copyWith(color: AppColors.textMuted),
+                  ),
+                ),
+              ],
+            ),
           ],
           const SizedBox(height: 16),
           LayoutBuilder(
             builder: (context, constraints) {
               final isNarrow = constraints.maxWidth < 480;
               final excelButton = OutlinedButton.icon(
-                onPressed: rows.isEmpty ? null : () => _exportExcel(context, rows, exporter),
+                onPressed: canExport ? () => _exportExcel(context, rows, exporter) : null,
                 icon: const Icon(Icons.grid_on, size: 18),
                 label: const Text('Excel'),
                 style: OutlinedButton.styleFrom(
@@ -236,7 +266,7 @@ class _EmployeeReportsScreenState extends ConsumerState<EmployeeReportsScreen> {
                 ),
               );
               final pdfButton = OutlinedButton.icon(
-                onPressed: rows.isEmpty ? null : () => _exportPdf(context, rows, exporter),
+                onPressed: canExport ? () => _exportPdf(context, rows, exporter) : null,
                 icon: const Icon(Icons.picture_as_pdf, size: 18),
                 label: const Text('PDF'),
                 style: OutlinedButton.styleFrom(
