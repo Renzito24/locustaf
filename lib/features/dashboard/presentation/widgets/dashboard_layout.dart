@@ -1,8 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../../../core/constants/app_colors.dart';
+import '../../../../core/models/user_model.dart';
+import '../../../../core/router/app_routes.dart';
 import '../../../../core/theme/app_theme.dart';
+import '../../../authentication/presentation/providers/auth_provider.dart';
+import 'employee_bottom_nav_bar.dart';
 import 'sidebar.dart';
 
 class DashboardLayout extends ConsumerWidget {
@@ -14,11 +19,21 @@ class DashboardLayout extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final isMobile = AppTheme.isMobile(context);
 
-    if (isMobile) {
-      return _MobileLayout(child: child);
+    if (!isMobile) {
+      return _DesktopLayout(child: child);
     }
 
-    return _DesktopLayout(child: child);
+    final role = ref.watch(userRoleProvider);
+    if (role == UserRole.employee) {
+      final isPushedForm = GoRouterState.of(context).uri.path ==
+          RoutePaths.employeeCreateIncidence;
+      return _MobileLayout(
+        bottomNavigationBar: isPushedForm ? null : const EmployeeBottomNavBar(),
+        child: child,
+      );
+    }
+
+    return _MobileLayout(child: child);
   }
 }
 
@@ -50,8 +65,9 @@ class _DesktopLayout extends StatelessWidget {
 
 class _MobileLayout extends ConsumerWidget {
   final Widget child;
+  final Widget? bottomNavigationBar;
 
-  const _MobileLayout({required this.child});
+  const _MobileLayout({required this.child, this.bottomNavigationBar});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -85,6 +101,7 @@ class _MobileLayout extends ConsumerWidget {
           ),
         ),
       ),
+      bottomNavigationBar: bottomNavigationBar,
       body: Container(
         decoration: const BoxDecoration(gradient: AppTheme.bgGradient),
         child: child,
