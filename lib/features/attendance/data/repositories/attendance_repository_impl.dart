@@ -1,4 +1,3 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:cloud_functions/cloud_functions.dart';
 
 import '../../../../core/services/firestore_service.dart';
@@ -13,31 +12,12 @@ class AttendanceRepositoryImpl implements AttendanceRepository {
   final String? _companyId;
   final FirebaseFunctions? _functions;
 
-  /// Un lock se considera huérfano/abandonado tras este tiempo sin check-out,
-  /// y puede ser reclamado en un nuevo check-in (TTL de recuperación).
-  static const Duration lockStaleTimeout = Duration(hours: 24);
-
   AttendanceRepositoryImpl(
     this._firestoreService, {
     String? companyId,
     FirebaseFunctions? functions,
   })  : _functions = functions,
         _companyId = companyId;
-
-  DateTime? _parseLockTime(dynamic value) {
-    if (value is Timestamp) return value.toDate();
-    if (value is String) {
-      return DateTime.tryParse(value)?.toLocal();
-    }
-    if (value is DateTime) return value;
-    return null;
-  }
-
-  bool _isLockStale(dynamic lockedAt) {
-    final time = _parseLockTime(lockedAt);
-    if (time == null) return false;
-    return DateTime.now().difference(time) > lockStaleTimeout;
-  }
 
   @override
   Stream<List<AttendanceModel>> getAttendancesByUser(String userId) {
@@ -148,55 +128,19 @@ class AttendanceRepositoryImpl implements AttendanceRepository {
 
   @override
   Future<void> manualCheckIn(AttendanceModel attendance) async {
-    await _createAttendance(attendance);
-  }
-
-  /// Crea un registro de asistencia activo y su lock, con protección
-  /// anti-duplicado. Usado tanto por el check-in normal como por el manual.
-  Future<void> _createAttendance(AttendanceModel attendance) async {
-    final lockRef =
-        _firestoreService.collection('_attendance_locks').doc(attendance.userId);
-
-    await _firestoreService.runTransaction((transaction) async {
-      final lockDoc = await transaction.get(lockRef);
-      if (lockDoc.exists) {
-        final data = lockDoc.data() as Map<String, dynamic>;
-        final attendanceId = data['attendanceId'] as String?;
-
-        // El lock puede ser huérfano: la asistencia asociada ya fue finalizada
-        // (o no existe), o el lock quedó abandonado más allá de la tolerancia
-        // TTL. En esos casos se reclama el lock y se continúa.
-        var isReclaimable = _isLockStale(data['lockedAt'] ?? data['checkInTime']);
-        if (!isReclaimable && attendanceId != null) {
-          final attendanceRef =
-              _firestoreService.collection('attendances').doc(attendanceId);
-          final attendanceDoc = await transaction.get(attendanceRef);
-          isReclaimable = !attendanceDoc.exists ||
-              (attendanceDoc.data() as Map<String, dynamic>)['status'] ==
-                  'completed';
-        }
-        if (!isReclaimable) {
-          throw AttendanceException(
-            'Ya tenés una asistencia activa desde las ${data['checkInTime'] ?? 'desconocido'}. '
-            'Finalizala antes de registrar una nueva.',
-          );
-        }
-      }
-
-      final attendanceRef =
-          _firestoreService.collection('attendances').doc();
-      final data = attendance.toJson();
-      data['id'] = attendanceRef.id;
-      if (_companyId != null) data['companyId'] = _companyId;
-
-      transaction.set(attendanceRef, data);
-      transaction.set(lockRef, {
-        'attendanceId': attendanceRef.id,
+    final functions = _functions;
+    if (functions == null) {
+      throw AttendanceException('El servicio de Cloud Functions no está configurado.');
+    }
+    try {
+      final callable = functions.httpsCallable('manualCheckIn');
+      await callable<Map<String, dynamic>>({
+        'targetUserId': attendance.userId,
         'checkInTime': attendance.checkInTime.toUtc().toIso8601String(),
-        'lockedAt': Timestamp.fromDate(DateTime.now().toUtc()),
-        'status': 'active',
       });
-    });
+    } on FirebaseFunctionsException catch (e) {
+      throw AttendanceException(e.message ?? 'No se pudo registrar la asistencia.');
+    }
   }
 
   @override
@@ -223,42 +167,16 @@ class AttendanceRepositoryImpl implements AttendanceRepository {
 
   @override
   Future<void> finalizeOrphaned(String attendanceId, String userId) async {
-    final attendanceRef =
-        _firestoreService.collection('attendances').doc(attendanceId);
-    final lockRef =
-        _firestoreService.collection('_attendance_locks').doc(userId);
-
-    await _firestoreService.runTransaction((transaction) async {
-      final attendanceDoc = await transaction.get(attendanceRef);
-      if (!attendanceDoc.exists) {
-        throw AttendanceException('Registro de asistencia no encontrado.');
-      }
-      final attendanceData =
-          attendanceDoc.data() as Map<String, dynamic>;
-      if (attendanceData['userId'] != userId) {
-        throw AttendanceException('Este registro no te pertenece.');
-      }
-      if (attendanceData['status'] == 'completed') {
-        throw AttendanceException('Esta asistencia ya fue finalizada.');
-      }
-
-      final now = DateTime.now();
-      final checkInTime = _parseLockTime(attendanceData['checkInTime']);
-      if (checkInTime == null && attendanceData['checkInTime'] != null) {
-        throw AttendanceException('Asistencia con fecha de ingreso inválida.');
-      }
-      final durationMinutes = checkInTime == null
-          ? 0
-          : now.difference(checkInTime).inMinutes;
-
-      transaction.update(attendanceRef, {
-        'checkOutTime': Timestamp.fromDate(now.toUtc()),
-        'durationMinutes': durationMinutes,
-        'status': 'completed',
-        'isOrphaned': true,
-      });
-      transaction.delete(lockRef);
-    });
+    final functions = _functions;
+    if (functions == null) {
+      throw AttendanceException('El servicio de Cloud Functions no está configurado.');
+    }
+    try {
+      final callable = functions.httpsCallable('finalizeOrphaned');
+      await callable<Map<String, dynamic>>({'attendanceId': attendanceId});
+    } on FirebaseFunctionsException catch (e) {
+      throw AttendanceException(e.message ?? 'No se pudo finalizar la jornada.');
+    }
   }
 
   @override

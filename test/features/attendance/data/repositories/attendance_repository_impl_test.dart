@@ -4,16 +4,55 @@ import 'package:app_locustaf/features/attendance/data/models/attendance_model.da
 import 'package:app_locustaf/features/attendance/data/repositories/attendance_repository_impl.dart';
 import 'package:app_locustaf/features/attendance/domain/exceptions/attendance_exception.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:cloud_functions/cloud_functions.dart';
 import 'package:fake_cloud_firestore/fake_cloud_firestore.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-/// Test de integración del repositorio de asistencia contra un Firestore
-/// fake en memoria (fake_cloud_firestore). Simula el flujo real de datos:
-/// checkIn → lock → checkOut / reclamación de locks → consultas y paginación.
-///
-/// Nota: usa `FakeFirebaseFirestore` porque las transacciones (`runTransaction`)
-/// no pueden mockearse de forma fiable, y este es el acercamiento estándar
-/// para tests de repositorios Firestore.
+class _FakeFirebaseFunctions implements FirebaseFunctions {
+  _FakeFirebaseFunctions(this._handler);
+
+  final void Function(Map<String, dynamic> parameters) _handler;
+  final List<Map<String, dynamic>> calls = [];
+
+  @override
+  HttpsCallable httpsCallable(String name, {HttpsCallableOptions? options}) {
+    return _FakeHttpsCallable((parameters) {
+      calls.add(parameters);
+      _handler(parameters);
+    });
+  }
+
+  @override
+  dynamic noSuchMethod(Invocation invocation) =>
+      throw UnimplementedError('${invocation.memberName}');
+}
+
+class _FakeHttpsCallable implements HttpsCallable {
+  _FakeHttpsCallable(this._handler);
+
+  final void Function(Map<String, dynamic> parameters) _handler;
+
+  @override
+  Future<HttpsCallableResult<T>> call<T>([dynamic parameters]) async {
+    _handler(parameters as Map<String, dynamic>);
+    throw StateError('La callable falsa solo produce errores controlados');
+  }
+
+  @override
+  dynamic noSuchMethod(Invocation invocation) =>
+      throw UnimplementedError('${invocation.memberName}');
+}
+
+class _FunctionsException extends FirebaseFunctionsException {
+  _FunctionsException(String message)
+      : super(message: message, code: 'internal');
+}
+
+/// Test del repositorio de asistencia contra Firestore fake en memoria
+/// (fake_cloud_firestore) + mock del runtime de Cloud Functions. La escritura
+/// (checkInGeo/manualCheckIn) y el cierre (checkOutGeo/finalizeOrphaned) se
+/// delegan a callables del servidor; aquí se verifica la delegación, la
+/// traducción de errores de callable a AttendanceException y las consultas.
 void main() {
   const companyId = 'company-1';
   const userId = 'user-1';
@@ -98,127 +137,58 @@ void main() {
     await fake.collection('attendances').doc(attendance.id).set(data);
   }
 
-  Future<void> seedLock({
-    String? user = userId,
-    String? attendanceId,
-    DateTime? lockedAt,
-    DateTime? checkInTime,
-  }) async {
-    await fake.collection('_attendance_locks').doc(user ?? userId).set({
-      'attendanceId': attendanceId,
-      'checkInTime': (checkInTime ?? DateTime.now().toLocal()).toIso8601String(),
-      'lockedAt': lockedAt != null
-          ? Timestamp.fromDate(lockedAt)
-          : Timestamp.fromDate(DateTime.now().toUtc()),
-      'status': 'active',
-    });
-  }
-
   setUp(() {
     fake = FakeFirebaseFirestore();
     service = FirestoreService(fake);
     repo = AttendanceRepositoryImpl(service, companyId: companyId);
   });
 
-  /* ------------------------------- check-in -------------------------------- */
+  /* --------------------------- check-in manual --------------------------- */
 
-  group('manualCheckIn (alta, lock anti-duplicado)', () {
-    test('crea una asistencia activa y un lock válido para el usuario', () async {
-      await repo.manualCheckIn(buildAttendance());
-
-      final attendances = await fake
-          .collection('attendances')
-          .where('userId', isEqualTo: userId)
-          .get();
-      expect(attendances.docs, hasLength(1));
-      expect(attendances.docs.first.get('status'), 'active');
-      expect(attendances.docs.first.get('companyId'), companyId);
-      expect(attendances.docs.first.get('checkInLatitud'), -34.6037);
-
-      final locks = await fake.collection('_attendance_locks').doc(userId).get();
-      expect(locks.exists, isTrue);
-      expect(locks.get('attendanceId'), attendances.docs.first.id);
-      expect(locks.get('status'), 'active');
-    });
-
-    test('rechaza un nuevo check-in si hay un lock activo y vigente', () async {
-      await repo.manualCheckIn(buildAttendance());
-
+  group('manualCheckIn (delegación a callable)', () {
+    test('delega en la callable manualCheckIn (sin Cloud Functions: error y sin escrituras)', () async {
       expect(
-        () => repo.manualCheckIn(buildAttendance(checkInTime: DateTime.now().add(const Duration(minutes: 5)))),
+        () => repo.manualCheckIn(buildAttendance()),
         throwsA(
           isA<AttendanceException>().having(
             (e) => e.message,
             'message',
-            contains('Ya tenés una asistencia activa'),
+            contains('Cloud Functions'),
           ),
         ),
       );
+
+      expect((await fake.collection('attendances').get()).docs, isEmpty);
+      expect((await fake.collection('_attendance_locks').get()).docs, isEmpty);
     });
 
-    test('reclama un lock huérfano cuando la asistencia asociada se finalizó', () async {
-      await repo.manualCheckIn(buildAttendance(id: 'att-completed'));
-      final attendanceId = (await fake
-              .collection('attendances')
-              .where('userId', isEqualTo: userId)
-              .get())
-          .docs
-          .first
-          .id;
-      // Finalizamos la asistencia pero dejamos (o simulamos) un lock residual.
-      await fake.collection('attendances').doc(attendanceId).update({
-        'status': 'completed',
-        'checkOutTime': Timestamp.fromDate(DateTime.now().toUtc()),
+    test('envía targetUserId/checkInTime y traduce el error de la callable a AttendanceException', () async {
+      final checkInTime = DateTime.now().toLocal();
+      final functions = _FakeFirebaseFunctions((_) {
+        throw _FunctionsException(
+          'La hora de ingreso no puede diferir más de 15 minutos de la hora actual.',
+        );
       });
-      await seedLock(user: userId, attendanceId: attendanceId, lockedAt: DateTime.now().toUtc());
+      final repoWithFunctions = AttendanceRepositoryImpl(service,
+          companyId: companyId, functions: functions);
 
-      // El lock apunta a una asistencia ya completada → es reclamable.
-      await repo.manualCheckIn(buildAttendance(checkInTime: DateTime.now().add(const Duration(minutes: 10))));
-
-      final locks = await fake.collection('_attendance_locks').doc(userId).get();
-      expect(locks.exists, isTrue);
-      expect(locks.get('attendanceId'), isNot(attendanceId));
-    });
-
-    test('reclama un lock vencido por TTL (más de 24h) aunque la asistencia siga activa', () async {
-      await repo.manualCheckIn(buildAttendance(id: 'att-stale'));
-      final attendanceId = (await fake
-              .collection('attendances')
-              .where('userId', isEqualTo: userId)
-              .get())
-          .docs
-          .first
-          .id;
-      // Lock abandonado hace más de 24h → TTL permite reclamarlo.
-      await seedLock(
-        user: userId,
-        attendanceId: attendanceId,
-        lockedAt: DateTime.now().subtract(const Duration(hours: 25)),
-        checkInTime: DateTime.now().subtract(const Duration(hours: 25)),
+      await expectLater(
+        repoWithFunctions
+            .manualCheckIn(buildAttendance(checkInTime: checkInTime)),
+        throwsA(
+          isA<AttendanceException>().having(
+            (e) => e.message,
+            'message',
+            'La hora de ingreso no puede diferir más de 15 minutos de la hora actual.',
+          ),
+        ),
       );
 
-      await repo.manualCheckIn(buildAttendance(checkInTime: DateTime.now()));
-
-      final locks = await fake.collection('_attendance_locks').doc(userId).get();
-      expect(locks.exists, isTrue);
-      expect(locks.get('attendanceId'), isNot(attendanceId));
-    });
-
-    test('no reclama un lock vigente con asistencia aún activa', () async {
-      await repo.manualCheckIn(buildAttendance(id: 'att-active'));
-      final attendanceId = (await fake
-              .collection('attendances')
-              .where('userId', isEqualTo: userId)
-              .get())
-          .docs
-          .first
-          .id;
-      // Lock reciente apuntando a una asistencia activa → NO reclamable.
-      await seedLock(user: userId, attendanceId: attendanceId, lockedAt: DateTime.now().toUtc());
-
+      expect(functions.calls, hasLength(1));
+      expect(functions.calls.single['targetUserId'], userId);
       expect(
-        () => repo.manualCheckIn(buildAttendance(checkInTime: DateTime.now().add(const Duration(minutes: 2)))),
-        throwsA(isA<AttendanceException>()),
+        functions.calls.single['checkInTime'],
+        checkInTime.toUtc().toIso8601String(),
       );
     });
   });
@@ -247,45 +217,45 @@ void main() {
     });
   });
 
-  /* --------------------------- órdenes huérfanas --------------------------- */
+  /* ---------------------------- órdenes huérfanas --------------------------- */
 
-  group('finalizeOrphaned', () {
-    test('finaliza una jornada huérfana, marca isOrphaned y limpia el lock', () async {
-      final checkInTime = DateTime.now().subtract(const Duration(hours: 9));
-      await repo.manualCheckIn(buildAttendance(id: 'att-orphan', checkInTime: checkInTime));
-      final attendanceId = (await fake
-              .collection('attendances')
-              .where('userId', isEqualTo: userId)
-              .get())
-          .docs
-          .first
-          .id;
+  group('finalizeOrphaned (delegación a callable)', () {
+    test('delega en la callable finalizeOrphaned (sin Cloud Functions: error y sin escrituras)', () async {
+      expect(
+        () => repo.finalizeOrphaned('att-1', userId),
+        throwsA(
+          isA<AttendanceException>().having(
+            (e) => e.message,
+            'message',
+            contains('Cloud Functions'),
+          ),
+        ),
+      );
 
-      await repo.finalizeOrphaned(attendanceId, userId);
-
-      final doc = await fake.collection('attendances').doc(attendanceId).get();
-      expect(doc.get('status'), 'completed');
-      expect(doc.get('isOrphaned'), isTrue);
-      expect(doc.get('durationMinutes'), greaterThanOrEqualTo(8 * 60));
-
-      final lock = await fake.collection('_attendance_locks').doc(userId).get();
-      expect(lock.exists, isFalse);
+      expect((await fake.collection('attendances').get()).docs, isEmpty);
+      expect((await fake.collection('_attendance_locks').get()).docs, isEmpty);
     });
 
-    test('lanza error si no pertenece al usuario', () async {
-      await repo.manualCheckIn(buildAttendance());
-      final attendanceId = (await fake
-              .collection('attendances')
-              .where('userId', isEqualTo: userId)
-              .get())
-          .docs
-          .first
-          .id;
+    test('envía attendanceId y traduce el error de la callable a AttendanceException', () async {
+      final functions = _FakeFirebaseFunctions((_) {
+        throw _FunctionsException('Registro de asistencia no encontrado.');
+      });
+      final repoWithFunctions = AttendanceRepositoryImpl(service,
+          companyId: companyId, functions: functions);
 
-      expect(
-        () => repo.finalizeOrphaned(attendanceId, 'other-user'),
-        throwsA(isA<AttendanceException>()),
+      await expectLater(
+        repoWithFunctions.finalizeOrphaned('att-999', userId),
+        throwsA(
+          isA<AttendanceException>().having(
+            (e) => e.message,
+            'message',
+            'Registro de asistencia no encontrado.',
+          ),
+        ),
       );
+
+      expect(functions.calls, hasLength(1));
+      expect(functions.calls.single['attendanceId'], 'att-999');
     });
   });
 

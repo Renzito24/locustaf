@@ -61,6 +61,46 @@ class _ServerEmulatorRepository extends AttendanceRepositoryImpl {
   }
 
   @override
+  Future<void> manualCheckIn(AttendanceModel attendance) async {
+    await fake.runTransaction((tx) async {
+      final lockRef = fake.collection('_attendance_locks').doc(attendance.userId);
+      final lockDoc = await tx.get(lockRef);
+      if (lockDoc.exists) {
+        final data = lockDoc.data() as Map<String, dynamic>;
+        final attendanceId = data['attendanceId'] as String?;
+        var isReclaimable = _isStaleLock(data);
+        if (!isReclaimable && attendanceId != null) {
+          final attendanceRef = fake.collection('attendances').doc(attendanceId);
+          final attendanceDoc = await tx.get(attendanceRef);
+          isReclaimable = !attendanceDoc.exists ||
+              (attendanceDoc.data() as Map<String, dynamic>)['status'] ==
+                  'completed';
+        }
+        if (!isReclaimable) {
+          throw AttendanceException(
+            'Ya tenés una asistencia activa desde las '
+            '${data['checkInTime'] ?? 'desconocido'}. '
+            'Finalizala antes de registrar una nueva.',
+          );
+        }
+      }
+
+      final attendanceRef = fake.collection('attendances').doc();
+      final data = attendance.toJson();
+      data['id'] = attendanceRef.id;
+      if (attendance.companyId != null) data['companyId'] = attendance.companyId;
+
+      tx.set(attendanceRef, data);
+      tx.set(lockRef, {
+        'attendanceId': attendanceRef.id,
+        'checkInTime': attendance.checkInTime.toUtc().toIso8601String(),
+        'lockedAt': Timestamp.fromDate(DateTime.now().toUtc()),
+        'status': 'active',
+      });
+    });
+  }
+
+  @override
   Future<void> checkOut({
     required String attendanceId,
     required double latitud,
@@ -156,6 +196,22 @@ class FakeGeolocatorPlatform extends GeolocatorPlatform {
     }
     return position!;
   }
+}
+
+bool _isStaleLock(Map<String, dynamic> data) {
+  final raw = data['lockedAt'] ?? data['checkInTime'];
+  final DateTime? time;
+  if (raw is Timestamp) {
+    time = raw.toDate();
+  } else if (raw is String) {
+    time = DateTime.tryParse(raw);
+  } else if (raw is DateTime) {
+    time = raw;
+  } else {
+    time = null;
+  }
+  if (time == null) return false;
+  return DateTime.now().difference(time) > const Duration(hours: 24);
 }
 
 /// Test E2E del flujo de asistencia: el notifier con sus providers reales
