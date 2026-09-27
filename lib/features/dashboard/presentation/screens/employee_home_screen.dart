@@ -57,50 +57,66 @@ class EmployeeHomeScreen extends ConsumerWidget {
         ? company!.diasLaborables
         : const [1, 2, 3, 4, 5];
 
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(24),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text('Principal', style: AppTheme.headingLg),
-          const SizedBox(height: 4),
-          Text(
-            'Tu jornada y tus métricas de ${_months[now.month - 1]} de ${now.year}.',
-            style: AppTheme.bodyLg,
-          ),
-          const SizedBox(height: 24),
-          _buildWorkplaceCard(user, workplacesAsync),
-          const SizedBox(height: 24),
-          _sectionLabel('Tus métricas de ${_months[now.month - 1]}'),
-          const SizedBox(height: 12),
-          attendancesAsync.when(
-            data: (allAttendances) {
-              final stats = EmployeeReportStats.compute(
-                monthAttendances: allAttendances,
-                incidences: incidences,
-                laborableDays: laborableDays,
-                employmentStart: user?.createdAt,
-                selectedMonth: now.month,
-                selectedYear: now.year,
-                now: now,
-              );
-              return _buildMetrics(stats);
-            },
-            loading: () => AppTheme.loadingState(message: 'Cargando métricas...'),
-            error: (e, _) => AppTheme.errorState('Error al cargar métricas: $e'),
-          ),
-          const SizedBox(height: 24),
-          Center(
-            child: Text(
-              '$appVersion · $appBuildLabel',
-              style: TextStyle(
-                color: AppColors.textMuted.withValues(alpha: 0.5),
-                fontSize: 11,
-                letterSpacing: 0.5,
+    // Forzar refresh de workplaces al montar la pantalla (resuelve caché de Firestore)
+    // Solo se ejecuta una vez al montar el widget.
+    // ignore: invalid_use_of_protected_member, invalid_use_of_visible_for_testing_member
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      ref.invalidate(activeWorkplacesProvider);
+      ref.invalidate(workplacesStreamProvider);
+    });
+
+    return RefreshIndicator(
+      onRefresh: () async {
+        ref.invalidate(activeWorkplacesProvider);
+        ref.invalidate(workplacesStreamProvider);
+        ref.invalidate(currentAppUserProvider);
+        await Future.delayed(const Duration(milliseconds: 500));
+      },
+      child: SingleChildScrollView(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('Principal', style: AppTheme.headingLg),
+            const SizedBox(height: 4),
+            Text(
+              'Tu jornada y tus métricas de ${_months[now.month - 1]} de ${now.year}.',
+              style: AppTheme.bodyLg,
+            ),
+            const SizedBox(height: 24),
+            _buildWorkplaceCard(user, workplacesAsync),
+            const SizedBox(height: 24),
+            _sectionLabel('Tus métricas de ${_months[now.month - 1]}'),
+            const SizedBox(height: 12),
+            attendancesAsync.when(
+              data: (allAttendances) {
+                final stats = EmployeeReportStats.compute(
+                  monthAttendances: allAttendances,
+                  incidences: incidences,
+                  laborableDays: laborableDays,
+                  employmentStart: user?.createdAt,
+                  selectedMonth: now.month,
+                  selectedYear: now.year,
+                  now: now,
+                );
+                return _buildMetrics(stats);
+              },
+              loading: () => AppTheme.loadingState(message: 'Cargando métricas...'),
+              error: (e, _) => AppTheme.errorState('Error al cargar métricas: $e'),
+            ),
+            const SizedBox(height: 24),
+            Center(
+              child: Text(
+                '$appVersion · $appBuildLabel',
+                style: TextStyle(
+                  color: AppColors.textMuted.withValues(alpha: 0.5),
+                  fontSize: 11,
+                  letterSpacing: 0.5,
+                ),
               ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
