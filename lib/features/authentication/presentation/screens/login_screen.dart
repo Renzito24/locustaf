@@ -1,5 +1,6 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
@@ -76,7 +77,27 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
     });
   }
 
+  /// Código real de un [FirebaseException] (`plugin/error`), que se pierde si
+  /// se usa `error.code` (devuelve `unknown` para todo error de plugin).
+  String _firebaseErrorCode(FirebaseException error) {
+    final match = RegExp(r'\[([^\]]+)\]').firstMatch(error.toString());
+    return match?.group(1) ?? error.code;
+  }
+
   String _mensajeError(Object error) {
+    // El detalle técnico se muestra a propósito: un catch genérico dejaba
+    // "Error inesperado" para cualquier fallo (Firestore, plugin de plataforma)
+    // y no había forma de diagnosticar fallos que solo aparecen en Android.
+    final msg = error.toString().toLowerCase();
+    if (msg.contains('idpiframe_initialization_failed') ||
+        msg.contains('google sign-in is not initialized') ||
+        msg.contains('clientid')) {
+      return 'Error de configuración de Google Sign-In. Verificá el Client ID web en index.html.';
+    }
+    if (msg.contains('popup')) {
+      return 'Inicio de sesión cancelado';
+    }
+
     if (error is FirebaseAuthException) {
       switch (error.code) {
         case 'user-not-found':
@@ -99,19 +120,26 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
         case 'cancelled-popup-request':
           return 'Inicio de sesión cancelado';
         default:
-          return 'Error al iniciar sesión: ${error.message ?? error.code}';
+          return 'Error al iniciar sesión [${error.code}]: ${error.message ?? 'sin detalle'}';
       }
     }
-    final msg = error.toString().toLowerCase();
-    if (msg.contains('idpiframe_initialization_failed') ||
-        msg.contains('google sign-in is not initialized') ||
-        msg.contains('clientid')) {
-      return 'Error de configuración de Google Sign-In. Verificá el Client ID web en index.html.';
+
+    // p.ej. fallo de Firestore en la lectura del documento de usuario que
+    // ocurre justo después de autenticar. `FirebaseException.code` devuelve
+    // solo "unknown" para plugins: el código real (plugin/error) únicamente
+    // aparece en `toString()`, así que se extrae de ahí.
+    if (error is FirebaseException) {
+      return 'Error de Firebase [${_firebaseErrorCode(error)}]: '
+          '${error.message ?? 'sin detalle'}';
     }
-    if (msg.contains('popup')) {
-      return 'Inicio de sesión cancelado';
+
+    // p.ej. fallos de canales de plataforma (Google Play Services, permisos).
+    if (error is PlatformException) {
+      final detail = error.message == null ? '' : ' ${error.message}';
+      return 'Error del dispositivo [${error.code}]:$detail';
     }
-    return 'Error inesperado. Intente nuevamente.';
+
+    return 'Error inesperado [${error.runtimeType}]: $error';
   }
 
   Future<void> login() async {
@@ -148,6 +176,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
       if (!mounted) return;
       context.go('/dashboard');
     } on Exception catch (e) {
+      debugPrint('LOGIN ERROR [${e.runtimeType}]: $e');
       setState(() {
         errorMessage = _mensajeError(e);
       });

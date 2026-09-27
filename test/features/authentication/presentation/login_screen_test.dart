@@ -4,6 +4,7 @@ import 'package:app_locustaf/features/authentication/presentation/providers/auth
 import 'package:app_locustaf/features/authentication/presentation/screens/login_screen.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
@@ -158,7 +159,41 @@ void main() {
       authRepo.loginError = Exception('boom');
       await pumpLogin(tester);
       await loginConCredencialesValidas(tester);
-      expect(find.text('Error inesperado. Intente nuevamente.'), findsOneWidget);
+      expect(find.textContaining('Error inesperado'), findsOneWidget);
+      expect(find.textContaining('boom'), findsOneWidget);
+    });
+
+    // El detalle técnico no puede volver a quedar oculto tras un mensaje
+    // genérico: en Android release un fallo de Firestore o de un canal de
+    // plataforma llegaba como "Error inesperado" sin ninguna pista.
+    testWidgets('FirebaseException: muestra el código de Firebase', (tester) async {
+      authRepo.loginError = FirebaseException(
+        plugin: 'cloud_firestore',
+        message: 'Missing or insufficient permissions.',
+      );
+      await pumpLogin(tester);
+      await loginConCredencialesValidas(tester);
+      expect(
+        find.textContaining('[cloud_firestore/unknown]'),
+        findsOneWidget,
+      );
+      expect(find.textContaining('Missing or insufficient permissions.'), findsOneWidget);
+    });
+
+    testWidgets('PlatformException: muestra el código del dispositivo',
+        (tester) async {
+      authRepo.loginError = PlatformException(code: 'DEVELOPER_ERROR');
+      await pumpLogin(tester);
+      await loginConCredencialesValidas(tester);
+      expect(find.textContaining('[DEVELOPER_ERROR]'), findsOneWidget);
+    });
+
+    testWidgets('FirebaseAuthException con code no mapeado: muestra el code',
+        (tester) async {
+      authRepo.loginError = FirebaseAuthException(code: 'internal-error');
+      await pumpLogin(tester);
+      await loginConCredencialesValidas(tester);
+      expect(find.textContaining('[internal-error]'), findsOneWidget);
     });
   });
 
