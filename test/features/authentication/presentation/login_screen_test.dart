@@ -188,6 +188,16 @@ void main() {
       expect(find.textContaining('[DEVELOPER_ERROR]'), findsOneWidget);
     });
 
+    // Un Error/FlutterError (p. ej. contexto de GoRouter desmontado al
+    // navegar) antes se escapaba del `on Exception` y dejaba al usuario sin
+    // ningún mensaje.
+    testWidgets('FlutterError: muestra el mensaje sin crashear', (tester) async {
+      authRepo.loginError = FlutterError('GoRouter context deactivated');
+      await pumpLogin(tester);
+      await loginConCredencialesValidas(tester);
+      expect(find.textContaining('GoRouter context deactivated'), findsOneWidget);
+    });
+
     testWidgets('FirebaseAuthException con code no mapeado: muestra el code',
         (tester) async {
       authRepo.loginError = FirebaseAuthException(code: 'internal-error');

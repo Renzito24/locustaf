@@ -139,7 +139,19 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
       return 'Error del dispositivo [${error.code}]:$detail';
     }
 
-    return 'Error inesperado [${error.runtimeType}]: $error';
+    // Errores del framework (p.ej. el contexto de GoRouter ya fue
+    // desmontado al navegar) llegan como FlutterError/Error, no como Exception.
+    if (error is FlutterError) {
+      return 'Error de interfaz: ${_acortar(error.message)}';
+    }
+
+    return 'Error inesperado [${error.runtimeType}]: ${_acortar('$error')}';
+  }
+
+  /// Evita que un error con stack trace largo rompa el layout del mensaje.
+  String _acortar(String texto, [int max = 180]) {
+    final limpio = texto.replaceAll('\n', ' ').trim();
+    return limpio.length <= max ? limpio : '${limpio.substring(0, max)}…';
   }
 
   Future<void> login() async {
@@ -175,8 +187,11 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
 
       if (!mounted) return;
       context.go('/dashboard');
-    } on Exception catch (e) {
+    } catch (e) {
+      // `catch (e)` y no `on Exception`: un Error/FlutterError de navegación
+      // escapaba por completo y el usuario se quedaba sin ningún mensaje.
       debugPrint('LOGIN ERROR [${e.runtimeType}]: $e');
+      if (!mounted) return;
       setState(() {
         errorMessage = _mensajeError(e);
       });
