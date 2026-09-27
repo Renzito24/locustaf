@@ -24,6 +24,13 @@ class UsersRepositoryImpl implements UsersRepository {
 
   @override
   Future<void> createUser(UserModel user, String password) async {
+    if (_companyId == null || _companyId.isEmpty) {
+      throw StateError(
+        'No hay empresa en sesion: el usuario se crearia con companyId null y '
+        'quedaria invisible para el admin que lo cargo.',
+      );
+    }
+
     final adminApp = await Firebase.initializeApp(
       name: 'adminCreation',
       options: Firebase.app().options,

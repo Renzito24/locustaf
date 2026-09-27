@@ -9,6 +9,7 @@ import '../../domain/services/attendance_calculator.dart';
 import '../../../../core/providers/data_providers.dart';
 import '../../../../core/providers/firebase_providers.dart';
 import '../../../../core/services/logging_service.dart';
+import '../../../../core/services/stream_retry.dart';
 import '../../../workplaces/data/models/workplace_model.dart';
 
 final attendanceRepositoryProvider = Provider<AttendanceRepository>((ref) {
@@ -20,12 +21,12 @@ final attendanceRepositoryProvider = Provider<AttendanceRepository>((ref) {
 
 final attendancesByUserProvider = StreamProvider.family<List<AttendanceModel>, String>((ref, userId) {
   final repo = ref.read(attendanceRepositoryProvider);
-  return repo.getAttendancesByUser(userId);
+  return retryOnError(() => repo.getAttendancesByUser(userId));
 });
 
 final activeAttendanceProvider = StreamProvider.family<AttendanceModel?, String>((ref, userId) {
   final repo = ref.read(attendanceRepositoryProvider);
-  return repo.getActiveAttendance(userId);
+  return retryOnError(() => repo.getActiveAttendance(userId));
 });
 
 /// Jornada huérfana del usuario: su asistencia ACTIVA que superó el fin de

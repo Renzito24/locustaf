@@ -110,4 +110,47 @@ void main() {
     expect(state.error, isA<Exception>());
     expect(state.status, isNot(CreateEmployeeStatus.success));
   });
+
+  // Regresión: sin empresa en sesión el documento se guardaba con
+  // `companyId: null`, y como la lista de empleados filtra por `companyId` el
+  // usuario quedaba invisible para el admin que lo cargó.
+  test('sin companyId en sesión NO crea el usuario y explica el motivo', () async {
+    final repository = FakeUsersRepository();
+    final container = ProviderContainer(
+      overrides: [
+        usersRepositoryProvider.overrideWithValue(repository),
+        currentCompanyIdProvider.overrideWithValue(null),
+      ],
+    );
+    addTearDown(container.dispose);
+
+    await container
+        .read(createEmployeeProvider.notifier)
+        .createEmployee(formData());
+
+    final state = container.read(createEmployeeProvider);
+    expect(repository.createCalls, 0, reason: 'no debe tocar Firestore');
+    expect(state.status, CreateEmployeeStatus.failure);
+    expect(state.isLoading, isFalse);
+    expect(state.error, contains('empresa'));
+  });
+
+  test('con companyId vacío tampoco crea el usuario', () async {
+    final repository = FakeUsersRepository();
+    final container = ProviderContainer(
+      overrides: [
+        usersRepositoryProvider.overrideWithValue(repository),
+        currentCompanyIdProvider.overrideWithValue(''),
+      ],
+    );
+    addTearDown(container.dispose);
+
+    await container
+        .read(createEmployeeProvider.notifier)
+        .createEmployee(formData());
+
+    expect(repository.createCalls, 0);
+    expect(container.read(createEmployeeProvider).status,
+        CreateEmployeeStatus.failure);
+  });
 }

@@ -57,7 +57,10 @@ class EmployeeHistoryScreen extends ConsumerWidget {
               return _buildRecords(ref, sorted);
             },
             loading: () => AppTheme.loadingState(message: 'Cargando historial...'),
-            error: (e, _) => AppTheme.errorState('Error al cargar el historial: $e'),
+            error: (e, _) => AppTheme.errorState(
+              'Error al cargar el historial: $e',
+              onRetry: () => ref.invalidate(attendancesByUserProvider(userId)),
+            ),
           ),
         ],
       ),

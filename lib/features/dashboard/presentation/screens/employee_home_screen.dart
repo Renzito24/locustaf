@@ -76,12 +76,7 @@ class EmployeeHomeScreen extends ConsumerWidget {
     });
 
     return RefreshIndicator(
-      onRefresh: () async {
-        ref.invalidate(activeWorkplacesProvider);
-        ref.invalidate(workplacesStreamProvider);
-        ref.invalidate(currentAppUserProvider);
-        await Future.delayed(const Duration(milliseconds: 500));
-      },
+      onRefresh: () => _refreshAll(ref, userId),
       child: SingleChildScrollView(
         padding: const EdgeInsets.all(24),
         child: Column(
@@ -113,8 +108,10 @@ class EmployeeHomeScreen extends ConsumerWidget {
               },
               loading: () =>
                   AppTheme.loadingState(message: 'Cargando métricas...'),
-              error: (e, _) =>
-                  AppTheme.errorState('Error al cargar métricas: $e'),
+              error: (e, _) => AppTheme.errorState(
+                'Error al cargar métricas: $e',
+                onRetry: () => _refreshAll(ref, userId),
+              ),
             ),
             const SizedBox(height: 24),
             Center(
@@ -131,6 +128,21 @@ class EmployeeHomeScreen extends ConsumerWidget {
         ),
       ),
     );
+  }
+
+  /// Re-pide TODOS los datos de la pantalla.
+  ///
+  /// Antes solo invalidaba los providers de lugar de trabajo, por eso un error
+  /// de metrics se quedaba latched hasta que el usuario borraba el cache de la
+  /// app: `attendancesByUserProvider` e `incidencesStreamProvider` nunca se
+  /// volvian a pedir.
+  Future<void> _refreshAll(WidgetRef ref, String userId) async {
+    ref.invalidate(attendancesByUserProvider(userId));
+    ref.invalidate(incidencesStreamProvider);
+    ref.invalidate(activeWorkplacesProvider);
+    ref.invalidate(workplacesStreamProvider);
+    ref.invalidate(currentAppUserProvider);
+    await Future.delayed(const Duration(milliseconds: 500));
   }
 
   Widget _buildWorkplaceCard(

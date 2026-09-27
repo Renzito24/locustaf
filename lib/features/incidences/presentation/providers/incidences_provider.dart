@@ -9,6 +9,7 @@ import '../../../../core/providers/data_providers.dart';
 import '../../../../core/providers/firebase_providers.dart';
 import '../../../../core/providers/async_action_state.dart';
 import '../../../../core/services/logging_service.dart';
+import '../../../../core/services/stream_retry.dart';
 
 final incidenceRepositoryProvider = Provider<IncidenceRepository>((ref) {
   final firestoreService = ref.read(firestoreServiceProvider);
@@ -28,7 +29,7 @@ final incidencesStreamProvider = StreamProvider<List<IncidenceModel>>((ref) {
   // después del primer frame. Con `read` la consulta quedaba clavada con
   // companyId == null y las incidencias nunca se recargaban.
   final repo = ref.watch(incidenceRepositoryProvider);
-  return repo.getIncidences();
+  return retryOnError(repo.getIncidences);
 });
 
 class IncidencesFilterState {

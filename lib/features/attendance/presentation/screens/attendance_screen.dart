@@ -79,7 +79,13 @@ class _AttendanceScreenState extends ConsumerState<AttendanceScreen> {
           activeAttendanceAsync.when(
             data: (active) => _buildActiveSection(context, ref, active, userId, isActionLoading),
             loading: () => AppTheme.loadingState(message: 'Cargando asistencia...'),
-            error: (e, _) => AppTheme.errorState('Error al cargar: $e'),
+            error: (e, _) => AppTheme.errorState(
+              'Error al cargar: $e',
+              onRetry: () {
+                ref.invalidate(activeAttendanceProvider(userId));
+                ref.invalidate(attendancesByUserProvider(userId));
+              },
+            ),
           ),
         ],
       ),

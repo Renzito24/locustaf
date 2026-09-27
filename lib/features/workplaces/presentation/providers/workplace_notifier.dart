@@ -6,6 +6,7 @@ import '../../domain/repositories/workplace_repository.dart';
 import '../../../../core/providers/async_action_state.dart';
 import '../../../../core/providers/data_providers.dart';
 import '../../../../core/providers/firebase_providers.dart';
+import '../../../../core/services/stream_retry.dart';
 
 final workplaceRepositoryProvider = Provider<WorkplaceRepository>((ref) {
   final svc = ref.read(firestoreServiceProvider);
@@ -19,7 +20,7 @@ final workplacesStreamProvider = StreamProvider<List<WorkplaceModel>>((ref) {
   // construía con companyId == null (lista vacía) y NUNCA se re-suscribía al
   // llegar el documento del usuario -> el empleado veía "Lugar no disponible".
   final repo = ref.watch(workplaceRepositoryProvider);
-  return repo.getWorkplaces();
+  return retryOnError(repo.getWorkplaces);
 });
 
 final activeWorkplacesProvider = Provider<AsyncValue<List<WorkplaceModel>>>((ref) {

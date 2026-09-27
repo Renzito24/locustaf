@@ -362,7 +362,7 @@ class AppTheme {
   }
 
   // ── Error State ──────────────────────────────────────────────────────────
-  static Widget errorState(String message) {
+  static Widget errorState(String message, {VoidCallback? onRetry}) {
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
@@ -379,6 +379,24 @@ class AppTheme {
           ),
           const SizedBox(height: 8),
           Text(message, style: bodyLg, textAlign: TextAlign.center),
+          if (onRetry != null) ...[
+            const SizedBox(height: 20),
+            OutlinedButton.icon(
+              onPressed: onRetry,
+              icon: const Icon(Icons.refresh, size: 18),
+              label: const Text('Reintentar'),
+              style: OutlinedButton.styleFrom(
+                foregroundColor: AppColors.gold,
+                side: BorderSide(
+                  color: AppColors.gold.withValues(alpha: 0.5),
+                ),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 20,
+                  vertical: 12,
+                ),
+              ),
+            ),
+          ],
         ],
       ),
     );

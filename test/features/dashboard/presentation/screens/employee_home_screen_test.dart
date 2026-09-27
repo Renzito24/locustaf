@@ -299,4 +299,111 @@ void main() {
       expectMetric(tester, 'Incidencias propias', '1');
     });
   });
+
+  // ── Regresión: las métricas quedaban latched en error ──────────────────
+  //
+  // Un update de APK conserva el cache local de Firestore. Si la consulta de
+  // asistencias fallaba una vez, `attendancesByUserProvider` quedaba en
+  // `AsyncError` para toda la sesión y el refresh automático solo invalidaba
+  // los providers de lugar de trabajo: las métricas seguían en error hasta
+  // que el usuario borraba el cache de la app a mano.
+  group('métricas: error y reintento', () {
+  Future<void> pumpHomeWithBrokenAttendances(WidgetTester tester) async {
+    tester.view.physicalSize = const Size(800, 1400);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          currentUserIdProvider.overrideWithValue('u1'),
+          userRoleProvider.overrideWithValue(UserRole.employee),
+          attendancesByUserProvider('u1').overrideWith(
+            (ref) => Stream<List<AttendanceModel>>.error(
+              StateError('cache local desactualizado'),
+            ),
+          ),
+          incidencesStreamProvider.overrideWith(
+            (ref) => Stream.value(const <IncidenceModel>[]),
+          ),
+          currentAppUserProvider.overrideWith(
+            (ref) => Stream.value(buildEmployeeUser(createdAt: monthStart)),
+          ),
+          currentCompanyProvider.overrideWith(
+            (ref) => Stream.value(buildCompany()),
+          ),
+          activeWorkplacesProvider
+              .overrideWith((ref) => const AsyncValue.data(<WorkplaceModel>[])),
+        ],
+        child: const MaterialApp(
+          home: Scaffold(body: EmployeeHomeScreen()),
+        ),
+      ),
+    );
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 100));
+  }
+
+    testWidgets('muestra el error de métricas con botón Reintentar', (tester) async {
+      await pumpHomeWithBrokenAttendances(tester);
+
+      expect(find.textContaining('Error al cargar métricas'), findsOneWidget);
+      expect(find.text('Reintentar'), findsOneWidget);
+    });
+
+    testWidgets('Reintentar vuelve a pedir las asistencias', (tester) async {
+      var subscribeCalls = 0;
+
+      tester.view.physicalSize = const Size(800, 1400);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            currentUserIdProvider.overrideWithValue('u1'),
+            userRoleProvider.overrideWithValue(UserRole.employee),
+            attendancesByUserProvider('u1').overrideWith((ref) {
+              subscribeCalls++;
+              return Stream<List<AttendanceModel>>.error(
+                StateError('cache local desactualizado'),
+              );
+            }),
+            incidencesStreamProvider.overrideWith(
+              (ref) => Stream.value(const <IncidenceModel>[]),
+            ),
+            currentAppUserProvider.overrideWith(
+              (ref) => Stream.value(buildEmployeeUser(createdAt: monthStart)),
+            ),
+            currentCompanyProvider.overrideWith(
+              (ref) => Stream.value(buildCompany()),
+            ),
+            activeWorkplacesProvider
+                .overrideWith((ref) => const AsyncValue.data(<WorkplaceModel>[])),
+          ],
+          child: const MaterialApp(
+            home: Scaffold(body: EmployeeHomeScreen()),
+          ),
+        ),
+      );
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 100));
+
+      final callsBeforeTap = subscribeCalls;
+      expect(callsBeforeTap, greaterThan(0));
+      expect(find.text('Reintentar'), findsOneWidget);
+
+      await tester.tap(find.text('Reintentar'));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 600));
+
+      expect(
+        subscribeCalls,
+        greaterThan(callsBeforeTap),
+        reason: 'Reintentar debe volver a pedir las asistencias',
+      );
+    });
+  });
 }

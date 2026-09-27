@@ -5,6 +5,7 @@ import '../../../../core/providers/data_providers.dart';
 import '../../../../core/providers/firebase_providers.dart';
 import '../../data/repositories/users_repository_impl.dart';
 import '../../domain/repositories/users_repository.dart';
+import '../../../../core/services/stream_retry.dart';
 
 final usersRepositoryProvider = Provider<UsersRepository>((ref) {
   final firestoreService = ref.read(firestoreServiceProvider);
@@ -17,7 +18,7 @@ final usersStreamProvider = StreamProvider<List<UserModel>>((ref) {
   // después del primer frame. Con `read` la consulta quedaba clavada con
   // companyId == null y la lista de empleados nunca se recargaba.
   final repo = ref.watch(usersRepositoryProvider);
-  return repo.getUsers();
+  return retryOnError(repo.getUsers);
 });
 
 enum EmployeeStatusFilter { all, active, inactive }
@@ -204,6 +205,17 @@ class CreateEmployeeNotifier extends Notifier<CreateEmployeeState> {
   CreateEmployeeState build() => const CreateEmployeeState.idle();
 
   Future<void> createEmployee(EmployeeFormData data) async {
+    // Sin empresa en sesion el documento se guardaria con `companyId: null`, y
+    // como la lista de empleados filtra por `companyId` el usuario recien
+    // creado quedaria invisible para el admin que lo cargo.
+    final companyId = ref.read(currentCompanyIdProvider);
+    if (companyId == null || companyId.isEmpty) {
+      state = const CreateEmployeeState.failure(
+        'No hay una empresa en sesión. Recargá la app e intentá de nuevo.',
+      );
+      return;
+    }
+
     state = const CreateEmployeeState.loading();
     final repo = ref.read(usersRepositoryProvider);
     try {
@@ -216,7 +228,7 @@ class CreateEmployeeNotifier extends Notifier<CreateEmployeeState> {
         telefono: data.telefono,
         rol: data.rol,
         lugarDeTrabajoId: data.lugarDeTrabajoId,
-        companyId: ref.read(currentCompanyIdProvider),
+        companyId: companyId,
         createdAt: DateTime.now(),
       );
       await repo.createUser(user, data.password);
