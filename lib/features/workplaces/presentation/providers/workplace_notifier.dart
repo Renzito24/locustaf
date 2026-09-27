@@ -14,7 +14,11 @@ final workplaceRepositoryProvider = Provider<WorkplaceRepository>((ref) {
 });
 
 final workplacesStreamProvider = StreamProvider<List<WorkplaceModel>>((ref) {
-  final repo = ref.read(workplaceRepositoryProvider);
+  // `watch` (no `read`): el repositorio está scopeado a la empresa del usuario,
+  // que todavía no está resuelta en el primer frame. Con `read` el stream se
+  // construía con companyId == null (lista vacía) y NUNCA se re-suscribía al
+  // llegar el documento del usuario -> el empleado veía "Lugar no disponible".
+  final repo = ref.watch(workplaceRepositoryProvider);
   return repo.getWorkplaces();
 });
 

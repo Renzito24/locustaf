@@ -24,7 +24,10 @@ final incidenceRepositoryProvider = Provider<IncidenceRepository>((ref) {
 });
 
 final incidencesStreamProvider = StreamProvider<List<IncidenceModel>>((ref) {
-  final repo = ref.read(incidenceRepositoryProvider);
+  // `watch`: el repositorio depende de empresa/rol/usuario, que se resuelven
+  // después del primer frame. Con `read` la consulta quedaba clavada con
+  // companyId == null y las incidencias nunca se recargaban.
+  final repo = ref.watch(incidenceRepositoryProvider);
   return repo.getIncidences();
 });
 

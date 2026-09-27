@@ -29,7 +29,10 @@ final medicalDocumentRepositoryProvider = Provider<MedicalDocumentRepository>((r
 });
 
 final medicalDocumentsStreamProvider = StreamProvider<List<MedicalDocumentModel>>((ref) {
-  final repo = ref.read(medicalDocumentRepositoryProvider);
+  // `watch`: el repositorio depende de empresa/rol/usuario, que se resuelven
+  // después del primer frame. Con `read` la consulta quedaba clavada con
+  // companyId == null y los documentos médicos nunca se recargaban.
+  final repo = ref.watch(medicalDocumentRepositoryProvider);
   return repo.getDocuments();
 });
 

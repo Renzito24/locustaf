@@ -13,7 +13,10 @@ final usersRepositoryProvider = Provider<UsersRepository>((ref) {
 });
 
 final usersStreamProvider = StreamProvider<List<UserModel>>((ref) {
-  final repo = ref.read(usersRepositoryProvider);
+  // `watch`: el repositorio depende de la empresa del usuario, que se resuelve
+  // después del primer frame. Con `read` la consulta quedaba clavada con
+  // companyId == null y la lista de empleados nunca se recargaba.
+  final repo = ref.watch(usersRepositoryProvider);
   return repo.getUsers();
 });
 
