@@ -53,7 +53,13 @@ class _DesktopLayout extends StatelessWidget {
             Expanded(
               child: Container(
                 color: AppColors.bgDarkTop.withValues(alpha: 0.5),
-                child: child,
+                child: Align(
+                  alignment: Alignment.topCenter,
+                  child: ConstrainedBox(
+                    constraints: const BoxConstraints(maxWidth: 1200),
+                    child: child,
+                  ),
+                ),
               ),
             ),
           ],

@@ -295,17 +295,6 @@ class _WorkplaceCardState extends ConsumerState<_WorkplaceCard> {
                         ],
                       ),
                     ],
-                    if (workplace.latitud != null && workplace.longitud != null) ...[
-                      const SizedBox(height: 2),
-                      Text(
-                        '${workplace.latitud!.toStringAsFixed(4)}, ${workplace.longitud!.toStringAsFixed(4)}',
-                        style: const TextStyle(
-                          color: AppColors.textMuted,
-                          fontSize: 11,
-                          fontFamily: 'monospace',
-                        ),
-                      ),
-                    ],
                   ],
                 ),
               ),

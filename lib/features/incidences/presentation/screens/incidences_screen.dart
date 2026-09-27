@@ -188,6 +188,7 @@ class IncidencesScreen extends ConsumerWidget {
                     const DataColumn(label: Text('Inicio', style: TextStyle(fontWeight: FontWeight.bold, color: AppColors.gold))),
                     const DataColumn(label: Text('Fin', style: TextStyle(fontWeight: FontWeight.bold, color: AppColors.gold))),
                     const DataColumn(label: Text('Estado', style: TextStyle(fontWeight: FontWeight.bold, color: AppColors.gold))),
+                    const DataColumn(label: Text('Aprobación', style: TextStyle(fontWeight: FontWeight.bold, color: AppColors.gold))),
                     if (isAdmin) const DataColumn(label: Text('Acciones', style: TextStyle(fontWeight: FontWeight.bold, color: AppColors.gold))),
                   ],
                   rows: incidences.map((inc) {
@@ -206,6 +207,7 @@ class IncidencesScreen extends ConsumerWidget {
                         DataCell(Text(_formatDate(inc.fechaInicio), style: const TextStyle(color: AppColors.textMuted))),
                         DataCell(Text(_formatDate(inc.fechaFin), style: const TextStyle(color: AppColors.textMuted))),
                         DataCell(_buildEstadoChip(inc.state)),
+                        DataCell(_buildAprobacionChip(inc.estado)),
                         if (isAdmin)
                           DataCell(Row(
                             children: [
@@ -253,6 +255,17 @@ class IncidencesScreen extends ConsumerWidget {
         return AppTheme.badge(label: state.label, bgColor: AppColors.success.withValues(alpha: 0.15), textColor: AppColors.success);
       case IncidenceState.finalizada:
         return AppTheme.badge(label: state.label, bgColor: AppColors.textMuted.withValues(alpha: 0.15), textColor: AppColors.textMuted);
+    }
+  }
+
+  Widget _buildAprobacionChip(IncidenceEstado estado) {
+    switch (estado) {
+      case IncidenceEstado.pendiente:
+        return AppTheme.badge(label: estado.label, bgColor: AppColors.warning.withValues(alpha: 0.15), textColor: AppColors.warning);
+      case IncidenceEstado.aprobado:
+        return AppTheme.badge(label: estado.label, bgColor: AppColors.success.withValues(alpha: 0.15), textColor: AppColors.success);
+      case IncidenceEstado.rechazado:
+        return AppTheme.badge(label: estado.label, bgColor: AppColors.error.withValues(alpha: 0.15), textColor: AppColors.error);
     }
   }
 

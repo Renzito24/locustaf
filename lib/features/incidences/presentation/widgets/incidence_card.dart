@@ -48,7 +48,10 @@ class IncidenceCard extends StatelessWidget {
                   runSpacing: 4,
                   alignment: WrapAlignment.end,
                   crossAxisAlignment: WrapCrossAlignment.center,
-                  children: [_StateBadge(state: incidence.state)],
+                  children: [
+                    _EstadoBadge(estado: incidence.estado),
+                    _StateBadge(state: incidence.state),
+                  ],
                 ),
               ),
             ],
@@ -131,6 +134,36 @@ class _StateBadge extends StatelessWidget {
           label: state.label,
           bgColor: AppColors.textMuted.withValues(alpha: 0.15),
           textColor: AppColors.textMuted,
+        );
+    }
+  }
+}
+
+class _EstadoBadge extends StatelessWidget {
+  final IncidenceEstado estado;
+
+  const _EstadoBadge({required this.estado});
+
+  @override
+  Widget build(BuildContext context) {
+    switch (estado) {
+      case IncidenceEstado.pendiente:
+        return AppTheme.badge(
+          label: estado.label,
+          bgColor: AppColors.warning.withValues(alpha: 0.15),
+          textColor: AppColors.warning,
+        );
+      case IncidenceEstado.aprobado:
+        return AppTheme.badge(
+          label: estado.label,
+          bgColor: AppColors.success.withValues(alpha: 0.15),
+          textColor: AppColors.success,
+        );
+      case IncidenceEstado.rechazado:
+        return AppTheme.badge(
+          label: estado.label,
+          bgColor: AppColors.error.withValues(alpha: 0.15),
+          textColor: AppColors.error,
         );
     }
   }

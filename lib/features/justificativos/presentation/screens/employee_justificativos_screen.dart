@@ -65,7 +65,7 @@ class EmployeeJustificativosScreen extends ConsumerWidget {
                 padding: const EdgeInsets.only(bottom: 8),
                 child: IncidenceCard(
                   incidence: inc,
-                  employeeName: 'Incidencia',
+                  employeeName: inc.type.label,
                   onTap: () => _showIncidenceDetail(context, inc),
                 ),
               ),

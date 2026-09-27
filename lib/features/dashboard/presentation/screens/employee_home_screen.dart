@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:url_launcher/url_launcher.dart';
 
 import '../../../../core/config/app_version.dart';
 import '../../../../core/constants/app_colors.dart';
@@ -428,125 +427,27 @@ class _WorkplaceDetailsCard extends StatelessWidget {
         ? '${found.nombre[0].toUpperCase()}${found.nombre.substring(1)}'
         : '';
 
-    // Formatear dirección con saltos de línea inteligentes
-    final List<String> addressLines = _splitAddress(found.direccion ?? '');
-
-    final List<Widget> children = [
-      // Nombre del lugar
-      _DataRowVertical(
-        label: 'Ubicación',
-        value: capitalizedName,
-        icon: Icons.location_on_outlined,
-      ),
-      const SizedBox(height: 16),
-    ];
-
-    // Dirección con botón "Ver en mapa"
-    if (found.direccion != null && found.direccion!.isNotEmpty) {
-      children.addAll([
-        _DataRowVertical(
-          label: 'Dirección',
-          value: addressLines.join('\n'),
-          icon: Icons.location_on,
-          isMultiline: true,
-        ),
-        const SizedBox(height: 8),
-        // Botón "Ver en mapa"
-        Align(
-          alignment: Alignment.centerLeft,
-          child: TextButton.icon(
-            onPressed: () => _openMap(found.direccion!, found.nombre),
-            icon: const Icon(Icons.map_outlined, size: 16),
-            label: const Text('Ver en mapa'),
-            style: TextButton.styleFrom(
-              foregroundColor: AppColors.goldLight,
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-              textStyle: const TextStyle(
-                fontSize: 12,
-                fontWeight: FontWeight.w500,
-              ),
-            ),
-          ),
-        ),
-        const SizedBox(height: 16),
-      ]);
-
-      // Divisor sutil
-      children.addAll([
-        Container(height: 1, color: AppColors.gold.withValues(alpha: 0.15)),
-        const SizedBox(height: 16),
-      ]);
-    }
-
     final String horarioValue = found.horaInicio != null
         ? '${found.horaInicio!} - ${found.horaFin ?? '----'}'
         : '---- - ----';
-    final String geocercaValue = found.radio != null
-        ? '${found.radio!.toStringAsFixed(0)} m'
-        : '';
-
-    children.add(
-      Row(
-        children: [
-          Expanded(
-            child: _DataRowVertical(
-              label: 'Horario',
-              value: horarioValue,
-              icon: Icons.access_time,
-              compact: true,
-            ),
-          ),
-          const SizedBox(width: 16),
-          geocercaValue.isNotEmpty
-              ? Expanded(
-                  child: _DataRowVertical(
-                    label: 'Geocerca',
-                    value: geocercaValue,
-                    icon: Icons.radio_button_checked,
-                    compact: true,
-                  ),
-                )
-              : const Expanded(child: SizedBox.shrink()),
-        ],
-      ),
-    );
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
-      children: children,
+      children: [
+        _DataRowVertical(
+          label: 'Ubicación',
+          value: capitalizedName,
+          icon: Icons.location_on_outlined,
+        ),
+        const SizedBox(height: 16),
+        _DataRowVertical(
+          label: 'Horario',
+          value: horarioValue,
+          icon: Icons.access_time,
+          compact: true,
+        ),
+      ],
     );
-  }
-
-  /// Divide la dirección en líneas lógicas (por comas, puntos y coma, o longitud).
-  List<String> _splitAddress(String address) {
-    // Dividir por comas, puntos y coma, o " - "
-    final parts = address
-        .split(RegExp(r'[,;]| - '))
-        .map((e) => e.trim())
-        .where((e) => e.isNotEmpty)
-        .toList();
-    // Si hay muchas partes, agrupar de a 2
-    if (parts.length > 3) {
-      final grouped = <String>[];
-      for (var i = 0; i < parts.length; i += 2) {
-        if (i + 1 < parts.length) {
-          grouped.add('${parts[i]}, ${parts[i + 1]}');
-        } else {
-          grouped.add(parts[i]);
-        }
-      }
-      return grouped;
-    }
-    return parts;
-  }
-
-  Future<void> _openMap(String address, String placeName) async {
-    final encoded = Uri.encodeComponent('$placeName, $address');
-    final url = 'https://www.google.com/maps/search/?api=1&query=$encoded';
-    final uri = Uri.parse(url);
-    if (await canLaunchUrl(uri)) {
-      await launchUrl(uri, mode: LaunchMode.externalApplication);
-    }
   }
 }
 
@@ -555,14 +456,12 @@ class _DataRowVertical extends StatelessWidget {
   final String label;
   final String value;
   final IconData icon;
-  final bool isMultiline;
   final bool compact;
 
   const _DataRowVertical({
     required this.label,
     required this.value,
     required this.icon,
-    this.isMultiline = false,
     this.compact = false,
   });
 
@@ -609,7 +508,7 @@ class _DataRowVertical extends StatelessWidget {
               child: Text(
                 value,
                 style: textStyle,
-                maxLines: isMultiline ? 3 : 1,
+                maxLines: 1,
                 overflow: TextOverflow.ellipsis,
               ),
             ),

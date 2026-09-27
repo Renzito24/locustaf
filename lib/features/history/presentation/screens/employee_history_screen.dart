@@ -79,87 +79,111 @@ class EmployeeHistoryScreen extends ConsumerWidget {
             padding: const EdgeInsets.only(bottom: 8),
             child: AppCard(
               padding: const EdgeInsets.all(16),
-            child: Row(
-              children: [
-                Icon(
-                  record.status == AttendanceStatus.active
-                      ? Icons.play_circle_outline
-                      : Icons.check_circle_outline,
-                  color: record.status == AttendanceStatus.active
-                      ? AppColors.success
-                      : AppColors.textMuted,
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
                     children: [
-                      Text(
-                        record.date,
-                        style: const TextStyle(
-                          fontWeight: FontWeight.w600,
-                          color: AppColors.textWhite,
+                      Icon(
+                        record.status == AttendanceStatus.active
+                            ? Icons.play_circle_outline
+                            : Icons.check_circle_outline,
+                        size: 18,
+                        color: record.status == AttendanceStatus.active
+                            ? AppColors.success
+                            : AppColors.textMuted,
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          record.date,
+                          style: const TextStyle(
+                            fontWeight: FontWeight.w600,
+                            color: AppColors.textWhite,
+                          ),
                         ),
                       ),
-                      const SizedBox(height: 6),
-                      _kvRow('Entrada', _formatTime(record.checkInTime)),
-                      if (record.checkOutTime != null) ...[
-                        Divider(
-                          height: 14,
-                          color: AppColors.gold.withValues(alpha: 0.1),
+                      if (record.status == AttendanceStatus.active)
+                        AppTheme.badge(
+                          label: 'Activo',
+                          bgColor: AppColors.success.withValues(alpha: 0.15),
+                          textColor: AppColors.success,
+                        )
+                      else
+                        AppTheme.badge(
+                          label: 'Completado',
+                          bgColor: AppColors.gold.withValues(alpha: 0.1),
+                          textColor: AppColors.gold,
                         ),
-                        _kvRow('Salida', _formatTime(record.checkOutTime!)),
-                      ],
-                      if (record.durationMinutes != null) ...[
-                        Divider(
-                          height: 14,
-                          color: AppColors.gold.withValues(alpha: 0.1),
-                        ),
-                        _kvRow(
+                    ],
+                  ),
+                  const SizedBox(height: 14),
+                  Row(
+                    children: [
+                      _statColumn('Entrada', _formatTime(record.checkInTime)),
+                      if (record.checkOutTime != null)
+                        _statColumn('Salida', _formatTime(record.checkOutTime!)),
+                      if (record.durationMinutes != null)
+                        _statColumn(
                           'Duración',
                           _formatDuration(record.durationMinutes!),
                         ),
-                      ],
-                      if (record.workplaceId != null &&
-                          workplaceMap[record.workplaceId!] != null) ...[
-                        Divider(
-                          height: 14,
-                          color: AppColors.gold.withValues(alpha: 0.1),
-                        ),
-                        _kvRow(
-                          'Lugar',
-                          workplaceMap[record.workplaceId!]!,
-                        ),
-                      ],
                     ],
                   ),
-                ),
-                const SizedBox(width: 8),
-if (record.status == AttendanceStatus.active)
-                  AppTheme.badge(
-                    label: 'Activo',
-                    bgColor: AppColors.success.withValues(alpha: 0.15),
-                    textColor: AppColors.success,
-                  )
-                else
-                  AppTheme.badge(
-                    label: 'Completado',
-                    bgColor: AppColors.gold.withValues(alpha: 0.1),
-                    textColor: AppColors.gold,
-                  ),
-              ],
+                  if (record.workplaceId != null &&
+                      workplaceMap[record.workplaceId!] != null) ...[
+                    const SizedBox(height: 10),
+                    Row(
+                      children: [
+                        Icon(
+                          Icons.location_on_outlined,
+                          size: 13,
+                          color: AppColors.textMuted.withValues(alpha: 0.7),
+                        ),
+                        const SizedBox(width: 4),
+                        Text(
+                          workplaceMap[record.workplaceId!]!,
+                          style: AppTheme.bodyMd.copyWith(
+                            fontSize: 12,
+                            color: AppColors.textMuted.withValues(alpha: 0.85),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ],
+              ),
             ),
           ),
-        ),
-    ],
-  );
+      ],
+    );
   }
 
-  Widget _kvRow(String key, String value) {
-    return AppDataRow(
-      label: key,
-      value: value,
-      divider: false,
+  Widget _statColumn(String label, String value) {
+    return Expanded(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            label.toUpperCase(),
+            style: const TextStyle(
+              fontSize: 10,
+              fontWeight: FontWeight.w500,
+              letterSpacing: 0.4,
+              color: AppColors.textMuted,
+            ),
+          ),
+          const SizedBox(height: 3),
+          Text(
+            value,
+            style: const TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w600,
+              color: AppColors.textWhite,
+            ),
+          ),
+        ],
+      ),
     );
   }
 
