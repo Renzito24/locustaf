@@ -121,6 +121,29 @@ class _EmployeeHomeContent extends ConsumerWidget {
             const SizedBox(height: 24),
             _sectionLabel('Tus métricas de ${_months[now.month - 1]}'),
             const SizedBox(height: 12),
+            if (incidencesAsync.hasError) ...[
+              Container(
+                margin: const EdgeInsets.only(bottom: 12),
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: AppColors.warning.withValues(alpha: 0.15),
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: AppColors.warning.withValues(alpha: 0.5)),
+                ),
+                child: Row(
+                  children: [
+                    const Icon(Icons.warning_amber_rounded, color: AppColors.warning, size: 20),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        'Aviso: no se pudieron cargar las incidencias. Las ausencias justificadas pueden no reflejarse en las métricas.',
+                        style: AppTheme.bodyMd.copyWith(color: AppColors.warning),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
             attendancesAsync.when(
               data: (allAttendances) {
                 final stats = EmployeeReportStats.compute(
