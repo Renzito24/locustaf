@@ -4,7 +4,6 @@ const admin = require('firebase-admin');
 const args = process.argv.slice(2);
 const isDryRun = args.includes('--dry-run');
 const emailArg = args.find(a => a.startsWith('--email='));
-const passwordArg = args.find(a => a.startsWith('--password='));
 
 if (!emailArg) {
   console.error('ERROR: Debes proveer un email con --email=tucorreo@ejemplo.com');
@@ -12,25 +11,6 @@ if (!emailArg) {
 }
 
 const email = emailArg.split('=')[1].toLowerCase();
-let password = passwordArg ? passwordArg.split('=')[1] : null;
-
-if (!password) {
-  // Intentar leer de variable de entorno
-  const envJson = process.env.LOCUSTAF_SEED_PASSWORDS;
-  if (envJson) {
-    try {
-      const decoded = JSON.parse(envJson);
-      password = decoded[email] || null;
-    } catch (e) {
-      // Ignore
-    }
-  }
-}
-
-if (!password) {
-  console.error('ERROR: Debes proveer un password con --password=tupassword para el usuario de Firebase Auth');
-  process.exit(1);
-}
 
 console.log('=== LOCUSTAF Superadmin Script ===\n');
 console.log(`Ejecutando para email: ${email}`);
@@ -39,8 +19,9 @@ if (isDryRun) {
   console.log('MODO DRY-RUN ACTIVADO. No se realizarán cambios reales en el proyecto.');
   console.log(`\n  [Dry-Run] 1. Inicializaría Firebase Admin SDK usando Application Default Credentials (ADC) o entorno.`);
   console.log(`  [Dry-Run] 2. Verificando en Firebase Auth si el usuario ${email} existe...`);
-  console.log(`  [Dry-Run] 3. Creando (o actualizando la contraseña) el usuario ${email} en Auth...`);
-  console.log(`  [Dry-Run] 4. Creando/Actualizando documento users/{uid} en Firestore con:`);
+  console.log(`  [Dry-Run] 3. Creando el usuario ${email} en Auth si no existe...`);
+  console.log(`  [Dry-Run] 4. Generando un link de restablecimiento de contraseña...`);
+  console.log(`  [Dry-Run] 5. Creando/Actualizando documento users/{uid} en Firestore con:`);
   console.log(`      - email: ${email}`);
   console.log(`      - rol: superadmin`);
   console.log(`      - isActive: true`);
@@ -68,14 +49,12 @@ async function run() {
       console.log(`Buscando usuario en Auth: ${email}...`);
       const userRecord = await admin.auth().getUserByEmail(email);
       uid = userRecord.uid;
-      console.log(`  - Usuario encontrado (uid: ${uid}). Actualizando contraseña...`);
-      await admin.auth().updateUser(uid, { password });
+      console.log(`  - Usuario encontrado (uid: ${uid}).`);
     } catch (error) {
       if (error.code === 'auth/user-not-found') {
-        console.log(`  - Usuario no encontrado. Creando nuevo usuario en Auth...`);
+        console.log(`  - Usuario no encontrado. Creando nuevo usuario en Auth sin contraseña inicial...`);
         const userRecord = await admin.auth().createUser({
           email: email,
-          password: password,
         });
         uid = userRecord.uid;
         console.log(`  - Creado con uid: ${uid}`);
@@ -83,6 +62,9 @@ async function run() {
         throw error;
       }
     }
+
+    console.log(`Generando enlace para establecer/restablecer la contraseña...`);
+    const resetLink = await admin.auth().generatePasswordResetLink(email);
 
     const db = admin.firestore();
     const userRef = db.collection('users').doc(uid);
@@ -109,6 +91,8 @@ async function run() {
 
     console.log('\n=== ÉXITO ===');
     console.log(`Usuario superadmin configurado correctamente para ${email}.`);
+    console.log(`\nIMPORTANTE: Ingresa a este enlace para establecer tu contraseña:`);
+    console.log(`👉 ${resetLink}\n`);
     
   } catch (error) {
     console.error('\nERROR inesperado:', error);
