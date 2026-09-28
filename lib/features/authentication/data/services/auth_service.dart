@@ -4,10 +4,10 @@ import 'package:google_sign_in/google_sign_in.dart';
 
 class AuthService {
   final FirebaseAuth _firebaseAuth;
-  final GoogleSignIn _googleSignIn;
+  final GoogleSignIn? _googleSignIn;
 
-  AuthService(this._firebaseAuth)
-      : _googleSignIn = GoogleSignIn();
+  AuthService(this._firebaseAuth, [GoogleSignIn? googleSignIn])
+      : _googleSignIn = kIsWeb ? null : (googleSignIn ?? GoogleSignIn());
 
   Future<UserCredential> login(String email, String password) {
     return _firebaseAuth.signInWithEmailAndPassword(
@@ -24,7 +24,7 @@ class AuthService {
       return _firebaseAuth.signInWithPopup(provider);
     }
 
-    final googleUser = await _googleSignIn.signIn();
+    final googleUser = await _googleSignIn?.signIn();
     if (googleUser == null) return null;
 
     final googleAuth = await googleUser.authentication;
