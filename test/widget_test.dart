@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 
@@ -14,13 +15,16 @@ void main() {
       ],
     );
 
-    await tester.pumpWidget(MaterialApp.router(routerConfig: router));
+    await tester.pumpWidget(
+      ProviderScope(
+        child: MaterialApp.router(routerConfig: router),
+      ),
+    );
 
     expect(find.text('LOCUSTAF'), findsOneWidget);
     expect(find.byType(CircularProgressIndicator), findsOneWidget);
 
-    // Avanza el timer de 2s del splash para que navegue a /login
-    // y no quede un timer pendiente.
+    // Avanza el timer del splash
     await tester.pump(const Duration(seconds: 3));
   });
 }

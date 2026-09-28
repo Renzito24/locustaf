@@ -54,15 +54,19 @@ class SessionNotifier extends Notifier<SessionState> {
   @override
   SessionState build() {
     ref.keepAlive();
-    final auth = AppRouter.auth;
-    void listener() {
-      state = SessionState.fromAuth(auth);
+    try {
+      final auth = AppRouter.auth;
+      void listener() {
+        state = SessionState.fromAuth(auth);
+      }
+      auth.addListener(listener);
+      ref.onDispose(() {
+        auth.removeListener(listener);
+      });
+      return SessionState.fromAuth(auth);
+    } catch (_) {
+      return const SessionState(isLoading: true);
     }
-    auth.addListener(listener);
-    ref.onDispose(() {
-      auth.removeListener(listener);
-    });
-    return SessionState.fromAuth(auth);
   }
 
   void retry() {
