@@ -49,6 +49,7 @@ class AppRouter {
         RouteGuardState(
           isLoggedIn: _auth.isLoggedIn,
           isProfileLoading: _auth.isProfileLoading,
+          hasProfileError: _auth.hasProfileError,
           isUserBlocked: _auth.isUserBlocked,
           isCompanyInactive: _auth.isCompanyInactive,
           needsOnboarding: _auth.needsOnboarding,

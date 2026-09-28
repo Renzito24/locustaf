@@ -18,6 +18,8 @@ class SessionState {
   final bool isUserBlocked;
   final bool isCompanyInactive;
   final bool needsOnboarding;
+  final String? profileError;
+  final bool hasProfileError;
 
   const SessionState({
     required this.isLoading,
@@ -28,6 +30,8 @@ class SessionState {
     this.isUserBlocked = false,
     this.isCompanyInactive = false,
     this.needsOnboarding = false,
+    this.profileError,
+    this.hasProfileError = false,
   });
 
   factory SessionState.fromAuth(AuthStateListenable auth) {
@@ -40,6 +44,8 @@ class SessionState {
       isUserBlocked: auth.isUserBlocked,
       isCompanyInactive: auth.isCompanyInactive,
       needsOnboarding: auth.needsOnboarding,
+      profileError: auth.profileError,
+      hasProfileError: auth.hasProfileError,
     );
   }
 }
@@ -57,6 +63,14 @@ class SessionNotifier extends Notifier<SessionState> {
       auth.removeListener(listener);
     });
     return SessionState.fromAuth(auth);
+  }
+
+  void retry() {
+    AppRouter.auth.retryProfileLoad();
+  }
+
+  Future<void> signOut() async {
+    await AppRouter.auth.signOut();
   }
 }
 

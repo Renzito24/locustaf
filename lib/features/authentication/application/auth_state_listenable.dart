@@ -81,7 +81,15 @@ class AuthStateListenable extends ChangeNotifier {
   bool get needsOnboarding =>
       isLoggedIn && !_profileLoading && _companyId == null && !isSuperadmin;
 
+  String? _profileError;
+  String? get profileError => _profileError;
+  bool get hasProfileError => _profileError != null;
+  Timer? _profileTimeoutTimer;
+
   void _onAuthChanged(User? user) {
+    _profileTimeoutTimer?.cancel();
+    _profileTimeoutTimer = null;
+    _profileError = null;
     _userDocSub?.cancel();
     _userDocSub = null;
     _companyDocSub?.cancel();
@@ -100,7 +108,20 @@ class AuthStateListenable extends ChangeNotifier {
   }
 
   void _startListeningUserDoc(String uid) {
+    _profileTimeoutTimer?.cancel();
+    _profileError = null;
     _profileLoading = true;
+
+    // Timeout de 10 segundos: si Firestore no responde (offline sin caché),
+    // el splash muestra error con reintento en lugar de colgarse infinitamente.
+    _profileTimeoutTimer = Timer(const Duration(seconds: 10), () {
+      if (_profileLoading) {
+        _profileLoading = false;
+        _profileError = 'No se pudo conectar con el servidor. Verifique su conexión a internet.';
+        notifyListeners();
+      }
+    });
+
     final svc = FirestoreService(FirebaseFirestore.instance);
     _userDocSub = svc.documentStream<UserModel>(
       path: 'users',
@@ -108,15 +129,13 @@ class AuthStateListenable extends ChangeNotifier {
       fromJson: UserModel.fromJson,
     ).listen(
       (userModel) {
-        // Primer snapshot recibido: el estado del perfil ya es conocido y el
-        // router puede decidir (dashboard u onboarding). (Fase B — A3)
+        _profileTimeoutTimer?.cancel();
+        _profileTimeoutTimer = null;
         _profileLoading = false;
         _userModel = userModel;
         if (userModel == null) {
-          // El usuario aún no tiene documento en 'users' (p. ej. recién se
-          // registró con Google y debe completar el onboarding). Se deja sin
-          // datos para que el router lo derive a /onboarding en lugar de
-          // bloquearlo como cuenta eliminada.
+          // El usuario no tiene documento en 'users'
+          _profileError = 'No se encontró un perfil registrado para este usuario (users/$uid).';
           _role = null;
           _isActive = null;
           _isDeleted = null;
@@ -125,6 +144,7 @@ class AuthStateListenable extends ChangeNotifier {
           notifyListeners();
           return;
         }
+        _profileError = null;
         _role = userModel.rol;
         _isActive = userModel.isActive;
         _isDeleted = userModel.isDeleted;
@@ -133,20 +153,40 @@ class AuthStateListenable extends ChangeNotifier {
         notifyListeners();
       },
       onError: (Object error, StackTrace stackTrace) {
-        // Si el documento no puede leerse (permisos/red), no quedarse en el
-        // splash eternamente: se degrada al estado "sin documento", el mismo
-        // comportamiento que una cuenta sin datos (deriva a onboarding).
+        _profileTimeoutTimer?.cancel();
+        _profileTimeoutTimer = null;
+        _profileLoading = false;
+        _profileError = 'Error al cargar el perfil de usuario. Verifique su conexión a internet.';
         _userModel = null;
         _role = null;
         _isActive = null;
         _isDeleted = null;
         _companyId = null;
         _companyEstado = null;
-        _profileLoading = false;
         _startListeningCompanyDoc(svc, null);
         notifyListeners();
       },
     );
+  }
+
+  /// Reintenta cargar el perfil del usuario actual desde Firestore.
+  void retryProfileLoad() {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user != null) {
+      _profileError = null;
+      _profileLoading = true;
+      notifyListeners();
+      _startListeningUserDoc(user.uid);
+    }
+  }
+
+  /// Cierra sesión en Auth y limpia cualquier temporizador o suscripción activa.
+  Future<void> signOut() async {
+    _profileTimeoutTimer?.cancel();
+    _profileTimeoutTimer = null;
+    _profileError = null;
+    _profileLoading = false;
+    await FirebaseAuth.instance.signOut();
   }
 
   void _startListeningCompanyDoc(FirestoreService svc, String? companyId) {
@@ -172,6 +212,7 @@ class AuthStateListenable extends ChangeNotifier {
 
   @override
   void dispose() {
+    _profileTimeoutTimer?.cancel();
     _authSub.cancel();
     _userDocSub?.cancel();
     _companyDocSub?.cancel();
