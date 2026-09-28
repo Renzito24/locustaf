@@ -238,7 +238,13 @@ service cloud.firestore {
                 && request.resource.data.rol == 'admin'
                 && request.resource.data.companyId != null
                 && exists(/databases/$(database)/documents/companies/$(request.resource.data.companyId))
-                && get(/databases/$(database)/documents/companies/$(request.resource.data.companyId)).data.createdBy == request.auth.uid))
+                && get(/databases/$(database)/documents/companies/$(request.resource.data.companyId)).data.createdBy == request.auth.uid)
+            || (isOwner(uid) && getCompanyId() == null
+                && request.auth.token.email_verified == true
+                && request.auth.token.email != null
+                && exists(/databases/$(database)/documents/invitations/$(request.auth.token.email))
+                && request.resource.data.companyId == get(/databases/$(database)/documents/invitations/$(request.auth.token.email)).data.companyId
+                && request.resource.data.rol == get(/databases/$(database)/documents/invitations/$(request.auth.token.email)).data.rol))
         && validWorkplaceForCreate();
 
       allow update: if isAuthenticated()
@@ -268,6 +274,26 @@ service cloud.firestore {
             == (('paidUntil' in old) ? old.paidUntil : null)
         && (('lastPaymentAt' in next) ? next.lastPaymentAt : null)
             == (('lastPaymentAt' in old) ? old.lastPaymentAt : null);
+    }
+
+    // ====================================================================
+    // INVITATIONS
+    // ====================================================================
+    match /invitations/{emailId} {
+      allow read: if isAuthenticated()
+        && (isSuperadmin()
+            || (isAdmin() && inCompany(resource.data.companyId))
+            || (request.auth.token.email_verified == true && request.auth.token.email == emailId));
+      allow create: if isAuthenticated()
+        && (isSuperadmin()
+            || (isAdmin() && request.resource.data.companyId == getCompanyId()));
+      allow update: if isAuthenticated()
+        && (isSuperadmin()
+            || (isAdmin() && inCompany(resource.data.companyId) && request.resource.data.companyId == getCompanyId()));
+      allow delete: if isAuthenticated()
+        && (isSuperadmin()
+            || (isAdmin() && inCompany(resource.data.companyId))
+            || (request.auth.token.email_verified == true && request.auth.token.email == emailId));
     }
 
     // ====================================================================
