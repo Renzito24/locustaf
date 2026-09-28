@@ -20,6 +20,9 @@ class MedicalDocumentRepositoryImpl implements MedicalDocumentRepository {
 
   @override
   Stream<List<MedicalDocumentModel>> getDocuments() {
+    if (_companyId.isEmpty) {
+      return Stream.value(<MedicalDocumentModel>[]);
+    }
     // Si el usuario es empleado (o ante ausencia de rol pero con userId por seguridad),
     // SIEMPRE incluir userId para satisfacer firestore.rules y evitar permission-denied.
     if (_role == UserRole.employee || (_role == null && _userId != null)) {

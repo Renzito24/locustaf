@@ -14,6 +14,9 @@ class UsersRepositoryImpl implements UsersRepository {
 
   @override
   Stream<List<UserModel>> getUsers() {
+    if (_companyId.isEmpty) {
+      return Stream.value(<UserModel>[]);
+    }
     return _firestoreService.queryStreamWithFilters<UserModel>(
       path: 'users',
       filters: {'companyId': _companyId},

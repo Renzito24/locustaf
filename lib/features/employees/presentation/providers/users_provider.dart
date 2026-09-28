@@ -8,10 +8,7 @@ import '../../domain/repositories/users_repository.dart';
 import '../../../../core/services/stream_retry.dart';
 
 final usersRepositoryProvider = Provider<UsersRepository>((ref) {
-  final companyId = ref.watch(currentCompanyIdProvider);
-  if (companyId == null) {
-    throw StateError('UsersRepository requires a non-null companyId');
-  }
+  final companyId = ref.watch(currentCompanyIdProvider) ?? '';
   final firestoreService = ref.read(firestoreServiceProvider);
   return UsersRepositoryImpl(firestoreService, companyId: companyId);
 });

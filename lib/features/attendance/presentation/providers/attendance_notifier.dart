@@ -1,3 +1,4 @@
+import 'package:cloud_functions/cloud_functions.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../data/models/attendance_model.dart';
@@ -13,12 +14,14 @@ import '../../../../core/services/stream_retry.dart';
 import '../../../workplaces/data/models/workplace_model.dart';
 
 final attendanceRepositoryProvider = Provider<AttendanceRepository>((ref) {
-  final companyId = ref.watch(currentCompanyIdProvider);
-  if (companyId == null) {
-    throw StateError('AttendanceRepository requires a non-null companyId');
-  }
+  final companyId = ref.watch(currentCompanyIdProvider) ?? '';
   final svc = ref.read(firestoreServiceProvider);
-  final functions = ref.read(functionsProvider);
+  FirebaseFunctions? functions;
+  try {
+    functions = ref.read(functionsProvider);
+  } catch (_) {
+    functions = null;
+  }
   return AttendanceRepositoryImpl(svc, companyId: companyId, functions: functions);
 });
 

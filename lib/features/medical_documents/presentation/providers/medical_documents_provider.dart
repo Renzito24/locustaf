@@ -16,10 +16,7 @@ import '../../data/repositories/medical_document_repository_impl.dart';
 import '../../domain/repositories/medical_document_repository.dart';
 
 final medicalDocumentRepositoryProvider = Provider<MedicalDocumentRepository>((ref) {
-  final companyId = ref.watch(currentCompanyIdProvider);
-  if (companyId == null) {
-    throw StateError('MedicalDocumentRepository requires a non-null companyId');
-  }
+  final companyId = ref.watch(currentCompanyIdProvider) ?? '';
   final firestoreService = ref.read(firestoreServiceProvider);
   final role = ref.watch(userRoleProvider);
   final userId = ref.watch(currentUserIdProvider);

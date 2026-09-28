@@ -21,6 +21,9 @@ class AttendanceRepositoryImpl implements AttendanceRepository {
 
   @override
   Stream<List<AttendanceModel>> getAttendancesByUser(String userId) {
+    if (_companyId.isEmpty) {
+      return Stream.value(<AttendanceModel>[]);
+    }
     return _firestoreService.queryStreamWithFilters<AttendanceModel>(
       path: 'attendances',
       filters: {
@@ -35,6 +38,9 @@ class AttendanceRepositoryImpl implements AttendanceRepository {
 
   @override
   Stream<List<AttendanceModel>> getAllAttendances() {
+    if (_companyId.isEmpty) {
+      return Stream.value(<AttendanceModel>[]);
+    }
     return _firestoreService.queryStreamWithFilters<AttendanceModel>(
       path: 'attendances',
       filters: {'companyId': _companyId},
@@ -47,6 +53,9 @@ class AttendanceRepositoryImpl implements AttendanceRepository {
   /// cambio (locks y jornadas huérfanas solo necesitan las activas).
   @override
   Stream<List<AttendanceModel>> getAllActiveAttendances() {
+    if (_companyId.isEmpty) {
+      return Stream.value(<AttendanceModel>[]);
+    }
     return _firestoreService.queryStreamWithFilters<AttendanceModel>(
       path: 'attendances',
       filters: {'companyId': _companyId, 'status': 'active'},
@@ -59,6 +68,13 @@ class AttendanceRepositoryImpl implements AttendanceRepository {
     required int limit,
     Object? startAfter,
   }) async {
+    if (_companyId.isEmpty) {
+      return const AttendancePage(
+        items: [],
+        hasMore: false,
+        lastCheckInTime: null,
+      );
+    }
     final page = await _firestoreService.queryPage<AttendanceModel>(
       path: 'attendances',
       filters: {'companyId': _companyId},
@@ -77,6 +93,7 @@ class AttendanceRepositoryImpl implements AttendanceRepository {
 
   @override
   Future<int> countCompanyAttendances() async {
+    if (_companyId.isEmpty) return 0;
     return _firestoreService.countDocuments(
       path: 'attendances',
       filters: {'companyId': _companyId},
@@ -85,6 +102,9 @@ class AttendanceRepositoryImpl implements AttendanceRepository {
 
   @override
   Stream<AttendanceModel?> getActiveAttendance(String userId) {
+    if (_companyId.isEmpty) {
+      return Stream.value(null);
+    }
     return _firestoreService.queryStreamWithFilters<AttendanceModel>(
       path: 'attendances',
       filters: {

@@ -11,6 +11,9 @@ class WorkplaceRepositoryImpl implements WorkplaceRepository {
 
   @override
   Stream<List<WorkplaceModel>> getWorkplaces() {
+    if (_companyId.isEmpty) {
+      return Stream.value(<WorkplaceModel>[]);
+    }
     return _firestoreService.queryStreamWithFilters<WorkplaceModel>(
       path: 'workplaces',
       filters: {'companyId': _companyId},

@@ -20,6 +20,9 @@ class IncidenceRepositoryImpl implements IncidenceRepository {
 
   @override
   Stream<List<IncidenceModel>> getIncidences() {
+    if (_companyId.isEmpty) {
+      return Stream.value(<IncidenceModel>[]);
+    }
     // Si el usuario es empleado (o ante ausencia de rol pero con userId por seguridad),
     // SIEMPRE incluir userId para satisfacer firestore.rules y evitar permission-denied.
     if (_role == UserRole.employee || (_role == null && _userId != null)) {

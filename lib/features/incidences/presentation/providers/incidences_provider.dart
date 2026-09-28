@@ -12,10 +12,7 @@ import '../../../../core/services/logging_service.dart';
 import '../../../../core/services/stream_retry.dart';
 
 final incidenceRepositoryProvider = Provider<IncidenceRepository>((ref) {
-  final companyId = ref.watch(currentCompanyIdProvider);
-  if (companyId == null) {
-    throw StateError('IncidenceRepository requires a non-null companyId');
-  }
+  final companyId = ref.watch(currentCompanyIdProvider) ?? '';
   final firestoreService = ref.read(firestoreServiceProvider);
   final role = ref.watch(userRoleProvider);
   final userId = ref.watch(currentUserIdProvider);

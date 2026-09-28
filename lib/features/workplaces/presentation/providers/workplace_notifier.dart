@@ -9,10 +9,7 @@ import '../../../../core/providers/firebase_providers.dart';
 import '../../../../core/services/stream_retry.dart';
 
 final workplaceRepositoryProvider = Provider<WorkplaceRepository>((ref) {
-  final companyId = ref.watch(currentCompanyIdProvider);
-  if (companyId == null) {
-    throw StateError('WorkplaceRepository requires a non-null companyId');
-  }
+  final companyId = ref.watch(currentCompanyIdProvider) ?? '';
   final svc = ref.read(firestoreServiceProvider);
   return WorkplaceRepositoryImpl(svc, companyId: companyId);
 });
