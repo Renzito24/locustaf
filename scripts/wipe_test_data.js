@@ -1,19 +1,31 @@
 const { initializeApp } = require('firebase-admin/app');
 const { getFirestore } = require('firebase-admin/firestore');
 const { getAuth } = require('firebase-admin/auth');
+const { getStorage } = require('firebase-admin/storage');
 const readline = require('readline');
 
 const args = process.argv.slice(2);
 const isApply = args.includes('--apply');
 const includeAuth = args.includes('--include-auth');
+const includeStorage = args.includes('--include-storage');
 
 console.log('=== LOCUSTAF Wipe Test Data ===\n');
+
+if (process.env.FIRESTORE_EMULATOR_HOST) {
+  console.log('⚠️  ATENCIÓN: FIRESTORE_EMULATOR_HOST detectado. El script está operando contra el EMULADOR local.');
+} else {
+  console.log('⚠️  ATENCIÓN: Corriendo contra un PROYECTO REAL de Firebase.');
+}
+console.log('');
 
 if (!isApply) {
   console.log('MODO DRY-RUN ACTIVADO (por defecto). Usa --apply para ejecutar el borrado real.');
 }
 if (includeAuth) {
-  console.log('Opcion --include-auth detectada: también se borrarán los usuarios de Firebase Auth.');
+  console.log('Opción --include-auth detectada: también se borrarán los usuarios de Firebase Auth.');
+}
+if (includeStorage) {
+  console.log('Opción --include-storage detectada: se borrarán los archivos de Firebase Storage.');
 }
 console.log('');
 
@@ -49,8 +61,22 @@ async function promptConfirmation(text) {
 async function wipeData() {
   console.log(`Proyecto detectado: ${projectId}`);
   
+  const superadminsIds = new Set();
+  const usersSnapshot = await db.collection('users').where('rol', '==', 'superadmin').get();
+  usersSnapshot.forEach(doc => {
+    superadminsIds.add(doc.id);
+  });
+  
+  console.log(`Superadmins protegidos encontrados: ${superadminsIds.size}`);
+
+  if (isApply && superadminsIds.size === 0) {
+    console.log('❌ ERROR: No se encontró ningún superadmin protegido.');
+    console.log('Por seguridad, --apply se niega a ejecutar el borrado si no hay al menos un superadmin.');
+    process.exit(1);
+  }
+
   if (isApply) {
-    console.log('\n¡ADVERTENCIA! Estás a punto de borrar TODOS los datos del proyecto.');
+    console.log('\n¡ADVERTENCIA! Estás a punto de borrar los datos del proyecto.');
     const answer = await promptConfirmation(`Para continuar, escribe el nombre del proyecto (${projectId}): `);
     
     if (answer !== projectId) {
@@ -70,19 +96,25 @@ async function wipeData() {
     'payments'
   ];
 
+  // Identificar colecciones no estándar
+  const allRootCollections = await db.listCollections();
+  const unknownCollections = [];
+  for (const collRef of allRootCollections) {
+    if (!collections.includes(collRef.id)) {
+      unknownCollections.push(collRef.id);
+    }
+  }
+
+  if (unknownCollections.length > 0) {
+    console.log(`\nColecciones extrañas detectadas (NO serán borradas): ${unknownCollections.join(', ')}`);
+  }
+
   let totalDocsDeleted = 0;
   let totalAuthDeleted = 0;
-  const superadminsIds = new Set();
-
-  // First, find all superadmins so we don't delete them or their auth accounts
-  const usersSnapshot = await db.collection('users').where('rol', '==', 'superadmin').get();
-  usersSnapshot.forEach(doc => {
-    superadminsIds.add(doc.id);
-  });
-  
-  console.log(`Superadmins protegidos encontrados: ${superadminsIds.size}`);
+  let totalStorageDeleted = 0;
 
   // Delete Firestore documents
+  console.log('\nProcesando colecciones de Firestore...');
   for (const collName of collections) {
     const snapshot = await db.collection(collName).get();
     let deletedInCollection = 0;
@@ -92,7 +124,6 @@ async function wipeData() {
     let currentBatchSize = 0;
     
     for (const doc of snapshot.docs) {
-      // Prevent deleting superadmin user documents
       if (collName === 'users' && superadminsIds.has(doc.id)) {
         continue;
       }
@@ -121,6 +152,26 @@ async function wipeData() {
     } else {
       console.log(`  [Dry-Run] Colección '${collName}': se borrarían ${deletedInCollection} documentos.`);
     }
+  }
+
+  // Delete Storage files
+  console.log('\nProcesando Storage...');
+  try {
+    const bucket = getStorage(app).bucket(`${projectId}.appspot.com`);
+    const [files] = await bucket.getFiles();
+    
+    if (isApply && includeStorage) {
+      for (const file of files) {
+        await file.delete();
+        totalStorageDeleted++;
+      }
+      console.log(`  - Borrados ${totalStorageDeleted} archivos de Storage.`);
+    } else {
+      console.log(`  [Dry-Run] Se encontraron ${files.length} archivos en Storage.${!includeStorage ? ' (Omite --include-storage para borrar)' : ''}`);
+      if (includeStorage) totalStorageDeleted = files.length;
+    }
+  } catch (err) {
+    console.log(`  No se pudo acceder al bucket de Storage. ${err.message}`);
   }
 
   // Delete Auth users if requested
@@ -153,10 +204,12 @@ async function wipeData() {
   console.log('\n=== RESUMEN ===');
   if (isApply) {
     console.log(`Documentos de Firestore borrados: ${totalDocsDeleted}`);
+    if (includeStorage) console.log(`Archivos de Storage borrados: ${totalStorageDeleted}`);
     if (includeAuth) console.log(`Usuarios de Auth borrados: ${totalAuthDeleted}`);
     console.log('Operación completada con éxito.');
   } else {
     console.log(`Documentos de Firestore que se borrarían: ${totalDocsDeleted}`);
+    if (includeStorage) console.log(`Archivos de Storage que se borrarían: ${totalStorageDeleted}`);
     if (includeAuth) console.log(`Usuarios de Auth que se borrarían: ${totalAuthDeleted}`);
     console.log('Operación Dry-Run completada.');
   }
