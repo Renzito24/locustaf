@@ -33,7 +33,10 @@ const PROJECT_ID = process.env.GCLOUD_PROJECT || 'locustaf-31ed2';
 
 let app;
 try {
-  app = initializeApp({ projectId: PROJECT_ID });
+  app = initializeApp({ 
+    projectId: PROJECT_ID,
+    storageBucket: process.env.FIREBASE_STORAGE_BUCKET || `${PROJECT_ID}.firebasestorage.app`
+  });
 } catch (error) {
   console.error('ERROR: No se pudo inicializar Firebase Admin SDK.');
   console.error('Asegúrate de estar autenticado: gcloud auth application-default login');
@@ -157,7 +160,7 @@ async function wipeData() {
   // Delete Storage files
   console.log('\nProcesando Storage...');
   try {
-    const bucket = getStorage(app).bucket(`${projectId}.appspot.com`);
+    const bucket = getStorage(app).bucket(); // Use default bucket configured in initializeApp
     const [files] = await bucket.getFiles();
     
     if (isApply && includeStorage) {
