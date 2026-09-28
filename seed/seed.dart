@@ -380,15 +380,18 @@ Map<String, dynamic> _toFirestoreFields(Map<String, dynamic> data) {
       fields[key] = {'stringValue': value};
     } else if (value is bool) {
       fields[key] = {'booleanValue': value};
+    } else if (value is int) {
+      fields[key] = {'integerValue': value.toString()};
     } else if (value is num) {
       fields[key] = {'doubleValue': value.toDouble()};
     } else if (value is List) {
       fields[key] = {
         'arrayValue': {
           'values': value.map((e) {
-            if (e is String) return {'stringValue': e};
-            if (e is bool) return {'booleanValue': e};
+            if (e is int) return {'integerValue': e.toString()};
             if (e is num) return {'doubleValue': e.toDouble()};
+            if (e is bool) return {'booleanValue': e};
+            if (e is String) return {'stringValue': e};
             return {'stringValue': e.toString()};
           }).toList()
         }
