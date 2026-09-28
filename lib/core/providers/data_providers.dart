@@ -19,8 +19,8 @@ final currentCompanyIdProvider = Provider<String?>((ref) {
 
 final allUsersStreamProvider = StreamProvider<List<UserModel>>((ref) {
   final companyId = ref.watch(currentCompanyIdProvider);
+  if (companyId == null) return const Stream.empty();
   final svc = ref.read(firestoreServiceProvider);
-  if (companyId == null) return Stream.value(<UserModel>[]);
   return svc.queryStreamWithFilters<UserModel>(
     path: 'users',
     filters: {'companyId': companyId},
@@ -30,8 +30,8 @@ final allUsersStreamProvider = StreamProvider<List<UserModel>>((ref) {
 
 final allWorkplacesStreamProvider = StreamProvider<List<WorkplaceModel>>((ref) {
   final companyId = ref.watch(currentCompanyIdProvider);
+  if (companyId == null) return const Stream.empty();
   final svc = ref.read(firestoreServiceProvider);
-  if (companyId == null) return Stream.value(<WorkplaceModel>[]);
   return svc.queryStreamWithFilters<WorkplaceModel>(
     path: 'workplaces',
     filters: {'companyId': companyId},
@@ -41,8 +41,8 @@ final allWorkplacesStreamProvider = StreamProvider<List<WorkplaceModel>>((ref) {
 
 final allAttendancesStreamProvider = StreamProvider<List<AttendanceModel>>((ref) {
   final companyId = ref.watch(currentCompanyIdProvider);
+  if (companyId == null) return const Stream.empty();
   final svc = ref.read(firestoreServiceProvider);
-  if (companyId == null) return Stream.value(<AttendanceModel>[]);
   return svc.queryStreamWithFilters<AttendanceModel>(
     path: 'attendances',
     filters: {'companyId': companyId},
