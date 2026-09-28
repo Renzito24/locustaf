@@ -19,7 +19,7 @@ import 'package:geolocator_platform_interface/geolocator_platform_interface.dart
 class ServerEmulatorRepository extends AttendanceRepositoryImpl {
   final FakeFirebaseFirestore fake;
 
-  ServerEmulatorRepository(FakeFirebaseFirestore fake, {super.companyId})
+  ServerEmulatorRepository(FakeFirebaseFirestore fake, {super.companyId = 'company-test'})
       : fake = fake,
         super(FirestoreService(fake));
 

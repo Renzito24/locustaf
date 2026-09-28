@@ -13,19 +13,30 @@ import '../../../../core/services/stream_retry.dart';
 import '../../../workplaces/data/models/workplace_model.dart';
 
 final attendanceRepositoryProvider = Provider<AttendanceRepository>((ref) {
-  final svc = ref.read(firestoreServiceProvider);
   final companyId = ref.watch(currentCompanyIdProvider);
+  if (companyId == null) {
+    throw StateError('AttendanceRepository requires a non-null companyId');
+  }
+  final svc = ref.read(firestoreServiceProvider);
   final functions = ref.read(functionsProvider);
   return AttendanceRepositoryImpl(svc, companyId: companyId, functions: functions);
 });
 
 final attendancesByUserProvider = StreamProvider.family<List<AttendanceModel>, String>((ref, userId) {
-  final repo = ref.read(attendanceRepositoryProvider);
+  final companyId = ref.watch(currentCompanyIdProvider);
+  if (companyId == null) {
+    return Stream.value(<AttendanceModel>[]);
+  }
+  final repo = ref.watch(attendanceRepositoryProvider);
   return retryOnError(() => repo.getAttendancesByUser(userId));
 });
 
 final activeAttendanceProvider = StreamProvider.family<AttendanceModel?, String>((ref, userId) {
-  final repo = ref.read(attendanceRepositoryProvider);
+  final companyId = ref.watch(currentCompanyIdProvider);
+  if (companyId == null) {
+    return Stream.value(null);
+  }
+  final repo = ref.watch(attendanceRepositoryProvider);
   return retryOnError(() => repo.getActiveAttendance(userId));
 });
 

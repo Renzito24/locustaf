@@ -118,5 +118,22 @@ void main() {
       expect(CompanyPlan.mensual.label, 'Mensual');
       expect(CompanyPlan.anual.label, 'Anual');
     });
+
+    test('fromJson tolera toleranciaCheckIn y diasLaborables como String o num', () {
+      final json = {
+        'id': 'emp-str',
+        'nombreComercial': 'Test Strings',
+        'razonSocial': 'Test Strings SA',
+        'cuit': '20-11111111-1',
+        'estado': 'activa',
+        'createdAt': '2026-01-01T11:00:00.000Z',
+        'toleranciaCheckIn': '15',
+        'diasLaborables': ['1', 2, '3', 4, 5],
+      };
+
+      final model = CompanyModel.fromJson(json);
+      expect(model.toleranciaCheckIn, 15);
+      expect(model.diasLaborables, [1, 2, 3, 4, 5]);
+    });
   });
 }

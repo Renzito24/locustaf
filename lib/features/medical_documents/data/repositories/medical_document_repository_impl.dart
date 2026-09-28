@@ -5,13 +5,13 @@ import '../models/medical_document_model.dart';
 
 class MedicalDocumentRepositoryImpl implements MedicalDocumentRepository {
   final FirestoreService _firestoreService;
-  final String? _companyId;
+  final String _companyId;
   final String? _userId;
   final UserRole? _role;
 
   MedicalDocumentRepositoryImpl(
     this._firestoreService, {
-    String? companyId,
+    required String companyId,
     String? userId,
     UserRole? role,
   })  : _companyId = companyId,
@@ -20,9 +20,9 @@ class MedicalDocumentRepositoryImpl implements MedicalDocumentRepository {
 
   @override
   Stream<List<MedicalDocumentModel>> getDocuments() {
-    if (_companyId == null) return Stream.value(<MedicalDocumentModel>[]);
-    // El empleado solo ve sus propios documentos (alineado con las reglas).
-    if (_role == UserRole.employee) {
+    // Si el usuario es empleado (o ante ausencia de rol pero con userId por seguridad),
+    // SIEMPRE incluir userId para satisfacer firestore.rules y evitar permission-denied.
+    if (_role == UserRole.employee || (_role == null && _userId != null)) {
       if (_userId == null) return Stream.value(<MedicalDocumentModel>[]);
       return _firestoreService.queryStreamWithFilters<MedicalDocumentModel>(
         path: 'medical_documents',
@@ -40,7 +40,7 @@ class MedicalDocumentRepositoryImpl implements MedicalDocumentRepository {
   @override
   Future<void> createDocument(MedicalDocumentModel document) async {
     final data = document.toJson();
-    if (_companyId != null) data['companyId'] = _companyId;
+    data['companyId'] = _companyId;
     await _firestoreService.addDocument(
       path: 'medical_documents',
       data: data,

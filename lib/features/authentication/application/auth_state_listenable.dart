@@ -24,19 +24,21 @@ bool isCompanyInactiveFor(
 
 class AuthStateListenable extends ChangeNotifier {
   AuthStateListenable() {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user != null) {
+      _profileLoading = true;
+      _startListeningUserDoc(user.uid);
+    }
     _authSub = FirebaseAuth.instance.authStateChanges().listen((user) {
       _onAuthChanged(user);
     });
-    final user = FirebaseAuth.instance.currentUser;
-    if (user != null) {
-      _startListeningUserDoc(user.uid);
-    }
   }
 
   late final StreamSubscription _authSub;
   StreamSubscription<Object?>? _userDocSub;
   StreamSubscription<Object?>? _companyDocSub;
-  bool _profileLoading = false;
+  bool _profileLoading = true;
+  UserModel? _userModel;
   UserRole? _role;
   bool? _isActive;
   bool? _isDeleted;
@@ -53,6 +55,8 @@ class AuthStateListenable extends ChangeNotifier {
   /// usuario que ya tiene empresa). (Fase B — A3)
   bool get isProfileLoading => _profileLoading;
 
+  UserModel? get userModel => _userModel;
+  String? get companyId => _companyId;
   UserRole? get role => _role;
 
   bool get isAdmin => _role == UserRole.admin;
@@ -82,6 +86,7 @@ class AuthStateListenable extends ChangeNotifier {
     _userDocSub = null;
     _companyDocSub?.cancel();
     _companyDocSub = null;
+    _userModel = null;
     _role = null;
     _isActive = null;
     _isDeleted = null;
@@ -106,6 +111,7 @@ class AuthStateListenable extends ChangeNotifier {
         // Primer snapshot recibido: el estado del perfil ya es conocido y el
         // router puede decidir (dashboard u onboarding). (Fase B — A3)
         _profileLoading = false;
+        _userModel = userModel;
         if (userModel == null) {
           // El usuario aún no tiene documento en 'users' (p. ej. recién se
           // registró con Google y debe completar el onboarding). Se deja sin
@@ -130,6 +136,7 @@ class AuthStateListenable extends ChangeNotifier {
         // Si el documento no puede leerse (permisos/red), no quedarse en el
         // splash eternamente: se degrada al estado "sin documento", el mismo
         // comportamiento que una cuenta sin datos (deriva a onboarding).
+        _userModel = null;
         _role = null;
         _isActive = null;
         _isDeleted = null;

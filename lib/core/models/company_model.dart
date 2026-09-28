@@ -156,6 +156,13 @@ class CompanyModel extends Equatable {
     );
   }
 
+  static int _parseInt(dynamic value, {int defaultValue = 15}) {
+    if (value == null) return defaultValue;
+    if (value is num) return value.toInt();
+    if (value is String) return int.tryParse(value) ?? defaultValue;
+    return defaultValue;
+  }
+
   factory CompanyModel.fromJson(Map<String, dynamic> json) {
     return CompanyModel(
       id: json['id'] as String,
@@ -171,9 +178,9 @@ class CompanyModel extends Equatable {
       updatedAt: json['updatedAt'] != null
           ? DateTime.parse(json['updatedAt'] as String).toLocal()
           : null,
-      toleranciaCheckIn: (json['toleranciaCheckIn'] as num?)?.toInt() ?? 15,
+      toleranciaCheckIn: _parseInt(json['toleranciaCheckIn']),
       diasLaborables: (json['diasLaborables'] as List<dynamic>?)
-              ?.map((e) => (e as num).toInt())
+              ?.map((e) => _parseInt(e, defaultValue: 1))
               .toList() ??
           const [1, 2, 3, 4, 5],
       plan: json['plan'] != null

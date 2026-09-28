@@ -8,15 +8,19 @@ import '../../domain/repositories/users_repository.dart';
 import '../../../../core/services/stream_retry.dart';
 
 final usersRepositoryProvider = Provider<UsersRepository>((ref) {
-  final firestoreService = ref.read(firestoreServiceProvider);
   final companyId = ref.watch(currentCompanyIdProvider);
+  if (companyId == null) {
+    throw StateError('UsersRepository requires a non-null companyId');
+  }
+  final firestoreService = ref.read(firestoreServiceProvider);
   return UsersRepositoryImpl(firestoreService, companyId: companyId);
 });
 
 final usersStreamProvider = StreamProvider<List<UserModel>>((ref) {
-  // `watch`: el repositorio depende de la empresa del usuario, que se resuelve
-  // después del primer frame. Con `read` la consulta quedaba clavada con
-  // companyId == null y la lista de empleados nunca se recargaba.
+  final companyId = ref.watch(currentCompanyIdProvider);
+  if (companyId == null) {
+    return Stream.value(<UserModel>[]);
+  }
   final repo = ref.watch(usersRepositoryProvider);
   return retryOnError(repo.getUsers);
 });

@@ -2,10 +2,72 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/models/user_model.dart';
+import '../../../../core/router/app_router.dart';
+import '../../application/auth_state_listenable.dart';
 import '../../data/services/auth_service.dart';
 import '../../data/repositories/auth_repository_impl.dart';
 import '../../domain/repositories/auth_repository.dart';
-import '../../../../core/providers/firebase_providers.dart';
+
+/// Estado inmutable de la sesión.
+class SessionState {
+  final bool isLoading;
+  final UserModel? user;
+  final String? companyId;
+  final UserRole? role;
+  final String? userId;
+  final bool isUserBlocked;
+  final bool isCompanyInactive;
+  final bool needsOnboarding;
+
+  const SessionState({
+    required this.isLoading,
+    this.user,
+    this.companyId,
+    this.role,
+    this.userId,
+    this.isUserBlocked = false,
+    this.isCompanyInactive = false,
+    this.needsOnboarding = false,
+  });
+
+  factory SessionState.fromAuth(AuthStateListenable auth) {
+    return SessionState(
+      isLoading: auth.isProfileLoading,
+      user: auth.userModel,
+      companyId: auth.companyId,
+      role: auth.role,
+      userId: auth.user?.uid,
+      isUserBlocked: auth.isUserBlocked,
+      isCompanyInactive: auth.isCompanyInactive,
+      needsOnboarding: auth.needsOnboarding,
+    );
+  }
+}
+
+class SessionNotifier extends Notifier<SessionState> {
+  @override
+  SessionState build() {
+    ref.keepAlive();
+    final auth = AppRouter.auth;
+    void listener() {
+      state = SessionState.fromAuth(auth);
+    }
+    auth.addListener(listener);
+    ref.onDispose(() {
+      auth.removeListener(listener);
+    });
+    return SessionState.fromAuth(auth);
+  }
+}
+
+/// 0. Provider raíz de sesión (keepAlive).
+///
+/// Comparte la misma instancia `AuthStateListenable` utilizada por `AppRouter`
+/// para garantizar consistencia total entre la navegación de GoRouter y el
+/// árbol de providers de Riverpod.
+final sessionProvider = NotifierProvider<SessionNotifier, SessionState>(
+  SessionNotifier.new,
+);
 
 /// 1. Provider de FirebaseAuth
 final firebaseAuthProvider = Provider<FirebaseAuth>((ref) {
@@ -38,30 +100,25 @@ final currentUserProvider = Provider<User?>((ref) {
 
 /// 5b. Provider del uid del usuario autenticado.
 ///
-/// Seam de testeabilidad: a diferencia de [currentUserProvider] (que expone
-/// un `firebase_auth.User` no construible fuera del plugin), este proveedor
-/// expone solo el uid y puede sobreescribirse en widget/provider tests.
+/// Seam de testeabilidad: lee directamente de la sesión ya resuelta.
 final currentUserIdProvider = Provider<String?>((ref) {
-  return FirebaseAuth.instance.currentUser?.uid;
+  return ref.watch(sessionProvider).userId;
 });
 
-/// 6. Provider del documento Firestore del usuario autenticado
+/// 6. Provider del modelo de usuario desde la sesión ya resuelta.
+final currentUserModelProvider = Provider<UserModel?>((ref) {
+  return ref.watch(sessionProvider).user;
+});
+
+/// StreamProvider para compatibilidad con código existente y tests que esperan `AsyncValue<UserModel?>`.
 final currentAppUserProvider = StreamProvider<UserModel?>((ref) {
-  final authUser = ref.watch(authStateProvider).value;
-  if (authUser == null) {
-    return Stream.value(null);
-  }
-  final svc = ref.read(firestoreServiceProvider);
-  return svc.documentStream<UserModel>(
-    path: 'users',
-    documentId: authUser.uid,
-    fromJson: UserModel.fromJson,
-  );
+  final user = ref.watch(currentUserModelProvider);
+  return Stream.value(user);
 });
 
-/// 7. Provider del rol del usuario autenticado
+/// 7. Provider del rol del usuario autenticado (leído sincrónicamente de la sesión).
 final userRoleProvider = Provider<UserRole?>((ref) {
-  return ref.watch(currentAppUserProvider).value?.rol;
+  return ref.watch(sessionProvider).role;
 });
 
 /// 8. Helpers booleanos para role checks
@@ -80,4 +137,4 @@ final isEmployeeProvider = Provider<bool>((ref) {
 final logoutProvider = Provider<Future<void> Function()>((ref) {
   final service = ref.read(authServiceProvider);
   return service.logout;
-});
+});

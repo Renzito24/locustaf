@@ -7,14 +7,13 @@ import '../../domain/repositories/users_repository.dart';
 
 class UsersRepositoryImpl implements UsersRepository {
   final FirestoreService _firestoreService;
-  final String? _companyId;
+  final String _companyId;
 
-  UsersRepositoryImpl(this._firestoreService, {String? companyId})
+  UsersRepositoryImpl(this._firestoreService, {required String companyId})
       : _companyId = companyId;
 
   @override
   Stream<List<UserModel>> getUsers() {
-    if (_companyId == null) return Stream.value(<UserModel>[]);
     return _firestoreService.queryStreamWithFilters<UserModel>(
       path: 'users',
       filters: {'companyId': _companyId},
@@ -24,7 +23,7 @@ class UsersRepositoryImpl implements UsersRepository {
 
   @override
   Future<void> createUser(UserModel user, String password) async {
-    if (_companyId == null || _companyId.isEmpty) {
+    if (_companyId.isEmpty) {
       throw StateError(
         'No hay empresa en sesion: el usuario se crearia con companyId null y '
         'quedaria invisible para el admin que lo cargo.',

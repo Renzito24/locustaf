@@ -9,16 +9,19 @@ import '../../../../core/providers/firebase_providers.dart';
 import '../../../../core/services/stream_retry.dart';
 
 final workplaceRepositoryProvider = Provider<WorkplaceRepository>((ref) {
-  final svc = ref.read(firestoreServiceProvider);
   final companyId = ref.watch(currentCompanyIdProvider);
+  if (companyId == null) {
+    throw StateError('WorkplaceRepository requires a non-null companyId');
+  }
+  final svc = ref.read(firestoreServiceProvider);
   return WorkplaceRepositoryImpl(svc, companyId: companyId);
 });
 
 final workplacesStreamProvider = StreamProvider<List<WorkplaceModel>>((ref) {
-  // `watch` (no `read`): el repositorio está scopeado a la empresa del usuario,
-  // que todavía no está resuelta en el primer frame. Con `read` el stream se
-  // construía con companyId == null (lista vacía) y NUNCA se re-suscribía al
-  // llegar el documento del usuario -> el empleado veía "Lugar no disponible".
+  final companyId = ref.watch(currentCompanyIdProvider);
+  if (companyId == null) {
+    return Stream.value(<WorkplaceModel>[]);
+  }
   final repo = ref.watch(workplaceRepositoryProvider);
   return retryOnError(repo.getWorkplaces);
 });

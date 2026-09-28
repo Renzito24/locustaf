@@ -21,6 +21,57 @@ import '../../../workplaces/presentation/providers/workplace_notifier.dart';
 class EmployeeHomeScreen extends ConsumerWidget {
   const EmployeeHomeScreen({super.key});
 
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final userId = ref.watch(currentUserIdProvider);
+    if (userId == null) {
+      return Padding(
+        padding: const EdgeInsets.all(24),
+        child: AppTheme.emptyState(
+          icon: Icons.person_off_outlined,
+          title: 'Usuario no autenticado',
+          subtitle: 'Iniciá sesión para ver tu información.',
+        ),
+      );
+    }
+
+    final userAsync = ref.watch(currentAppUserProvider);
+    return userAsync.when(
+      loading: () => AppTheme.loadingState(message: 'Cargando información...'),
+      error: (e, _) => AppTheme.errorState(
+        'Error al cargar perfil: $e',
+        onRetry: () => ref.invalidate(currentAppUserProvider),
+      ),
+      data: (user) {
+        if (user == null || user.companyId == null) {
+          return Padding(
+            padding: const EdgeInsets.all(24),
+            child: AppTheme.emptyState(
+              icon: Icons.business_outlined,
+              title: 'Empresa no asignada',
+              subtitle: 'Tu usuario no tiene una empresa asignada.',
+            ),
+          );
+        }
+
+        return _EmployeeHomeContent(
+          user: user,
+          userId: userId,
+        );
+      },
+    );
+  }
+}
+
+class _EmployeeHomeContent extends ConsumerWidget {
+  const _EmployeeHomeContent({
+    required this.user,
+    required this.userId,
+  });
+
+  final UserModel user;
+  final String userId;
+
   static const List<String> _months = [
     'enero',
     'febrero',
@@ -38,27 +89,12 @@ class EmployeeHomeScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final userId = ref.watch(currentUserIdProvider);
-    final userAsync = ref.watch(currentAppUserProvider);
-
-    if (userId == null) {
-      return Padding(
-        padding: const EdgeInsets.all(24),
-        child: AppTheme.emptyState(
-          icon: Icons.person_off_outlined,
-          title: 'Usuario no autenticado',
-          subtitle: 'Iniciá sesión para ver tu información.',
-        ),
-      );
-    }
-
     final attendancesAsync = ref.watch(attendancesByUserProvider(userId));
     final incidencesAsync = ref.watch(incidencesStreamProvider);
     final companyAsync = ref.watch(currentCompanyProvider);
     final workplacesAsync = ref.watch(activeWorkplacesProvider);
     final now = DateTime.now();
 
-    final user = userAsync.value;
     final incidences = (incidencesAsync.value ?? [])
         .where((i) => i.userId == userId)
         .toList();
@@ -66,14 +102,6 @@ class EmployeeHomeScreen extends ConsumerWidget {
     final laborableDays = (company?.diasLaborables.isNotEmpty ?? false)
         ? company!.diasLaborables
         : const [1, 2, 3, 4, 5];
-
-    // Forzar refresh de workplaces al montar la pantalla (resuelve caché de Firestore)
-    // Solo se ejecuta una vez al montar el widget.
-    // ignore: invalid_use_of_protected_member, invalid_use_of_visible_for_testing_member
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      ref.invalidate(activeWorkplacesProvider);
-      ref.invalidate(workplacesStreamProvider);
-    });
 
     return RefreshIndicator(
       onRefresh: () => _refreshAll(ref, userId),
@@ -99,7 +127,7 @@ class EmployeeHomeScreen extends ConsumerWidget {
                   monthAttendances: allAttendances,
                   incidences: incidences,
                   laborableDays: laborableDays,
-                  employmentStart: user?.createdAt,
+                  employmentStart: user.createdAt,
                   selectedMonth: now.month,
                   selectedYear: now.year,
                   now: now,
@@ -131,11 +159,6 @@ class EmployeeHomeScreen extends ConsumerWidget {
   }
 
   /// Re-pide TODOS los datos de la pantalla.
-  ///
-  /// Antes solo invalidaba los providers de lugar de trabajo, por eso un error
-  /// de metrics se quedaba latched hasta que el usuario borraba el cache de la
-  /// app: `attendancesByUserProvider` e `incidencesStreamProvider` nunca se
-  /// volvian a pedir.
   Future<void> _refreshAll(WidgetRef ref, String userId) async {
     ref.invalidate(attendancesByUserProvider(userId));
     ref.invalidate(incidencesStreamProvider);

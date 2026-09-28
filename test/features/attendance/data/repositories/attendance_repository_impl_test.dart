@@ -290,13 +290,11 @@ void main() {
       expect(activeAttendance.companyId, companyId);
     });
 
-    test('getActiveAttendance sin companyId devuelve null (guard Opción B)', () async {
+    test('getActiveAttendance filtra por companyId y no devuelve asistencias de otra empresa', () async {
       await seedAttendance(
         buildAttendance(id: 'att-other-company', company: 'company-2'),
       );
-      final repoNoCompany = AttendanceRepositoryImpl(service);
-
-      final active = await repoNoCompany.getActiveAttendance(userId).first;
+      final active = await repo.getActiveAttendance(userId).first;
       expect(active, isNull);
     });
 
@@ -319,10 +317,10 @@ void main() {
       expect(list.map((a) => a.id), ['att-1', 'att-3', 'att-2']);
     });
 
-    test('getAllAttendances devuelve vacío si no hay companyId', () async {
-      final repoNoCompany = AttendanceRepositoryImpl(service);
-      await seedAttendance(buildAttendance(id: 'att-any'));
-      final list = await repoNoCompany.getAllAttendances().first;
+    test('getAllAttendances filtra por companyId y no devuelve asistencias de otra empresa', () async {
+      final repoOtherCompany = AttendanceRepositoryImpl(service, companyId: 'company-empty');
+      await seedAttendance(buildAttendance(id: 'att-any', company: companyId));
+      final list = await repoOtherCompany.getAllAttendances().first;
       expect(list, isEmpty);
     });
 

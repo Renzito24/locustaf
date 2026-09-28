@@ -37,11 +37,12 @@ import 'app_routes.dart';
 import 'route_guard.dart';
 
 class AppRouter {
-  static final _auth = AuthStateListenable();
+  static final AuthStateListenable auth = AuthStateListenable();
+  static AuthStateListenable get _auth => auth;
 
   static final GoRouter router = GoRouter(
     initialLocation: '/',
-    refreshListenable: _auth,
+    refreshListenable: auth,
 
     redirect: (context, state) {
       return resolveRedirect(

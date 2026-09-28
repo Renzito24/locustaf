@@ -12,9 +12,9 @@ import 'firebase_providers.dart';
 /// Todos los streams filtran por el `companyId` del usuario autenticado,
 /// garantizando aislamiento multiempresa a nivel de consulta.
 
-/// companyId del usuario autenticado (null si no hay sesión o no tiene empresa).
+/// companyId del usuario autenticado leído directamente de la sesión resuelta.
 final currentCompanyIdProvider = Provider<String?>((ref) {
-  return ref.watch(currentAppUserProvider).value?.companyId;
+  return ref.watch(sessionProvider).companyId;
 });
 
 final allUsersStreamProvider = StreamProvider<List<UserModel>>((ref) {

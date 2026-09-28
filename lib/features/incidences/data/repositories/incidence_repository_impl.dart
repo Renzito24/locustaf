@@ -5,13 +5,13 @@ import '../models/incidence_model.dart';
 
 class IncidenceRepositoryImpl implements IncidenceRepository {
   final FirestoreService _firestoreService;
-  final String? _companyId;
+  final String _companyId;
   final String? _userId;
   final UserRole? _role;
 
   IncidenceRepositoryImpl(
     this._firestoreService, {
-    String? companyId,
+    required String companyId,
     String? userId,
     UserRole? role,
   })  : _companyId = companyId,
@@ -20,9 +20,9 @@ class IncidenceRepositoryImpl implements IncidenceRepository {
 
   @override
   Stream<List<IncidenceModel>> getIncidences() {
-    if (_companyId == null) return Stream.value(<IncidenceModel>[]);
-    // El empleado solo ve sus propias incidencias (alineado con las reglas).
-    if (_role == UserRole.employee) {
+    // Si el usuario es empleado (o ante ausencia de rol pero con userId por seguridad),
+    // SIEMPRE incluir userId para satisfacer firestore.rules y evitar permission-denied.
+    if (_role == UserRole.employee || (_role == null && _userId != null)) {
       if (_userId == null) return Stream.value(<IncidenceModel>[]);
       return _firestoreService.queryStreamWithFilters<IncidenceModel>(
         path: 'incidences',
@@ -40,7 +40,7 @@ class IncidenceRepositoryImpl implements IncidenceRepository {
   @override
   Future<void> createIncidence(IncidenceModel incidence) async {
     final data = incidence.toJson();
-    if (_companyId != null) data['companyId'] = _companyId;
+    data['companyId'] = _companyId;
     await _firestoreService.addDocument(
       path: 'incidences',
       data: data,

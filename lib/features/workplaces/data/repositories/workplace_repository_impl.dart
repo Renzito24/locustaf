@@ -4,14 +4,13 @@ import '../models/workplace_model.dart';
 
 class WorkplaceRepositoryImpl implements WorkplaceRepository {
   final FirestoreService _firestoreService;
-  final String? _companyId;
+  final String _companyId;
 
-  WorkplaceRepositoryImpl(this._firestoreService, {String? companyId})
+  WorkplaceRepositoryImpl(this._firestoreService, {required String companyId})
       : _companyId = companyId;
 
   @override
   Stream<List<WorkplaceModel>> getWorkplaces() {
-    if (_companyId == null) return Stream.value(<WorkplaceModel>[]);
     return _firestoreService.queryStreamWithFilters<WorkplaceModel>(
       path: 'workplaces',
       filters: {'companyId': _companyId},
@@ -22,7 +21,7 @@ class WorkplaceRepositoryImpl implements WorkplaceRepository {
   @override
   Future<void> createWorkplace(WorkplaceModel workplace) async {
     final data = workplace.toJson();
-    if (_companyId != null) data['companyId'] = _companyId;
+    data['companyId'] = _companyId;
     final uid = await _firestoreService.addDocument(
       path: 'workplaces',
       data: data,

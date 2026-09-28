@@ -126,6 +126,7 @@ class HistoryFilterBar extends ConsumerWidget {
         return SizedBox(
           width: 200,
           child: DropdownButtonFormField<String?>(
+            isExpanded: true,
             initialValue: selectedId,
             decoration: _dropdownDecoration('Empleado'),
             dropdownColor: AppColors.cardDark,
@@ -182,6 +183,7 @@ class HistoryFilterBar extends ConsumerWidget {
         return SizedBox(
           width: 200,
           child: DropdownButtonFormField<String?>(
+            isExpanded: true,
             initialValue: selectedId,
             decoration: _dropdownDecoration('Lugar de trabajo'),
             dropdownColor: AppColors.cardDark,
@@ -231,6 +233,7 @@ class HistoryFilterBar extends ConsumerWidget {
     return SizedBox(
       width: 160,
       child: DropdownButtonFormField<String?>(
+        isExpanded: true,
         initialValue: selectedStatus,
         decoration: _dropdownDecoration('Estado'),
         dropdownColor: AppColors.cardDark,

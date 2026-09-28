@@ -71,19 +71,33 @@ class WorkplaceModel extends Equatable {
     );
   }
 
+  static int _parseInt(dynamic value, {int defaultValue = 15}) {
+    if (value == null) return defaultValue;
+    if (value is num) return value.toInt();
+    if (value is String) return int.tryParse(value) ?? defaultValue;
+    return defaultValue;
+  }
+
+  static double? _parseDouble(dynamic value) {
+    if (value == null) return null;
+    if (value is num) return value.toDouble();
+    if (value is String) return double.tryParse(value);
+    return null;
+  }
+
   factory WorkplaceModel.fromJson(Map<String, dynamic> json) {
     return WorkplaceModel(
       id: json['id'] as String,
       nombre: json['nombre'] as String,
       description: json['description'] as String?,
       direccion: json['direccion'] as String?,
-      latitud: (json['latitud'] as num?)?.toDouble(),
-      longitud: (json['longitud'] as num?)?.toDouble(),
-      radio: (json['radio'] as num?)?.toDouble(),
+      latitud: _parseDouble(json['latitud']),
+      longitud: _parseDouble(json['longitud']),
+      radio: _parseDouble(json['radio']),
       codigo: json['codigo'] as String?,
       horaInicio: json['horaInicio'] as String?,
       horaFin: json['horaFin'] as String?,
-      toleranciaMinutos: (json['toleranciaMinutos'] as num?)?.toInt() ?? 15,
+      toleranciaMinutos: _parseInt(json['toleranciaMinutos']),
       companyId: json['companyId'] as String?,
       isActive: json['isActive'] as bool? ?? true,
       createdAt: DateTime.parse(json['createdAt'] as String).toLocal(),

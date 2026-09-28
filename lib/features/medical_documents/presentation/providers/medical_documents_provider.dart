@@ -16,8 +16,11 @@ import '../../data/repositories/medical_document_repository_impl.dart';
 import '../../domain/repositories/medical_document_repository.dart';
 
 final medicalDocumentRepositoryProvider = Provider<MedicalDocumentRepository>((ref) {
-  final firestoreService = ref.read(firestoreServiceProvider);
   final companyId = ref.watch(currentCompanyIdProvider);
+  if (companyId == null) {
+    throw StateError('MedicalDocumentRepository requires a non-null companyId');
+  }
+  final firestoreService = ref.read(firestoreServiceProvider);
   final role = ref.watch(userRoleProvider);
   final userId = ref.watch(currentUserIdProvider);
   return MedicalDocumentRepositoryImpl(
@@ -29,9 +32,10 @@ final medicalDocumentRepositoryProvider = Provider<MedicalDocumentRepository>((r
 });
 
 final medicalDocumentsStreamProvider = StreamProvider<List<MedicalDocumentModel>>((ref) {
-  // `watch`: el repositorio depende de empresa/rol/usuario, que se resuelven
-  // después del primer frame. Con `read` la consulta quedaba clavada con
-  // companyId == null y los documentos médicos nunca se recargaban.
+  final companyId = ref.watch(currentCompanyIdProvider);
+  if (companyId == null) {
+    return Stream.value(<MedicalDocumentModel>[]);
+  }
   final repo = ref.watch(medicalDocumentRepositoryProvider);
   return repo.getDocuments();
 });

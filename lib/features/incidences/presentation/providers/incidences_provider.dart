@@ -12,8 +12,11 @@ import '../../../../core/services/logging_service.dart';
 import '../../../../core/services/stream_retry.dart';
 
 final incidenceRepositoryProvider = Provider<IncidenceRepository>((ref) {
-  final firestoreService = ref.read(firestoreServiceProvider);
   final companyId = ref.watch(currentCompanyIdProvider);
+  if (companyId == null) {
+    throw StateError('IncidenceRepository requires a non-null companyId');
+  }
+  final firestoreService = ref.read(firestoreServiceProvider);
   final role = ref.watch(userRoleProvider);
   final userId = ref.watch(currentUserIdProvider);
   return IncidenceRepositoryImpl(
@@ -25,9 +28,10 @@ final incidenceRepositoryProvider = Provider<IncidenceRepository>((ref) {
 });
 
 final incidencesStreamProvider = StreamProvider<List<IncidenceModel>>((ref) {
-  // `watch`: el repositorio depende de empresa/rol/usuario, que se resuelven
-  // después del primer frame. Con `read` la consulta quedaba clavada con
-  // companyId == null y las incidencias nunca se recargaban.
+  final companyId = ref.watch(currentCompanyIdProvider);
+  if (companyId == null) {
+    return Stream.value(<IncidenceModel>[]);
+  }
   final repo = ref.watch(incidenceRepositoryProvider);
   return retryOnError(repo.getIncidences);
 });

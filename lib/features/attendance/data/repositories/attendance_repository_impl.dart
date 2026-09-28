@@ -9,12 +9,12 @@ import '../models/attendance_model.dart';
 
 class AttendanceRepositoryImpl implements AttendanceRepository {
   final FirestoreService _firestoreService;
-  final String? _companyId;
+  final String _companyId;
   final FirebaseFunctions? _functions;
 
   AttendanceRepositoryImpl(
     this._firestoreService, {
-    String? companyId,
+    required String companyId,
     FirebaseFunctions? functions,
   })  : _functions = functions,
         _companyId = companyId;
@@ -25,7 +25,7 @@ class AttendanceRepositoryImpl implements AttendanceRepository {
       path: 'attendances',
       filters: {
         'userId': userId,
-        if (_companyId != null) 'companyId': _companyId,
+        'companyId': _companyId,
       },
       fromJson: AttendanceModel.fromJson,
       orderField: 'checkInTime',
@@ -35,7 +35,6 @@ class AttendanceRepositoryImpl implements AttendanceRepository {
 
   @override
   Stream<List<AttendanceModel>> getAllAttendances() {
-    if (_companyId == null) return Stream.value(<AttendanceModel>[]);
     return _firestoreService.queryStreamWithFilters<AttendanceModel>(
       path: 'attendances',
       filters: {'companyId': _companyId},
@@ -48,7 +47,6 @@ class AttendanceRepositoryImpl implements AttendanceRepository {
   /// cambio (locks y jornadas huérfanas solo necesitan las activas).
   @override
   Stream<List<AttendanceModel>> getAllActiveAttendances() {
-    if (_companyId == null) return Stream.value(<AttendanceModel>[]);
     return _firestoreService.queryStreamWithFilters<AttendanceModel>(
       path: 'attendances',
       filters: {'companyId': _companyId, 'status': 'active'},
@@ -61,7 +59,6 @@ class AttendanceRepositoryImpl implements AttendanceRepository {
     required int limit,
     Object? startAfter,
   }) async {
-    if (_companyId == null) return const AttendancePage(items: [], hasMore: false);
     final page = await _firestoreService.queryPage<AttendanceModel>(
       path: 'attendances',
       filters: {'companyId': _companyId},
@@ -80,7 +77,6 @@ class AttendanceRepositoryImpl implements AttendanceRepository {
 
   @override
   Future<int> countCompanyAttendances() async {
-    if (_companyId == null) return 0;
     return _firestoreService.countDocuments(
       path: 'attendances',
       filters: {'companyId': _companyId},
@@ -89,8 +85,6 @@ class AttendanceRepositoryImpl implements AttendanceRepository {
 
   @override
   Stream<AttendanceModel?> getActiveAttendance(String userId) {
-    // R-QG-2: sin empresa en sesión no se consulta nada (Opción B).
-    if (_companyId == null) return Stream.value(null);
     return _firestoreService.queryStreamWithFilters<AttendanceModel>(
       path: 'attendances',
       filters: {
