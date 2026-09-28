@@ -158,10 +158,16 @@ class AuthStateListenable extends ChangeNotifier {
       path: 'companies',
       documentId: companyId,
       fromJson: CompanyModel.fromJson,
-    ).listen((company) {
-      _companyEstado = company?.estado;
-      notifyListeners();
-    });
+    ).listen(
+      (company) {
+        _companyEstado = company?.estado;
+        notifyListeners();
+      },
+      onError: (Object error, StackTrace stackTrace) {
+        _companyEstado = null;
+        notifyListeners();
+      },
+    );
   }
 
   @override
