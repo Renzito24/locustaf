@@ -25,6 +25,27 @@ class SuperadminSettingsPanel extends ConsumerStatefulWidget {
 class _SuperadminSettingsPanelState extends ConsumerState<SuperadminSettingsPanel> {
   CompanyModel? _selectedCompany;
 
+  /// Sincroniza [_selectedCompany] con la instancia más reciente de la lista
+  /// usando únicamente [CompanyModel.id] como clave de identidad. Se llama
+  /// desde [ref.listen] para no mutar estado dentro del árbol de build.
+  void _syncSelection(List<CompanyModel> companies) {
+    if (companies.isEmpty) {
+      if (_selectedCompany != null) setState(() => _selectedCompany = null);
+      return;
+    }
+    if (_selectedCompany == null) {
+      setState(() => _selectedCompany = companies.first);
+      return;
+    }
+    final updated = companies
+        .where((c) => c.id == _selectedCompany!.id)
+        .toList();
+    final next = updated.isNotEmpty ? updated.first : companies.first;
+    if (next != _selectedCompany) {
+      setState(() => _selectedCompany = next);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final metrics = ref.watch(platformMetricsProvider);
@@ -32,10 +53,20 @@ class _SuperadminSettingsPanelState extends ConsumerState<SuperadminSettingsPane
     final paymentsAsync = ref.watch(recentPaymentsProvider);
     final isMobile = AppTheme.isMobile(context);
 
+    // Reacciona a cada nueva emisión de la lista de empresas y sincroniza
+    // la selección por id, fuera del árbol de build.
+    ref.listen(allCompaniesProvider, (_, next) {
+      _syncSelection(next.value ?? const <CompanyModel>[]);
+    });
+
     final companies = companiesAsync.value ?? const <CompanyModel>[];
-    if (_selectedCompany == null && companies.isNotEmpty) {
-      _selectedCompany = companies.first;
-    }
+
+    // Inicialización defensiva solo en el primer build cuando el listener
+    // aún no tuvo oportunidad de dispararse (estado ya cargado).
+    final effectiveSelected = _selectedCompany != null &&
+            companies.any((c) => c.id == _selectedCompany!.id)
+        ? companies.firstWhere((c) => c.id == _selectedCompany!.id)
+        : (companies.isNotEmpty ? companies.first : null);
 
     return SingleChildScrollView(
       padding: EdgeInsets.all(isMobile ? 16.0 : 24.0),
@@ -103,37 +134,42 @@ class _SuperadminSettingsPanelState extends ConsumerState<SuperadminSettingsPane
               Row(
                 children: [
                   Expanded(
-                    child: DropdownButtonFormField<CompanyModel>(
-                      initialValue: _selectedCompany,
+                    child: InputDecorator(
                       decoration: AppTheme.inputDecoration(
                         label: 'Empresa',
                         icon: Icons.business_outlined,
                       ),
-                      dropdownColor: AppColors.cardDark,
-                      style: const TextStyle(color: AppColors.textWhite),
-                      items: companies
-                          .map(
-                            (c) => DropdownMenuItem(
-                              value: c,
-                              child: Text(
-                                c.nombreComercial,
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                            ),
-                          )
-                          .toList(),
-                      onChanged: (v) =>
-                          setState(() => _selectedCompany = v),
+                      child: DropdownButtonHideUnderline(
+                        child: DropdownButton<CompanyModel>(
+                          value: effectiveSelected,
+                          dropdownColor: AppColors.cardDark,
+                          style: const TextStyle(color: AppColors.textWhite),
+                          isExpanded: true,
+                          items: companies
+                              .map(
+                                (c) => DropdownMenuItem(
+                                  value: c,
+                                  child: Text(
+                                    c.nombreComercial,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ),
+                              )
+                              .toList(),
+                          onChanged: (v) =>
+                              setState(() => _selectedCompany = v),
+                        ),
+                      ),
                     ),
                   ),
                   const SizedBox(width: 12),
                   FilledButton.icon(
-                    onPressed: _selectedCompany == null
+                    onPressed: effectiveSelected == null
                         ? null
                         : () => showDialog<void>(
                               context: context,
                               builder: (_) => RegisterPaymentDialog(
-                                company: _selectedCompany!,
+                                company: effectiveSelected,
                               ),
                             ),
                     icon: const Icon(Icons.payment, size: 18),
