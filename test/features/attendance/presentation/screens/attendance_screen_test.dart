@@ -277,7 +277,7 @@ void main() {
       await tester.tap(find.text('Iniciar jornada'));
       await tester.pumpAndSettle();
 
-      expect(find.textContaining('radio'), findsOneWidget);
+      expect(find.textContaining('área habilitada'), findsOneWidget);
     });
 
     testWidgets('check-in con usuario inactivo: snackbar de cuenta no activa',

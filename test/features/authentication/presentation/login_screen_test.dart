@@ -126,84 +126,77 @@ void main() {
   });
 
   group('LoginScreen E2E — mapeo de errores', () {
-    testWidgets('user-not-found: mensaje de cuenta inexistente', (tester) async {
+    testWidgets('user-not-found: mensaje de cuenta inexistente/credenciales incorrectas', (tester) async {
       authRepo.loginError = FirebaseAuthException(code: 'user-not-found');
       await pumpLogin(tester);
       await loginConCredencialesValidas(tester);
-      expect(find.text('No existe una cuenta con este correo electrónico'), findsOneWidget);
+      expect(find.text('El correo o la contraseña no son correctos.'), findsOneWidget);
       expect(find.byKey(const ValueKey('dashboard')), findsNothing);
     });
 
-    testWidgets('wrong-password: mensaje de contraseña incorrecta', (tester) async {
+    testWidgets('wrong-password: mensaje de credenciales incorrectas', (tester) async {
       authRepo.loginError = FirebaseAuthException(code: 'wrong-password');
       await pumpLogin(tester);
       await loginConCredencialesValidas(tester);
-      expect(find.text('Contraseña incorrecta'), findsOneWidget);
+      expect(find.text('El correo o la contraseña no son correctos.'), findsOneWidget);
     });
 
     testWidgets('user-disabled: mensaje de cuenta deshabilitada', (tester) async {
       authRepo.loginError = FirebaseAuthException(code: 'user-disabled');
       await pumpLogin(tester);
       await loginConCredencialesValidas(tester);
-      expect(find.text('Esta cuenta ha sido deshabilitada'), findsOneWidget);
+      expect(find.text('Tu cuenta se encuentra deshabilitada.'), findsOneWidget);
     });
 
     testWidgets('invalid-credential: mensaje genérico de credenciales', (tester) async {
       authRepo.loginError = FirebaseAuthException(code: 'invalid-credential');
       await pumpLogin(tester);
       await loginConCredencialesValidas(tester);
-      expect(find.text('Correo o contraseña incorrectos'), findsOneWidget);
+      expect(find.text('El correo o la contraseña no son correctos.'), findsOneWidget);
     });
 
-    testWidgets('error no-Firebase: mensaje de error inesperado', (tester) async {
+    testWidgets('error genérico (Exception): mensaje de error inesperado', (tester) async {
       authRepo.loginError = Exception('boom');
       await pumpLogin(tester);
       await loginConCredencialesValidas(tester);
-      expect(find.textContaining('Error inesperado'), findsOneWidget);
-      expect(find.textContaining('boom'), findsOneWidget);
+      expect(find.textContaining('Se produjo un problema inesperado'), findsOneWidget);
     });
 
-    // El detalle técnico no puede volver a quedar oculto tras un mensaje
-    // genérico: en Android release un fallo de Firestore o de un canal de
-    // plataforma llegaba como "Error inesperado" sin ninguna pista.
-    testWidgets('FirebaseException: muestra el código de Firebase', (tester) async {
+    testWidgets('FirebaseException: muestra mensaje de problema inesperado o conexión', (tester) async {
       authRepo.loginError = FirebaseException(
         plugin: 'cloud_firestore',
-        message: 'Missing or insufficient permissions.',
+        code: 'unavailable',
+        message: 'Network error.',
       );
       await pumpLogin(tester);
       await loginConCredencialesValidas(tester);
       expect(
-        find.textContaining('[cloud_firestore/unknown]'),
+        find.textContaining('Problemas de conexión'),
         findsOneWidget,
       );
-      expect(find.textContaining('Missing or insufficient permissions.'), findsOneWidget);
     });
 
-    testWidgets('PlatformException: muestra el código del dispositivo',
+    testWidgets('PlatformException: muestra mensaje amigable del sistema',
         (tester) async {
       authRepo.loginError = PlatformException(code: 'DEVELOPER_ERROR');
       await pumpLogin(tester);
       await loginConCredencialesValidas(tester);
-      expect(find.textContaining('[DEVELOPER_ERROR]'), findsOneWidget);
+      expect(find.textContaining('Ocurrió un error en el dispositivo'), findsOneWidget);
     });
 
-    // Un Error/FlutterError (p. ej. contexto de GoRouter desmontado al
-    // navegar) antes se escapaba del `on Exception` y dejaba al usuario sin
-    // ningún mensaje.
-    testWidgets('FlutterError: muestra el mensaje sin crashear', (tester) async {
+    testWidgets('FlutterError: muestra mensaje genérico', (tester) async {
       authRepo.loginError = FlutterError('GoRouter context deactivated');
       await pumpLogin(tester);
       await loginConCredencialesValidas(tester);
-      expect(find.textContaining('GoRouter context deactivated'), findsOneWidget);
+      expect(find.textContaining('Se produjo un problema inesperado'), findsOneWidget);
     });
 
-    testWidgets('FirebaseAuthException con code no mapeado: muestra el code',
+    testWidgets('FirebaseAuthException con code no mapeado: muestra mensaje genérico de autenticación',
         (tester) async {
       authRepo.loginError = FirebaseAuthException(code: 'internal-error');
       await pumpLogin(tester);
       await loginConCredencialesValidas(tester);
-      expect(find.textContaining('[internal-error]'), findsOneWidget);
+      expect(find.textContaining('Ocurrió un problema al iniciar sesión'), findsOneWidget);
     });
   });
 
@@ -279,7 +272,7 @@ void main() {
       await enviarRecuperacion(tester, email: 'inexistente@empresa.com');
 
       expect(authRepo.resetPasswordCalls, 1);
-      expect(find.textContaining('No existe una cuenta'), findsOneWidget);
+      expect(find.textContaining('El correo o la contraseña no son correctos.'), findsOneWidget);
       expect(find.text('Recuperar contraseña'), findsOneWidget, reason: 'el diálogo sigue abierto');
     });
 

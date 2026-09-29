@@ -8,6 +8,7 @@ import '../../../../core/providers/firebase_providers.dart';
 import '../../../../core/providers/async_action_state.dart';
 import '../../../../core/services/storage_service.dart';
 import '../../../../core/services/logging_service.dart';
+import '../../../../core/errors/error_handler.dart';
 import '../../../../core/utils/file_utils.dart';
 import '../../../authentication/presentation/providers/auth_provider.dart';
 import '../../../employees/presentation/providers/users_provider.dart';
@@ -236,7 +237,7 @@ class MedicalDocumentCreateNotifier extends Notifier<MedicalDocumentActionState>
           await storageService.deleteFile(uploadedUrl);
         } catch (_) {}
       }
-      state = MedicalDocumentActionState(error: e.toString());
+      state = MedicalDocumentActionState(error: ErrorHandler.parse(e).message);
     }
   }
 
@@ -315,7 +316,7 @@ class MedicalDocumentUpdateNotifier extends Notifier<MedicalDocumentActionState>
           await storageService.deleteFile(uploadedUrl);
         } catch (_) {}
       }
-      state = MedicalDocumentActionState(error: e.toString());
+      state = MedicalDocumentActionState(error: ErrorHandler.parse(e).message);
     }
   }
 
@@ -350,7 +351,7 @@ class MedicalDocumentDeleteNotifier extends Notifier<AsyncActionState> {
 
       state = const AsyncActionState.success();
     } catch (e) {
-      state = AsyncActionState.failure(e);
+      state = AsyncActionState.failure(ErrorHandler.parse(e).message);
     }
   }
 
@@ -391,7 +392,7 @@ class MedicalDocumentApprovalNotifier extends Notifier<AsyncActionState> {
         error: e,
         stackTrace: st,
       );
-      state = AsyncActionState.failure(e);
+      state = AsyncActionState.failure(ErrorHandler.parse(e).message);
     }
   }
 
@@ -418,7 +419,7 @@ class MedicalDocumentApprovalNotifier extends Notifier<AsyncActionState> {
         error: e,
         stackTrace: st,
       );
-      state = AsyncActionState.failure(e);
+      state = AsyncActionState.failure(ErrorHandler.parse(e).message);
     }
   }
 

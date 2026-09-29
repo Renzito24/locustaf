@@ -10,6 +10,7 @@ import '../../../../core/providers/firebase_providers.dart';
 import '../../../../core/providers/async_action_state.dart';
 import '../../../../core/services/logging_service.dart';
 import '../../../../core/services/stream_retry.dart';
+import '../../../../core/errors/error_handler.dart';
 
 final incidenceRepositoryProvider = Provider<IncidenceRepository>((ref) {
   final companyId = ref.watch(currentCompanyIdProvider) ?? '';
@@ -159,7 +160,7 @@ class IncidenceCreateNotifier extends Notifier<AsyncActionState> {
       await repo.createIncidence(incidence);
       state = const AsyncActionState.success();
     } catch (e) {
-      state = AsyncActionState.failure(e);
+      state = AsyncActionState.failure(ErrorHandler.parse(e).message);
     }
   }
 
@@ -183,7 +184,7 @@ class IncidenceUpdateNotifier extends Notifier<AsyncActionState> {
       await repo.updateIncidence(incidence);
       state = const AsyncActionState.success();
     } catch (e) {
-      state = AsyncActionState.failure(e);
+      state = AsyncActionState.failure(ErrorHandler.parse(e).message);
     }
   }
 
@@ -207,7 +208,7 @@ class IncidenceDeleteNotifier extends Notifier<AsyncActionState> {
       await repo.softDeleteIncidence(id);
       state = const AsyncActionState.success();
     } catch (e) {
-      state = AsyncActionState.failure(e);
+      state = AsyncActionState.failure(ErrorHandler.parse(e).message);
     }
   }
 
@@ -246,7 +247,7 @@ class IncidenceApprovalNotifier extends Notifier<AsyncActionState> {
         error: e,
         stackTrace: st,
       );
-      state = AsyncActionState.failure(e);
+      state = AsyncActionState.failure(ErrorHandler.parse(e).message);
     }
   }
 
@@ -273,7 +274,7 @@ class IncidenceApprovalNotifier extends Notifier<AsyncActionState> {
         error: e,
         stackTrace: st,
       );
-      state = AsyncActionState.failure(e);
+      state = AsyncActionState.failure(ErrorHandler.parse(e).message);
     }
   }
 

@@ -352,8 +352,7 @@ void main() {
       final state = await runCheckIn();
 
       expect(state.status, AttendanceActionStatus.error);
-      expect(state.message, contains('Estás a'));
-      expect(state.message, contains('radio'));
+      expect(state.message, contains('área habilitada'));
     });
 
     test('checkIn con GPS apagado: error claro', () async {
@@ -364,7 +363,7 @@ void main() {
       final state = await runCheckIn();
 
       expect(state.status, AttendanceActionStatus.error);
-      expect(state.message, contains('GPS'));
+      expect(state.message, contains('ubicación'));
     });
 
     test('checkIn de usuario mutado/inactivo: error', () async {
@@ -448,7 +447,7 @@ void main() {
       final state = await runCheckOut(attendanceId);
 
       expect(state.status, AttendanceActionStatus.error);
-      expect(state.message, contains('Estás a'));
+      expect(state.message, contains('área habilitada'));
     });
 
     test('checkOut de asistencia inexistente: error', () async {

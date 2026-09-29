@@ -2,6 +2,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/providers/firebase_providers.dart';
+import '../../../../core/errors/error_handler.dart';
 
 class ProfileUpdateState {
   final bool isLoading;
@@ -45,7 +46,7 @@ class ProfileUpdateNotifier extends Notifier<ProfileUpdateState> {
       );
       state = const ProfileUpdateState.success('Perfil actualizado correctamente.');
     } catch (e) {
-      state = ProfileUpdateState.error('Error al actualizar perfil: $e');
+      state = ProfileUpdateState.error(ErrorHandler.parse(e).message);
     }
   }
 
@@ -112,7 +113,7 @@ class PasswordChangeNotifier extends Notifier<PasswordChangeState> {
       }
       state = PasswordChangeState.error(msg);
     } catch (e) {
-      state = PasswordChangeState.error('Error al cambiar contraseña: $e');
+      state = PasswordChangeState.error(ErrorHandler.parse(e).message);
     }
   }
 

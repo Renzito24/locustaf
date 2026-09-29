@@ -1,7 +1,5 @@
-class AttendanceException implements Exception {
-  final String message;
-  const AttendanceException(this.message);
+import 'package:app_locustaf/core/errors/domain_exceptions.dart';
 
-  @override
-  String toString() => message;
+class AttendanceException extends DomainException {
+  AttendanceException(super.message);
 }

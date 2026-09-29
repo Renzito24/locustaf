@@ -340,12 +340,11 @@ service cloud.firestore {
       allow read: if isAuthenticated()
         && (isSuperadmin()
             || ((isAdmin() || isSupervisor()) && inCompany(resource.data.companyId))
-            // R-QG-1: la query de jornada activa (getActiveAttendance) filtra
-            // userId+status sin companyId; inCompany no es demostrable en ese
-            // list y tumba la query completa. isOwner acota a documentos
-            // propios (mismo patrón que /incidences). El gate company-wide de
-            // admin/supervisor NO cambia. El bloque gemelo de medical_documents
-            // SÍ conserva inCompany: sus queries de app filtran companyId.
+            // R-QG-1 (Falso Positivo Validado): la regla isOwner blinda el acceso
+            // cruzado entre tenants. Aunque getActiveAttendance incluye companyId
+            // en su filtro, omitir inCompany() aquí no rompe el aislamiento 
+            // porque el empleado solo puede leer sus propias asistencias (las
+            // cuales siempre pertenecen a su propia empresa por diseño).
             || (isEmployee() && isOwner(resource.data.userId)));
       // El alta queda exclusivamente server-side (superadmin + Admin SDK).
       // AUI-02 (Fase 2): el self check-in pasa por la callable `checkInGeo`

@@ -4,7 +4,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../data/models/attendance_model.dart';
 import '../../data/repositories/attendance_repository_impl.dart';
 import '../../data/services/location_service.dart';
-import '../../domain/exceptions/attendance_exception.dart';
 import '../../domain/repositories/attendance_repository.dart';
 import '../../domain/services/attendance_calculator.dart';
 import '../../../../core/providers/data_providers.dart';
@@ -12,6 +11,8 @@ import '../../../../core/providers/firebase_providers.dart';
 import '../../../../core/services/logging_service.dart';
 import '../../../../core/services/stream_retry.dart';
 import '../../../workplaces/data/models/workplace_model.dart';
+import '../../../../core/errors/error_handler.dart';
+import '../../../../core/errors/domain_exceptions.dart';
 
 final attendanceRepositoryProvider = Provider<AttendanceRepository>((ref) {
   final companyId = ref.watch(currentCompanyIdProvider) ?? '';
@@ -144,12 +145,7 @@ class AttendanceNotifier extends Notifier<AttendanceActionState> {
         return;
       }
 
-      final locationResult = await _validateLocation(workplace);
-      if (locationResult.error != null) {
-        state = AttendanceActionState.error(locationResult.error!);
-        return;
-      }
-      final location = locationResult.location!;
+      final location = await _validateLocation(workplace);
 
       await repo.checkIn(latitud: location.latitude, longitud: location.longitude);
       LoggingService.instance.info(
@@ -157,19 +153,13 @@ class AttendanceNotifier extends Notifier<AttendanceActionState> {
         tag: 'attendance',
       );
       state = AttendanceActionState.success('Asistencia registrada correctamente.');
-    } on AttendanceException catch (e) {
-      LoggingService.instance.warning(
-        'Check-in rechazado: ${e.message}',
-        tag: 'attendance',
-      );
-      state = AttendanceActionState.error(e.message);
     } catch (e) {
       LoggingService.instance.error(
         'Error al registrar check-in',
         tag: 'attendance',
         error: e,
       );
-      state = AttendanceActionState.error('Error al registrar asistencia: $e');
+      state = AttendanceActionState.error(ErrorHandler.parse(e).message);
     }
   }
 
@@ -238,19 +228,13 @@ class AttendanceNotifier extends Notifier<AttendanceActionState> {
         tag: 'attendance',
       );
       state = AttendanceActionState.success('Ingreso registrado manualmente.');
-    } on AttendanceException catch (e) {
-      LoggingService.instance.warning(
-        'Check-in manual rechazado: ${e.message}',
-        tag: 'attendance',
-      );
-      state = AttendanceActionState.error(e.message);
     } catch (e) {
       LoggingService.instance.error(
         'Error al registrar check-in manual',
         tag: 'attendance',
         error: e,
       );
-      state = AttendanceActionState.error('Error al registrar asistencia: $e');
+      state = AttendanceActionState.error(ErrorHandler.parse(e).message);
     }
   }
 
@@ -298,12 +282,7 @@ class AttendanceNotifier extends Notifier<AttendanceActionState> {
         return;
       }
 
-      final locationResult = await _validateLocation(workplace);
-      if (locationResult.error != null) {
-        state = AttendanceActionState.error(locationResult.error!);
-        return;
-      }
-      final location = locationResult.location!;
+      final location = await _validateLocation(workplace);
 
       await repo.checkOut(
         attendanceId: attendanceId,
@@ -315,19 +294,13 @@ class AttendanceNotifier extends Notifier<AttendanceActionState> {
         tag: 'attendance',
       );
       state = AttendanceActionState.success('Jornada finalizada correctamente.');
-    } on AttendanceException catch (e) {
-      LoggingService.instance.warning(
-        'Check-out rechazado: ${e.message}',
-        tag: 'attendance',
-      );
-      state = AttendanceActionState.error(e.message);
     } catch (e) {
       LoggingService.instance.error(
         'Error al finalizar jornada',
         tag: 'attendance',
         error: e,
       );
-      state = AttendanceActionState.error('Error al finalizar jornada: $e');
+      state = AttendanceActionState.error(ErrorHandler.parse(e).message);
     }
   }
 
@@ -343,32 +316,36 @@ class AttendanceNotifier extends Notifier<AttendanceActionState> {
         tag: 'attendance',
       );
       state = AttendanceActionState.success('Jornada huérfana finalizada correctamente.');
-    } on AttendanceException catch (e) {
-      LoggingService.instance.warning(
-        'Finalizar huérfana rechazado: ${e.message}',
-        tag: 'attendance',
-      );
-      state = AttendanceActionState.error(e.message);
     } catch (e) {
       LoggingService.instance.error(
         'Error al finalizar jornada huérfana',
         tag: 'attendance',
         error: e,
       );
-      state = AttendanceActionState.error('Error al finalizar jornada: $e');
+      state = AttendanceActionState.error(ErrorHandler.parse(e).message);
     }
   }
 
   /// Valida que la ubicación actual esté disponible y dentro del radio del
   /// lugar de trabajo. Devuelve la ubicación o un mensaje de error.
-  Future<({LocationResult? location, String? error})> _validateLocation(
+  Future<LocationResult> _validateLocation(
     WorkplaceModel workplace,
   ) async {
     final locationService = LocationService();
     final location = await locationService.getCurrentPosition();
 
-    if (location.status != LocationStatus.available) {
-      return (location: null, error: location.message ?? 'Error de ubicación.');
+    switch (location.status) {
+      case LocationStatus.disabled:
+        throw LocationDisabledException('El GPS está desactivado.');
+      case LocationStatus.denied:
+      case LocationStatus.deniedForever:
+        throw LocationPermissionException('Permiso de ubicación denegado.');
+      case LocationStatus.lowAccuracy:
+        throw LocationAccuracyException('Señal GPS débil.');
+      case LocationStatus.unavailable:
+        throw Exception('Ubicación no disponible.');
+      case LocationStatus.available:
+        break;
     }
 
     final withinRadius = LocationService.isWithinRadius(
@@ -380,21 +357,10 @@ class AttendanceNotifier extends Notifier<AttendanceActionState> {
     );
 
     if (!withinRadius) {
-      final distance = LocationService.calculateDistance(
-        location.latitude, location.longitude,
-        workplace.latitud!, workplace.longitud!,
-      );
-      final distStr = distance >= 1000
-          ? '${(distance / 1000).toStringAsFixed(1)} km'
-          : '${distance.toStringAsFixed(0)} m';
-      return (
-        location: null,
-        error: 'Estás a $distStr del lugar de trabajo (${workplace.nombre}). '
-            'Debés estar dentro del radio de ${workplace.radio!.toStringAsFixed(0)} m para registrar asistencia.',
-      );
+      throw LocationOutOfRangeException('Fuera del área de trabajo.');
     }
 
-    return (location: location, error: null);
+    return location;
   }
 
   void reset() {

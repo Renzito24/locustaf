@@ -1,6 +1,5 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
@@ -9,6 +8,7 @@ import '../../../../core/providers/firebase_providers.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/widgets/widgets.dart';
 import '../providers/auth_provider.dart';
+import '../../../../core/errors/error_handler.dart';
 
 class LoginScreen extends ConsumerStatefulWidget {
   const LoginScreen({super.key});
@@ -77,82 +77,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
     });
   }
 
-  /// Código real de un [FirebaseException] (`plugin/error`), que se pierde si
-  /// se usa `error.code` (devuelve `unknown` para todo error de plugin).
-  String _firebaseErrorCode(FirebaseException error) {
-    final match = RegExp(r'\[([^\]]+)\]').firstMatch(error.toString());
-    return match?.group(1) ?? error.code;
-  }
 
-  String _mensajeError(Object error) {
-    // El detalle técnico se muestra a propósito: un catch genérico dejaba
-    // "Error inesperado" para cualquier fallo (Firestore, plugin de plataforma)
-    // y no había forma de diagnosticar fallos que solo aparecen en Android.
-    final msg = error.toString().toLowerCase();
-    if (msg.contains('idpiframe_initialization_failed') ||
-        msg.contains('google sign-in is not initialized') ||
-        msg.contains('clientid')) {
-      return 'Error de configuración de Google Sign-In. Verificá el Client ID web en index.html.';
-    }
-    if (msg.contains('popup')) {
-      return 'Inicio de sesión cancelado';
-    }
 
-    if (error is FirebaseAuthException) {
-      switch (error.code) {
-        case 'user-not-found':
-          return 'No existe una cuenta con este correo electrónico';
-        case 'wrong-password':
-          return 'Contraseña incorrecta';
-        case 'invalid-credential':
-          return 'Correo o contraseña incorrectos';
-        case 'invalid-email':
-          return 'El correo electrónico no es válido';
-        case 'user-disabled':
-          return 'Esta cuenta ha sido deshabilitada';
-        case 'too-many-requests':
-          return 'Demasiados intentos. Intente más tarde';
-        case 'network-request-failed':
-          return 'Error de red. Verifique su conexión';
-        case 'account-exists-with-different-credential':
-          return 'Ya existe una cuenta con ese correo usando otro método de inicio de sesión';
-        case 'popup-closed-by-user':
-        case 'cancelled-popup-request':
-          return 'Inicio de sesión cancelado';
-        default:
-          return 'Error al iniciar sesión [${error.code}]: ${error.message ?? 'sin detalle'}';
-      }
-    }
-
-    // p.ej. fallo de Firestore en la lectura del documento de usuario que
-    // ocurre justo después de autenticar. `FirebaseException.code` devuelve
-    // solo "unknown" para plugins: el código real (plugin/error) únicamente
-    // aparece en `toString()`, así que se extrae de ahí.
-    if (error is FirebaseException) {
-      return 'Error de Firebase [${_firebaseErrorCode(error)}]: '
-          '${error.message ?? 'sin detalle'}';
-    }
-
-    // p.ej. fallos de canales de plataforma (Google Play Services, permisos).
-    if (error is PlatformException) {
-      final detail = error.message == null ? '' : ' ${error.message}';
-      return 'Error del dispositivo [${error.code}]:$detail';
-    }
-
-    // Errores del framework (p.ej. el contexto de GoRouter ya fue
-    // desmontado al navegar) llegan como FlutterError/Error, no como Exception.
-    if (error is FlutterError) {
-      return 'Error de interfaz: ${_acortar(error.message)}';
-    }
-
-    return 'Error inesperado [${error.runtimeType}]: ${_acortar('$error')}';
-  }
-
-  /// Evita que un error con stack trace largo rompa el layout del mensaje.
-  String _acortar(String texto, [int max = 180]) {
-    final limpio = texto.replaceAll('\n', ' ').trim();
-    return limpio.length <= max ? limpio : '${limpio.substring(0, max)}…';
-  }
 
   Future<void> login() async {
     if (!_formKey.currentState!.validate()) return;
@@ -193,7 +119,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
       debugPrint('LOGIN ERROR [${e.runtimeType}]: $e');
       if (!mounted) return;
       setState(() {
-        errorMessage = _mensajeError(e);
+        errorMessage = ErrorHandler.parse(e).message;
       });
     } finally {
       if (mounted) {
@@ -223,7 +149,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
     } on Exception catch (e) {
       if (mounted) {
         setState(() {
-          errorMessage = _mensajeError(e);
+          errorMessage = ErrorHandler.parse(e).message;
         });
       }
       // Si el correo ya existe con otro método (correo/contraseña), guiar al
@@ -273,9 +199,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
   Future<void> _showForgotPasswordDialog() async {
     final success = await showDialog<bool>(
       context: context,
-      builder: (dialogContext) => _ForgotPasswordDialog(
-        mensajeError: _mensajeError,
-      ),
+      builder: (dialogContext) => const _ForgotPasswordDialog(),
     );
     if (success == true && mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -588,11 +512,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
 }
 
 class _ForgotPasswordDialog extends ConsumerStatefulWidget {
-  const _ForgotPasswordDialog({
-    required this.mensajeError,
-  });
-
-  final String Function(Object error) mensajeError;
+  const _ForgotPasswordDialog();
 
   @override
   ConsumerState<_ForgotPasswordDialog> createState() =>
@@ -623,7 +543,7 @@ class _ForgotPasswordDialogState extends ConsumerState<_ForgotPasswordDialog> {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         AppTheme.errorSnackBar(
-          'Error al enviar el correo: ${widget.mensajeError(e)}',
+          'Error al enviar el correo: ${ErrorHandler.parse(e).message}',
         ),
       );
     }
