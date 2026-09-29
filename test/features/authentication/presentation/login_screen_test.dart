@@ -123,6 +123,35 @@ void main() {
       expect(find.text('Ingrese su correo electrónico'), findsOneWidget);
       expect(find.text('Ingrese su contraseña'), findsOneWidget);
     });
+
+    testWidgets('visibilidad de contraseña: el botón alterna entre ocultar y mostrar', (tester) async {
+      await pumpLogin(tester);
+      final passwordField = find.byType(TextFormField).last;
+
+      // Por defecto la contraseña está oculta y se muestra el icono visibility
+      TextField textField = tester.widget<TextField>(find.descendant(of: passwordField, matching: find.byType(TextField)));
+      expect(textField.obscureText, isTrue);
+      expect(find.byIcon(Icons.visibility), findsOneWidget);
+      expect(find.byIcon(Icons.visibility_off), findsNothing);
+
+      // Tocar el icono para mostrar la contraseña
+      await tester.tap(find.byIcon(Icons.visibility));
+      await tester.pumpAndSettle();
+
+      textField = tester.widget<TextField>(find.descendant(of: passwordField, matching: find.byType(TextField)));
+      expect(textField.obscureText, isFalse);
+      expect(find.byIcon(Icons.visibility_off), findsOneWidget);
+      expect(find.byIcon(Icons.visibility), findsNothing);
+
+      // Tocar de nuevo para volver a ocultar
+      await tester.tap(find.byIcon(Icons.visibility_off));
+      await tester.pumpAndSettle();
+
+      textField = tester.widget<TextField>(find.descendant(of: passwordField, matching: find.byType(TextField)));
+      expect(textField.obscureText, isTrue);
+      expect(find.byIcon(Icons.visibility), findsOneWidget);
+      expect(find.byIcon(Icons.visibility_off), findsNothing);
+    });
   });
 
   group('LoginScreen E2E — mapeo de errores', () {

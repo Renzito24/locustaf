@@ -1,3 +1,4 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/models/company_model.dart';
@@ -61,12 +62,15 @@ class OnboardingNotifier extends Notifier<OnboardingState> {
         isActive: true,
         isDeleted: false,
         createdAt: DateTime.now(),
-        acceptedPoliciesAt: DateTime.now(),
+        termsVersion: '1.0',
+        privacyVersion: '1.0',
       );
       final userRef = firestore.collection('users').doc(authUser.uid);
 
       try {
-        await userRef.set(user.toJson());
+        final userData = user.toJson();
+        userData['acceptedPoliciesAt'] = FieldValue.serverTimestamp();
+        await userRef.set(userData);
       } catch (_) {
         // Limpieza de la empresa huérfana si falló el alta del admin.
         await companyRef.delete();

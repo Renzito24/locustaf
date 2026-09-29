@@ -53,6 +53,8 @@ class UserModel extends Equatable {
   /// Momento en que el usuario aceptó los términos y políticas de la
   /// plataforma (TASK-013). Se fija en el onboarding; null si es legacy.
   final DateTime? acceptedPoliciesAt;
+  final String? termsVersion;
+  final String? privacyVersion;
 
   const UserModel({
     required this.id,
@@ -72,6 +74,8 @@ class UserModel extends Equatable {
     required this.createdAt,
     this.updatedAt,
     this.acceptedPoliciesAt,
+    this.termsVersion,
+    this.privacyVersion,
   });
 
   String get nombreCompleto => '$nombre $apellido';
@@ -94,6 +98,8 @@ class UserModel extends Equatable {
     DateTime? createdAt,
     DateTime? updatedAt,
     DateTime? acceptedPoliciesAt,
+    String? termsVersion,
+    String? privacyVersion,
   }) {
     return UserModel(
       id: id ?? this.id,
@@ -113,6 +119,8 @@ class UserModel extends Equatable {
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
       acceptedPoliciesAt: acceptedPoliciesAt ?? this.acceptedPoliciesAt,
+      termsVersion: termsVersion ?? this.termsVersion,
+      privacyVersion: privacyVersion ?? this.privacyVersion,
     );
   }
 
@@ -139,6 +147,8 @@ class UserModel extends Equatable {
       acceptedPoliciesAt: json['acceptedPoliciesAt'] != null
           ? DateTime.parse(json['acceptedPoliciesAt'] as String).toLocal()
           : null,
+      termsVersion: json['termsVersion'] as String?,
+      privacyVersion: json['privacyVersion'] as String?,
     );
   }
 
@@ -161,6 +171,8 @@ class UserModel extends Equatable {
       'createdAt': createdAt.toUtc().toIso8601String(),
       'updatedAt': updatedAt?.toUtc().toIso8601String(),
       'acceptedPoliciesAt': acceptedPoliciesAt?.toUtc().toIso8601String(),
+      if (termsVersion != null) 'termsVersion': termsVersion,
+      if (privacyVersion != null) 'privacyVersion': privacyVersion,
     };
   }
 
@@ -183,5 +195,7 @@ class UserModel extends Equatable {
         createdAt,
         updatedAt,
         acceptedPoliciesAt,
+        termsVersion,
+        privacyVersion,
       ];
 }

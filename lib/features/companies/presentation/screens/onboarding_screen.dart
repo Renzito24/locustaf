@@ -39,7 +39,39 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
   final _razonSocialController = TextEditingController();
   final _cuitController = TextEditingController();
   final _empresaEmailController = TextEditingController();
-  bool _aceptaPoliticas = false;
+  bool _aceptaTerminos = false;
+  bool _aceptaPrivacidad = false;
+
+  Future<void> _showLegalDocument(String title, String content) async {
+    final isMobile = AppTheme.isMobile(context);
+    await showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          backgroundColor: AppColors.bgDarkTop,
+          title: Text(title, style: AppTheme.headingMd),
+          content: SizedBox(
+            width: isMobile ? double.maxFinite : 600,
+            child: Scrollbar(
+              thumbVisibility: true,
+              child: SingleChildScrollView(
+                child: Text(
+                  content,
+                  style: const TextStyle(color: AppColors.textSecondary, fontSize: 14, height: 1.5),
+                ),
+              ),
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text('Cerrar', style: TextStyle(color: AppColors.gold)),
+            ),
+          ],
+        );
+      },
+    );
+  }
 
   @override
   void dispose() {
@@ -370,64 +402,123 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                       style: AppTheme.bodyMd,
                     ),
                     const SizedBox(height: 12),
+                    const SizedBox(height: 12),
                     FormField<bool>(
-                      initialValue: _aceptaPoliticas,
+                      initialValue: _aceptaTerminos,
                       validator: (v) => (v == true)
                           ? null
-                          : 'Debés aceptar los términos y políticas para continuar.',
+                          : 'Requerido para continuar.',
                       builder: (field) => Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          InkWell(
-                            onTap: state.isLoading
-                                ? null
-                                : () {
-                                    setState(() =>
-                                        _aceptaPoliticas = !_aceptaPoliticas);
-                                    field.didChange(_aceptaPoliticas);
-                                  },
-                            child: Row(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Checkbox(
-                                  value: _aceptaPoliticas,
-                                  activeColor: AppColors.gold,
-                                  checkColor: Colors.white,
-                                  side: const BorderSide(
-                                    color: AppColors.textSecondary,
+                          Row(
+                            crossAxisAlignment: CrossAxisAlignment.center,
+                            children: [
+                              Checkbox(
+                                value: _aceptaTerminos,
+                                activeColor: AppColors.gold,
+                                checkColor: Colors.white,
+                                side: const BorderSide(color: AppColors.textSecondary),
+                                onChanged: state.isLoading
+                                    ? null
+                                    : (v) {
+                                        setState(() => _aceptaTerminos = v ?? false);
+                                        field.didChange(_aceptaTerminos);
+                                      },
+                              ),
+                              Expanded(
+                                child: GestureDetector(
+                                  onTap: () => _showLegalDocument(
+                                    'Términos y Condiciones (Borrador Académico)',
+                                    'BORRADOR ACADÉMICO / PROVISIONAL - SUJETO A REVISIÓN LEGAL\n\n'
+                                    '1. Objeto\n'
+                                    'LOCUSTAF es un proyecto académico diseñado para la gestión de asistencia y administración de personal. Su uso es estrictamente educativo y no comercial.\n\n'
+                                    '2. Uso de Geolocalización\n'
+                                    'La plataforma captura la geolocalización del usuario (empleado) únicamente al momento de registrar su asistencia (Check-in / Check-out). Esta información es utilizada para verificar si el usuario se encuentra dentro del radio permitido de su lugar de trabajo.\n\n'
+                                    '3. Responsabilidades\n'
+                                    'Al ser un proyecto académico, no se ofrecen garantías de disponibilidad, integridad o seguridad de nivel empresarial. El administrador de la empresa asume la responsabilidad por los datos de sus empleados ingresados en el sistema.\n\n'
+                                    '4. Documentación Médica y Justificativos\n'
+                                    'El sistema permite la carga de documentos para justificar inasistencias. El administrador debe garantizar que tiene el consentimiento de sus empleados para manejar esta información en la plataforma.',
                                   ),
-                                  onChanged: state.isLoading
-                                      ? null
-                                      : (v) {
-                                          setState(() => _aceptaPoliticas = v ?? false);
-                                          field.didChange(_aceptaPoliticas);
-                                        },
-                                ),
-                                const Expanded(
-                                  child: Padding(
-                                    padding: EdgeInsets.only(top: 12),
-                                    child: Text(
-                                      'Acepto los términos y condiciones y las '
-                                      'políticas de uso y privacidad de LOCUSTAF.',
-                                      style: TextStyle(
-                                        color: AppColors.textWhite,
-                                        fontSize: 13,
-                                      ),
+                                  child: const Text(
+                                    'He leído y acepto los Términos y Condiciones.',
+                                    style: TextStyle(
+                                      color: AppColors.textWhite,
+                                      fontSize: 13,
+                                      decoration: TextDecoration.underline,
                                     ),
                                   ),
                                 ),
-                              ],
-                            ),
+                              ),
+                            ],
                           ),
                           if (field.hasError)
                             Padding(
                               padding: const EdgeInsets.only(left: 12),
                               child: Text(
                                 field.errorText!,
-                                style: const TextStyle(
-                                  color: AppColors.error,
-                                  fontSize: 12,
+                                style: const TextStyle(color: AppColors.error, fontSize: 12),
+                              ),
+                            ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    FormField<bool>(
+                      initialValue: _aceptaPrivacidad,
+                      validator: (v) => (v == true)
+                          ? null
+                          : 'Requerido para continuar.',
+                      builder: (field) => Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            crossAxisAlignment: CrossAxisAlignment.center,
+                            children: [
+                              Checkbox(
+                                value: _aceptaPrivacidad,
+                                activeColor: AppColors.gold,
+                                checkColor: Colors.white,
+                                side: const BorderSide(color: AppColors.textSecondary),
+                                onChanged: state.isLoading
+                                    ? null
+                                    : (v) {
+                                        setState(() => _aceptaPrivacidad = v ?? false);
+                                        field.didChange(_aceptaPrivacidad);
+                                      },
+                              ),
+                              Expanded(
+                                child: GestureDetector(
+                                  onTap: () => _showLegalDocument(
+                                    'Política de Privacidad (Borrador Académico)',
+                                    'BORRADOR ACADÉMICO / PROVISIONAL - SUJETO A REVISIÓN LEGAL\n\n'
+                                    '1. Recopilación de Datos\n'
+                                    'Recolectamos información personal básica (nombre, DNI, correo, teléfono) y datos de ubicación (solo durante el registro de asistencia) con fines funcionales del sistema académico.\n\n'
+                                    '2. Almacenamiento\n'
+                                    'Los datos se almacenan en infraestructura en la nube (Google Cloud / Firebase). Al ser un entorno de prueba, los datos podrían ser eliminados o reseteados sin previo aviso.\n\n'
+                                    '3. Uso de la Información\n'
+                                    'La información será utilizada exclusivamente para el funcionamiento de LOCUSTAF (gestión de personal, control de asistencia, reportes internos de la empresa).\n\n'
+                                    '4. Eliminación de Datos\n'
+                                    'Un usuario puede ser marcado como "inactivo" o "eliminado" de forma lógica en la base de datos para no perder el historial de asistencias de la empresa, de acuerdo a la lógica actual del sistema.',
+                                  ),
+                                  child: const Text(
+                                    'He leído y acepto la Política de Privacidad.',
+                                    style: TextStyle(
+                                      color: AppColors.textWhite,
+                                      fontSize: 13,
+                                      decoration: TextDecoration.underline,
+                                    ),
+                                  ),
                                 ),
+                              ),
+                            ],
+                          ),
+                          if (field.hasError)
+                            Padding(
+                              padding: const EdgeInsets.only(left: 12),
+                              child: Text(
+                                field.errorText!,
+                                style: const TextStyle(color: AppColors.error, fontSize: 12),
                               ),
                             ),
                         ],

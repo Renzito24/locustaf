@@ -25,6 +25,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
 
   bool isLoading = false;
   String? errorMessage;
+  bool _obscurePassword = true;
 
   late final AnimationController _animController;
   late final Animation<double> _fadeAnim;
@@ -318,12 +319,24 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
                               const SizedBox(height: 18),
                               TextFormField(
                                 controller: passwordController,
-                                obscureText: true,
+                                obscureText: _obscurePassword,
                                 style: const TextStyle(color: AppColors.textWhite),
                                 cursorColor: AppColors.gold,
                                 decoration: AppTheme.inputDecoration(
                                   label: 'Contraseña',
                                   icon: Icons.lock_outline_rounded,
+                                ).copyWith(
+                                  suffixIcon: IconButton(
+                                    icon: Icon(
+                                      _obscurePassword ? Icons.visibility : Icons.visibility_off,
+                                      color: AppColors.textWhite.withValues(alpha: 0.6),
+                                    ),
+                                    onPressed: () {
+                                      setState(() {
+                                        _obscurePassword = !_obscurePassword;
+                                      });
+                                    },
+                                  ),
                                 ),
                                 validator: (value) {
                                   if (value == null || value.isEmpty) {
