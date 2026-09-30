@@ -47,6 +47,7 @@ class FakeCompanyRepository implements CompanyRepository {
     required DateTime paidUntil,
     CompanyPlan plan = CompanyPlan.mensual,
     String? nota,
+    String? registradoPor,
   }) async {}
 }
 

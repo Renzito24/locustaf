@@ -17,5 +17,6 @@ abstract class CompanyRepository {
     required DateTime paidUntil,
     CompanyPlan plan = CompanyPlan.mensual,
     String? nota,
+    String? registradoPor,
   });
 }

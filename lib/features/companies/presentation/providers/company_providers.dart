@@ -52,3 +52,11 @@ final recentPaymentsProvider = StreamProvider<List<PaymentModel>>((ref) {
   final repo = ref.read(paymentRepositoryProvider);
   return repo.getRecentPayments();
 });
+
+/// Historial de pagos filtrado por empresa (solo superadmin).
+/// Requiere el índice compuesto (companyId ASC, createdAt DESC) en Firestore.
+final companyPaymentsProvider =
+    StreamProvider.family<List<PaymentModel>, String>((ref, companyId) {
+  final repo = ref.read(paymentRepositoryProvider);
+  return repo.getPaymentsByCompany(companyId);
+});

@@ -5,9 +5,11 @@ import 'package:go_router/go_router.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/models/company_model.dart';
 import '../../../../core/models/payment_model.dart';
+import '../../../../core/providers/async_action_state.dart';
 import '../../../../core/router/app_routes.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/widgets/widgets.dart';
+import '../providers/company_action_provider.dart';
 import '../providers/company_providers.dart';
 import 'register_payment_dialog.dart';
 
@@ -57,6 +59,17 @@ class _SuperadminSettingsPanelState extends ConsumerState<SuperadminSettingsPane
     // la selección por id, fuera del árbol de build.
     ref.listen(allCompaniesProvider, (_, next) {
       _syncSelection(next.value ?? const <CompanyModel>[]);
+    });
+
+    // Muestra snackbar de éxito tras un pago registrado y resetea el provider.
+    ref.listen<AsyncActionState>(registerPaymentProvider, (prev, next) {
+      if (prev?.status != AsyncActionStatus.loading) return;
+      if (next.status == AsyncActionStatus.success) {
+        ref.read(registerPaymentProvider.notifier).reset();
+        ScaffoldMessenger.of(context).showSnackBar(
+          AppTheme.successSnackBar('Pago registrado. Empresa habilitada.'),
+        );
+      }
     });
 
     final companies = companiesAsync.value ?? const <CompanyModel>[];
@@ -190,7 +203,32 @@ class _SuperadminSettingsPanelState extends ConsumerState<SuperadminSettingsPane
                 ],
               ),
               const SizedBox(height: 28),
-              Text('Historial de pagos', style: AppTheme.headingMd),
+              // ----------------------------------------------------------------
+              // Historial de empresa seleccionada (filtrado por companyId)
+              // ----------------------------------------------------------------
+              if (effectiveSelected != null) ...[
+                Row(
+                  children: [
+                    const Icon(Icons.receipt_long_outlined,
+                        color: AppColors.gold, size: 18),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        'Historial de ${effectiveSelected.nombreComercial}',
+                        style: AppTheme.headingMd,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                _CompanyPaymentsSection(companyId: effectiveSelected.id),
+                const SizedBox(height: 28),
+              ],
+              // ----------------------------------------------------------------
+              // Últimos pagos de la plataforma (global, todos los clientes)
+              // ----------------------------------------------------------------
+              Text('Últimos pagos de la plataforma', style: AppTheme.headingMd),
               const SizedBox(height: 12),
               paymentsAsync.when(
                 loading: () =>
@@ -215,6 +253,7 @@ class _SuperadminSettingsPanelState extends ConsumerState<SuperadminSettingsPane
                   );
                 },
               ),
+
             ],
           ),
         ),
@@ -344,3 +383,162 @@ class _PaymentTile extends StatelessWidget {
     );
   }
 }
+
+// ---------------------------------------------------------------------------
+// Sección de historial de pagos filtrada por empresa seleccionada.
+// Usa companyPaymentsProvider (family) que hace la query con el índice
+// compuesto (companyId ASC, createdAt DESC) declarado en firestore.indexes.json.
+// ---------------------------------------------------------------------------
+class _CompanyPaymentsSection extends ConsumerWidget {
+  final String companyId;
+  const _CompanyPaymentsSection({required this.companyId});
+
+  String _fmtDate(DateTime d) =>
+      '${d.day.toString().padLeft(2, '0')}/${d.month.toString().padLeft(2, '0')}/${d.year}';
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final paymentsAsync = ref.watch(companyPaymentsProvider(companyId));
+    return paymentsAsync.when(
+      loading: () => const Center(
+        child: Padding(
+          padding: EdgeInsets.symmetric(vertical: 16),
+          child: CircularProgressIndicator(),
+        ),
+      ),
+      error: (e, _) => Text(
+        'Error al cargar historial: $e',
+        style: const TextStyle(color: AppColors.error),
+      ),
+      data: (payments) {
+        if (payments.isEmpty) {
+          return AppTheme.emptyState(
+            icon: Icons.history,
+            title: 'Sin pagos registrados para esta empresa',
+            subtitle: 'Registrá el primer pago usando el botón "Pagar".',
+          );
+        }
+        return AppCard(
+          padding: const EdgeInsets.all(0),
+          child: Column(
+            children: [
+              // Cabecera de la tabla
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                decoration: BoxDecoration(
+                  color: AppColors.bgDarkTop,
+                  borderRadius: const BorderRadius.vertical(
+                    top: Radius.circular(AppTheme.radiusMd),
+                  ),
+                ),
+                child: const Row(
+                  children: [
+                    Expanded(
+                      flex: 3,
+                      child: Text(
+                        'Fecha de pago',
+                        style: TextStyle(
+                          color: AppColors.textSecondary,
+                          fontSize: 11,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                    Expanded(
+                      flex: 2,
+                      child: Text(
+                        'Plan',
+                        style: TextStyle(
+                          color: AppColors.textSecondary,
+                          fontSize: 11,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                    Expanded(
+                      flex: 3,
+                      child: Text(
+                        'Vencimiento',
+                        style: TextStyle(
+                          color: AppColors.textSecondary,
+                          fontSize: 11,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                    SizedBox(width: 40), // espacio badge
+                  ],
+                ),
+              ),
+              const Divider(height: 1, color: Color(0x1AFFFFFF)),
+              // Filas
+              ...payments.asMap().entries.map((entry) {
+                final i = entry.key;
+                final p = entry.value;
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Padding(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 14, vertical: 10),
+                      child: Row(
+                        children: [
+                          Expanded(
+                            flex: 3,
+                            child: Text(
+                              _fmtDate(p.createdAt),
+                              style: const TextStyle(
+                                color: AppColors.textWhite,
+                                fontSize: 13,
+                              ),
+                            ),
+                          ),
+                          Expanded(
+                            flex: 2,
+                            child: Text(
+                              p.plan.label,
+                              style: const TextStyle(
+                                color: AppColors.textWhite,
+                                fontSize: 13,
+                              ),
+                            ),
+                          ),
+                          Expanded(
+                            flex: 3,
+                            child: Text(
+                              _fmtDate(p.paidUntil),
+                              style: const TextStyle(
+                                color: AppColors.gold,
+                                fontSize: 13,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ),
+                          SizedBox(
+                            width: 40,
+                            child: p.nota != null && p.nota!.isNotEmpty
+                                ? Tooltip(
+                                    message: p.nota!,
+                                    child: const Icon(
+                                      Icons.sticky_note_2_outlined,
+                                      size: 16,
+                                      color: AppColors.textMuted,
+                                    ),
+                                  )
+                                : const SizedBox.shrink(),
+                          ),
+                        ],
+                      ),
+                    ),
+                    if (i < payments.length - 1)
+                      const Divider(height: 1, color: Color(0x1AFFFFFF)),
+                  ],
+                );
+              }),
+            ],
+          ),
+        );
+      },
+    );
+  }
+}

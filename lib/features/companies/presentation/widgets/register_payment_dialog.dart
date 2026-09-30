@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/models/company_model.dart';
+import '../../../../core/providers/async_action_state.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../providers/company_action_provider.dart';
 
@@ -25,6 +26,9 @@ class _RegisterPaymentDialogState extends ConsumerState<RegisterPaymentDialog> {
   _PaymentType _type = _PaymentType.mes;
   DateTime? _customDate;
   final _notaController = TextEditingController();
+
+  /// Evita doble-tap: true mientras se está ejecutando la escritura a Firestore.
+  bool _isSubmitting = false;
 
   @override
   void initState() {
@@ -59,16 +63,33 @@ class _RegisterPaymentDialogState extends ConsumerState<RegisterPaymentDialog> {
   String _fmtDate(DateTime d) =>
       '${d.day.toString().padLeft(2, '0')}/${d.month.toString().padLeft(2, '0')}/${d.year}';
 
-  void _submit() {
+  Future<void> _submit() async {
+    if (_isSubmitting) return;
+
     final paidUntil = _type == _PaymentType.custom ? _customDate : _computePaidUntil();
     if (paidUntil == null) return;
+
+    setState(() => _isSubmitting = true);
+
     final nota = _notaController.text.trim();
-    ref.read(registerPaymentProvider.notifier).registerPayment(
+    await ref.read(registerPaymentProvider.notifier).registerPayment(
           widget.company.id,
           paidUntil: paidUntil,
           plan: _plan,
           nota: nota.isEmpty ? null : nota,
         );
+
+    if (!mounted) return;
+
+    final result = ref.read(registerPaymentProvider);
+    if (result.status == AsyncActionStatus.failure) {
+      setState(() => _isSubmitting = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        AppTheme.errorSnackBar('Error al registrar el pago'),
+      );
+      return;
+    }
+
     Navigator.of(context).pop();
   }
 
@@ -85,18 +106,33 @@ class _RegisterPaymentDialogState extends ConsumerState<RegisterPaymentDialog> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            DropdownButtonFormField<CompanyPlan>(
-              initialValue: _plan,
+            // ----------------------------------------------------------------
+            // Plan — usa DropdownButton + InputDecorator (patrón controlado)
+            // para evitar el bug de DropdownButtonFormField con initialValue
+            // en Flutter >=3.33 donde el valor no se sincroniza en rebuilds.
+            // ----------------------------------------------------------------
+            InputDecorator(
               decoration: AppTheme.inputDecoration(
                 label: 'Plan',
                 icon: Icons.credit_card_outlined,
               ),
-              dropdownColor: AppColors.cardDark,
-              style: const TextStyle(color: AppColors.textWhite),
-              items: CompanyPlan.values
-                  .map((p) => DropdownMenuItem(value: p, child: Text(p.label)))
-                  .toList(),
-              onChanged: (v) => setState(() => _plan = v ?? CompanyPlan.mensual),
+              child: DropdownButtonHideUnderline(
+                child: DropdownButton<CompanyPlan>(
+                  value: _plan,
+                  dropdownColor: AppColors.cardDark,
+                  style: const TextStyle(color: AppColors.textWhite),
+                  isExpanded: true,
+                  items: CompanyPlan.values
+                      .map((p) => DropdownMenuItem(
+                            value: p,
+                            child: Text(p.label),
+                          ))
+                      .toList(),
+                  onChanged: _isSubmitting
+                      ? null
+                      : (v) => setState(() => _plan = v ?? CompanyPlan.mensual),
+                ),
+              ),
             ),
             const SizedBox(height: 16),
             const Text('Extender período',
@@ -104,10 +140,12 @@ class _RegisterPaymentDialogState extends ConsumerState<RegisterPaymentDialog> {
             const SizedBox(height: 8),
             SegmentedButton<_PaymentType>(
               selected: {_type},
-              onSelectionChanged: (v) => setState(() {
-                _type = v.first;
-                _customDate = null;
-              }),
+              onSelectionChanged: _isSubmitting
+                  ? null
+                  : (v) => setState(() {
+                        _type = v.first;
+                        _customDate = null;
+                      }),
               segments: const [
                 ButtonSegment(value: _PaymentType.mes, label: Text('+1 mes')),
                 ButtonSegment(value: _PaymentType.anio, label: Text('+1 año')),
@@ -119,16 +157,23 @@ class _RegisterPaymentDialogState extends ConsumerState<RegisterPaymentDialog> {
               SizedBox(
                 width: double.infinity,
                 child: OutlinedButton.icon(
-                  onPressed: () async {
-                    final picked = await showDatePicker(
-                      context: context,
-                      initialDate: _customDate ?? DateTime.now(),
-                      firstDate: DateTime.now(),
-                      lastDate: DateTime.now().add(const Duration(days: 3650)),
-                      locale: const Locale('es'),
-                    );
-                    if (picked != null) setState(() => _customDate = picked);
-                  },
+                  onPressed: _isSubmitting
+                      ? null
+                      : () async {
+                          final now = DateTime.now();
+                          final picked = await showDatePicker(
+                            context: context,
+                            initialDate: _customDate ?? now,
+                            firstDate: now,
+                            lastDate: now.add(const Duration(days: 3650)),
+                            locale: const Locale('es'),
+                          );
+                          // Guardamos solo si el widget sigue montado y se
+                          // eligió una fecha real.
+                          if (picked != null && mounted) {
+                            setState(() => _customDate = picked);
+                          }
+                        },
                   icon: const Icon(Icons.calendar_today, size: 16),
                   label: Text(
                     _customDate == null ? 'Elegir fecha' : _fmtDate(_customDate!),
@@ -144,6 +189,7 @@ class _RegisterPaymentDialogState extends ConsumerState<RegisterPaymentDialog> {
             const SizedBox(height: 16),
             TextField(
               controller: _notaController,
+              enabled: !_isSubmitting,
               maxLines: 2,
               maxLength: 80,
               style: const TextStyle(color: AppColors.textWhite),
@@ -161,7 +207,7 @@ class _RegisterPaymentDialogState extends ConsumerState<RegisterPaymentDialog> {
                 borderRadius: BorderRadius.circular(AppTheme.radiusSm),
               ),
               child: Text(
-                'Nuevo paidUntil: ${_fmtDate(preview)}',
+                'Nueva fecha de vencimiento: ${_fmtDate(preview)}',
                 style: const TextStyle(
                   color: AppColors.gold,
                   fontWeight: FontWeight.w600,
@@ -174,14 +220,23 @@ class _RegisterPaymentDialogState extends ConsumerState<RegisterPaymentDialog> {
       ),
       actions: [
         TextButton(
-          onPressed: () => Navigator.of(context).pop(),
+          onPressed: _isSubmitting ? null : () => Navigator.of(context).pop(),
           child: const Text('Cancelar',
               style: TextStyle(color: AppColors.textMuted)),
         ),
         FilledButton(
           style: FilledButton.styleFrom(backgroundColor: AppColors.gold),
-          onPressed: _submit,
-          child: const Text('Registrar'),
+          onPressed: _isSubmitting ? null : _submit,
+          child: _isSubmitting
+              ? const SizedBox(
+                  width: 18,
+                  height: 18,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    color: Colors.white,
+                  ),
+                )
+              : const Text('Registrar'),
         ),
       ],
     );

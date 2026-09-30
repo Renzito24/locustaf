@@ -22,6 +22,10 @@ class PaymentModel extends Equatable {
   /// Momento en que se registró el pago.
   final DateTime createdAt;
 
+  /// UID del superadmin que registró el pago. Campo opcional para mantener
+  /// compatibilidad con registros anteriores que no incluían este campo.
+  final String? registradoPor;
+
   const PaymentModel({
     required this.id,
     required this.companyId,
@@ -30,6 +34,7 @@ class PaymentModel extends Equatable {
     required this.paidUntil,
     this.nota,
     required this.createdAt,
+    this.registradoPor,
   });
 
   factory PaymentModel.fromJson(Map<String, dynamic> json) {
@@ -45,6 +50,7 @@ class PaymentModel extends Equatable {
       createdAt: json['createdAt'] != null
           ? DateTime.parse(json['createdAt'] as String).toLocal()
           : DateTime.now(),
+      registradoPor: json['registradoPor'] as String?,
     );
   }
 
@@ -65,6 +71,7 @@ class PaymentModel extends Equatable {
       'paidUntil': paidUntil.toUtc().toIso8601String(),
       'nota': nota,
       'createdAt': createdAt.toUtc().toIso8601String(),
+      'registradoPor': registradoPor,
     };
   }
 
@@ -77,5 +84,6 @@ class PaymentModel extends Equatable {
         paidUntil,
         nota,
         createdAt,
+        registradoPor,
       ];
 }

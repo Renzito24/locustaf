@@ -73,6 +73,7 @@ class CompanyRepositoryImpl implements CompanyRepository {
     required DateTime paidUntil,
     CompanyPlan plan = CompanyPlan.mensual,
     String? nota,
+    String? registradoPor,
   }) async {
     final companyData = await _firestoreService.getDocument(
       path: 'companies',
@@ -95,6 +96,9 @@ class CompanyRepositoryImpl implements CompanyRepository {
           'paidUntil': paidUntil.toUtc().toIso8601String(),
           'lastPaymentAt': now.toIso8601String(),
           'plan': plan.name,
+          // Al registrar un pago, la empresa queda activa aunque estuviera
+          // suspendida. El pago es la única fuente de verdad para la habilitación.
+          'estado': CompanyEstado.activa.name,
           'updatedAt': now.toIso8601String(),
         },
       );
@@ -105,6 +109,7 @@ class CompanyRepositoryImpl implements CompanyRepository {
         'paidUntil': paidUntil.toUtc().toIso8601String(),
         'nota': nota,
         'createdAt': now.toIso8601String(),
+        'registradoPor': ?registradoPor,
       });
     });
   }

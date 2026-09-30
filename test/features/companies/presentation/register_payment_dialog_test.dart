@@ -77,7 +77,7 @@ void main() {
     await pumpDialog(tester);
 
     expect(find.text('Registrar pago'), findsOneWidget);
-    expect(find.textContaining('Nuevo paidUntil'), findsOneWidget);
+    expect(find.textContaining('Nueva fecha de vencimiento'), findsOneWidget);
 
     await tester.tap(find.text('Registrar'));
     await tester.pumpAndSettle();

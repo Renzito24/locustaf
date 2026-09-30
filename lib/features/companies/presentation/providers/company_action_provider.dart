@@ -2,6 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/models/company_model.dart';
 import '../../../../core/providers/async_action_state.dart';
+import '../../../authentication/presentation/providers/auth_provider.dart';
 import 'company_providers.dart';
 
 class CompanyFormData {
@@ -131,12 +132,16 @@ class RegisterPaymentNotifier extends Notifier<AsyncActionState> {
   }) async {
     state = const AsyncActionState.loading();
     final repo = ref.read(companyRepositoryProvider);
+    // Obtiene el UID del superadmin desde la sesión ya resuelta (sin consultas
+    // adicionales a Firestore).
+    final registradoPor = ref.read(currentUserIdProvider);
     try {
       await repo.registerPayment(
         companyId,
         paidUntil: paidUntil,
         plan: plan,
         nota: nota,
+        registradoPor: registradoPor,
       );
       state = const AsyncActionState.success();
     } catch (e) {
