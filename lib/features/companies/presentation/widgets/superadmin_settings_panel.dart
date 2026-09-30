@@ -234,8 +234,19 @@ class _SuperadminSettingsPanelState extends ConsumerState<SuperadminSettingsPane
                 loading: () =>
                     const Center(child: CircularProgressIndicator()),
                 error: (e, _) => Center(
-                  child: Text('Error al cargar pagos: $e',
-                      style: const TextStyle(color: AppColors.error)),
+                  child: Column(
+                    children: [
+                      const Text('No se pudo cargar los pagos recientes',
+                          style: TextStyle(color: AppColors.error)),
+                      const SizedBox(height: 8),
+                      TextButton.icon(
+                        onPressed: () => ref.invalidate(recentPaymentsProvider),
+                        icon: const Icon(Icons.refresh, size: 16),
+                        label: const Text('Reintentar'),
+                        style: TextButton.styleFrom(foregroundColor: AppColors.gold),
+                      ),
+                    ],
+                  ),
                 ),
                 data: (payments) {
                   if (payments.isEmpty) {
@@ -406,9 +417,20 @@ class _CompanyPaymentsSection extends ConsumerWidget {
           child: CircularProgressIndicator(),
         ),
       ),
-      error: (e, _) => Text(
-        'Error al cargar historial: $e',
-        style: const TextStyle(color: AppColors.error),
+      error: (e, _) => Column(
+        children: [
+          const Text(
+            'No se pudo cargar el historial',
+            style: TextStyle(color: AppColors.error),
+          ),
+          const SizedBox(height: 8),
+          TextButton.icon(
+            onPressed: () => ref.invalidate(companyPaymentsProvider(companyId)),
+            icon: const Icon(Icons.refresh, size: 16),
+            label: const Text('Reintentar'),
+            style: TextButton.styleFrom(foregroundColor: AppColors.gold),
+          ),
+        ],
       ),
       data: (payments) {
         if (payments.isEmpty) {

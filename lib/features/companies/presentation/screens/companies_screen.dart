@@ -49,85 +49,98 @@ class CompaniesScreen extends ConsumerWidget {
       }
     });
 
-    return SingleChildScrollView(
-      padding: EdgeInsets.all(isMobile ? 16.0 : 24.0),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              IconButton(
-                icon: const Icon(Icons.arrow_back, color: AppColors.textWhite),
-                tooltip: 'Volver al dashboard',
-                onPressed: () => context.go(RoutePaths.dashboard),
-              ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text('Empresas', style: AppTheme.headingLg),
-                    const SizedBox(height: 4),
-                    Text(
-                      'Administración de empresas de la plataforma.',
-                      style: AppTheme.bodyLg,
-                    ),
-                  ],
+    return SafeArea(
+      child: SingleChildScrollView(
+        padding: EdgeInsets.all(isMobile ? 16.0 : 24.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                IconButton(
+                  icon: const Icon(Icons.arrow_back, color: AppColors.textWhite),
+                  tooltip: 'Volver al dashboard',
+                  onPressed: () => context.go(RoutePaths.dashboard),
                 ),
-              ),
-              if (isSuperadmin)
-                FilledButton.icon(
-                  onPressed: () => context.push(RoutePaths.createCompany),
-                  icon: const Icon(Icons.add_business_outlined, size: 18),
-                  label: const Text('Nueva empresa'),
-                  style: FilledButton.styleFrom(
-                    backgroundColor: AppColors.gold,
-                    foregroundColor: Colors.white,
-                    shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(AppTheme.radiusSm)),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text('Empresas', style: AppTheme.headingLg),
+                      const SizedBox(height: 4),
+                      Text(
+                        'Administración de empresas de la plataforma.',
+                        style: AppTheme.bodyLg,
+                      ),
+                    ],
                   ),
                 ),
-            ],
-          ),
-          const SizedBox(height: 24),
-          if (!isSuperadmin)
-            const Center(
-              child: Text(
-                'Solo el super administrador puede ver esta sección.',
-                style: TextStyle(color: AppColors.textMuted),
-              ),
-            )
-          else ...[
-            const _PlatformMetricsRow(),
-            const SizedBox(height: 24),
-            companiesAsync.when(
-              loading: () => const Center(child: CircularProgressIndicator()),
-              error: (e, _) => Center(
-                child: Text('Error al cargar empresas: $e',
-                    style: const TextStyle(color: AppColors.error)),
-              ),
-              data: (companies) {
-                if (companies.isEmpty) {
-                  return AppTheme.emptyState(
-                    icon: Icons.business_outlined,
-                    title: 'No hay empresas registradas',
-                    subtitle: 'Creá la primera empresa para comenzar.',
-                  );
-                }
-                return ListView.separated(
-                  shrinkWrap: true,
-                  physics: const NeverScrollableScrollPhysics(),
-                  itemCount: companies.length,
-                  separatorBuilder: (_, _) => const SizedBox(height: 12),
-                  itemBuilder: (context, index) {
-                    final company = companies[index];
-                    return _CompanyCard(company: company);
-                  },
-                );
-              },
+                if (isSuperadmin)
+                  FilledButton.icon(
+                    onPressed: () => context.push(RoutePaths.createCompany),
+                    icon: const Icon(Icons.add_business_outlined, size: 18),
+                    label: const Text('Nueva empresa'),
+                    style: FilledButton.styleFrom(
+                      backgroundColor: AppColors.gold,
+                      foregroundColor: Colors.white,
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(AppTheme.radiusSm)),
+                    ),
+                  ),
+              ],
             ),
+            const SizedBox(height: 24),
+            if (!isSuperadmin)
+              const Center(
+                child: Text(
+                  'Solo el super administrador puede ver esta sección.',
+                  style: TextStyle(color: AppColors.textMuted),
+                ),
+              )
+            else ...[
+              const _PlatformMetricsRow(),
+              const SizedBox(height: 24),
+              companiesAsync.when(
+                loading: () => const Center(child: CircularProgressIndicator()),
+                error: (e, _) => Center(
+                  child: Column(
+                    children: [
+                      const Text('No se pudieron cargar las empresas',
+                          style: TextStyle(color: AppColors.error)),
+                      const SizedBox(height: 8),
+                      TextButton.icon(
+                        onPressed: () => ref.invalidate(allCompaniesProvider),
+                        icon: const Icon(Icons.refresh, size: 16),
+                        label: const Text('Reintentar'),
+                        style: TextButton.styleFrom(foregroundColor: AppColors.gold),
+                      ),
+                    ],
+                  ),
+                ),
+                data: (companies) {
+                  if (companies.isEmpty) {
+                    return AppTheme.emptyState(
+                      icon: Icons.business_outlined,
+                      title: 'No hay empresas registradas',
+                      subtitle: 'Creá la primera empresa para comenzar.',
+                    );
+                  }
+                  return ListView.separated(
+                    shrinkWrap: true,
+                    physics: const NeverScrollableScrollPhysics(),
+                    itemCount: companies.length,
+                    separatorBuilder: (_, _) => const SizedBox(height: 12),
+                    itemBuilder: (context, index) {
+                      final company = companies[index];
+                      return _CompanyCard(company: company);
+                    },
+                  );
+                },
+              ),
+            ],
           ],
-        ],
+        ),
       ),
     );
   }
@@ -179,7 +192,10 @@ class _PlatformMetricsRow extends ConsumerWidget {
     return Wrap(
       spacing: 12,
       runSpacing: 12,
-      children: cards.map((c) => _MetricCard(data: c, isMobile: isMobile)).toList(),
+      children: cards.asMap().entries.map((e) {
+        final isLastAndOdd = e.key == cards.length - 1 && cards.length % 2 != 0;
+        return _MetricCard(data: e.value, isMobile: isMobile, isLastAndOdd: isLastAndOdd);
+      }).toList(),
     );
   }
 }
@@ -201,13 +217,29 @@ class _MetricCardData {
 class _MetricCard extends StatelessWidget {
   final _MetricCardData data;
   final bool isMobile;
+  final bool isLastAndOdd;
 
-  const _MetricCard({required this.data, required this.isMobile});
+  const _MetricCard({
+    required this.data,
+    required this.isMobile,
+    this.isLastAndOdd = false,
+  });
 
   @override
   Widget build(BuildContext context) {
+    double width;
+    if (isMobile) {
+      if (isLastAndOdd) {
+        width = MediaQuery.sizeOf(context).width - 32;
+      } else {
+        width = (MediaQuery.sizeOf(context).width - 32) / 2 - 6;
+      }
+    } else {
+      width = 200;
+    }
+
     return SizedBox(
-      width: isMobile ? (MediaQuery.sizeOf(context).width - 32) / 2 - 6 : 200,
+      width: width,
       child: AppCard(
         padding: const EdgeInsets.all(16),
         child: Row(
@@ -300,6 +332,111 @@ class _CompanyCard extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final isActive = company.estado == CompanyEstado.activa;
     final isToggling = ref.watch(toggleCompanyStateProvider).isLoading;
+    final isMobile = AppTheme.isMobile(context);
+
+    if (isMobile) {
+      return AppCard(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Container(
+                  width: 44,
+                  height: 44,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: AppColors.gold.withValues(alpha: 0.15),
+                  ),
+                  child: const Icon(Icons.business, color: AppColors.gold, size: 22),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    company.nombreComercial,
+                    style: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                      color: AppColors.textWhite,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+            Text(
+              'CUIT: ${company.cuit}',
+              style: const TextStyle(color: AppColors.textMuted, fontSize: 13),
+            ),
+            if (company.razonSocial.isNotEmpty)
+              Text(
+                company.razonSocial,
+                style: const TextStyle(color: AppColors.textMuted, fontSize: 13),
+              ),
+            if (company.email != null)
+              Text(
+                company.email!,
+                style: const TextStyle(color: AppColors.textMuted, fontSize: 13),
+              ),
+            const SizedBox(height: 16),
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              crossAxisAlignment: WrapCrossAlignment.center,
+              children: [
+                AppTheme.badge(
+                  label: isActive ? 'Activa' : 'Inactiva',
+                  bgColor: (isActive ? AppColors.success : AppColors.error)
+                      .withValues(alpha: 0.15),
+                  textColor: isActive ? AppColors.success : AppColors.error,
+                ),
+                _SubscriptionInfo(company: company),
+              ],
+            ),
+            const SizedBox(height: 16),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.end,
+              children: [
+                IconButton(
+                  onPressed: () => context.push(
+                    RoutePaths.editCompany,
+                    extra: company,
+                  ),
+                  icon: const Icon(Icons.edit_outlined, size: 18),
+                  color: AppColors.gold,
+                  tooltip: 'Editar',
+                  visualDensity: VisualDensity.compact,
+                ),
+                IconButton(
+                  onPressed: () {
+                    showDialog<void>(
+                      context: context,
+                      builder: (_) => RegisterPaymentDialog(company: company),
+                    );
+                  },
+                  icon: const Icon(Icons.payment, size: 18),
+                  color: AppColors.gold,
+                  tooltip: 'Registrar pago',
+                  visualDensity: VisualDensity.compact,
+                ),
+                IconButton(
+                  onPressed: isToggling
+                      ? null
+                      : () => _confirmToggleCompany(context, ref),
+                  icon: Icon(
+                    isActive ? Icons.block_outlined : Icons.check_circle_outlined,
+                    size: 18,
+                  ),
+                  color: isActive ? AppColors.error : AppColors.success,
+                  tooltip: isActive ? 'Desactivar' : 'Activar',
+                  visualDensity: VisualDensity.compact,
+                ),
+              ],
+            ),
+          ],
+        ),
+      );
+    }
 
     return AppCard(
       child: Row(
