@@ -335,7 +335,7 @@ class _EmployeeHomeContent extends ConsumerWidget {
       _MetricData(
         icon: Icons.access_time,
         label: 'Horas trabajadas',
-        value: '${stats.totalHours.toStringAsFixed(1)}h',
+        value: stats.formattedHours,
         color: AppColors.gold,
       ),
       _MetricData(

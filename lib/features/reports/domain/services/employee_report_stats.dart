@@ -37,6 +37,14 @@ class EmployeeReportStats {
     required this.hasActiveToday,
   });
 
+  /// Formato claro de horas y minutos (ej: "7h 0m", "7h 30m").
+  String get formattedHours {
+    final totalMinutes = (totalHours * 60).round();
+    final h = totalMinutes ~/ 60;
+    final m = totalMinutes % 60;
+    return '${h}h ${m}m';
+  }
+
   factory EmployeeReportStats.compute({
     required List<AttendanceModel> monthAttendances,
     required List<IncidenceModel> incidences,

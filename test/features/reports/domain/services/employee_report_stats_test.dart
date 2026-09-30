@@ -74,6 +74,7 @@ void main() {
       expect(stats.absences, 0);
       expect(stats.daysWorked, 0);
       expect(stats.totalHours, 0);
+      expect(stats.formattedHours, '0h 0m');
     });
 
     test('mes anterior al alta no genera ausencias (ventana fuera del alta)', () {
@@ -85,6 +86,54 @@ void main() {
 
       // El alta es abr/06: la ventana de marzo queda toda previa al alta.
       expect(stats.absences, 0);
+    });
+  });
+
+  group('EmployeeReportStats — formattedHours', () {
+    test('formatea correctamente 7.0, 7.5, 8.25 y 6.99 horas', () {
+      const s70 = EmployeeReportStats(
+        daysWorked: 1,
+        totalHours: 7.0,
+        lateArrivals: 0,
+        absences: 0,
+        justifications: 0,
+        ownIncidences: 0,
+        hasActiveToday: false,
+      );
+      expect(s70.formattedHours, '7h 0m');
+
+      const s75 = EmployeeReportStats(
+        daysWorked: 1,
+        totalHours: 7.5,
+        lateArrivals: 0,
+        absences: 0,
+        justifications: 0,
+        ownIncidences: 0,
+        hasActiveToday: false,
+      );
+      expect(s75.formattedHours, '7h 30m');
+
+      const s825 = EmployeeReportStats(
+        daysWorked: 1,
+        totalHours: 8.25,
+        lateArrivals: 0,
+        absences: 0,
+        justifications: 0,
+        ownIncidences: 0,
+        hasActiveToday: false,
+      );
+      expect(s825.formattedHours, '8h 15m');
+
+      const s699 = EmployeeReportStats(
+        daysWorked: 1,
+        totalHours: 6.99,
+        lateArrivals: 0,
+        absences: 0,
+        justifications: 0,
+        ownIncidences: 0,
+        hasActiveToday: false,
+      );
+      expect(s699.formattedHours, '6h 59m');
     });
   });
 
