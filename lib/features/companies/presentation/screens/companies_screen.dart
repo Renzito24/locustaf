@@ -3,11 +3,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../../core/constants/app_colors.dart';
-import '../../../../core/models/company_model.dart';
 import '../../../../core/providers/async_action_state.dart';
 import '../../../../core/router/app_routes.dart';
 import '../../../../core/theme/app_theme.dart';
-import '../../../../core/widgets/widgets.dart';
 import '../providers/company_action_provider.dart';
 import '../providers/company_providers.dart';
 import '../widgets/company_card.dart';

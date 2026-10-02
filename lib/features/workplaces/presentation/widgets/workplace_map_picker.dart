@@ -201,16 +201,17 @@ class _WorkplaceMapPickerState extends State<WorkplaceMapPicker> {
           },
         ),
         if (_suggestions.isNotEmpty)
-          Container(
-            constraints: const BoxConstraints(maxHeight: 200),
-            decoration: BoxDecoration(
-              color: AppColors.cardDark,
-              border: Border.all(
+          Material(
+            color: AppColors.cardDark,
+            shape: RoundedRectangleBorder(
+              side: BorderSide(
                 color: AppColors.gold.withValues(alpha: 0.25),
               ),
               borderRadius: const BorderRadius.vertical(bottom: Radius.circular(AppTheme.radiusLg)),
             ),
-            child: ListView.builder(
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxHeight: 200),
+              child: ListView.builder(
               shrinkWrap: true,
               itemCount: _suggestions.length,
               itemBuilder: (context, index) {
@@ -229,6 +230,7 @@ class _WorkplaceMapPickerState extends State<WorkplaceMapPicker> {
               },
             ),
           ),
+        ),
         const SizedBox(height: 12),
         if (kIsWeb) ...[
           _buildWebLocationPicker(),
