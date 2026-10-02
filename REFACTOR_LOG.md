@@ -67,8 +67,11 @@ Este archivo mantiene un registro de todos los archivos que han sido refactoriza
   - **Acción:** Refactorizado. Se extrajeron la barra de filtros y la sección de exportación a `employee_reports_components.dart`.
   - **Tests:** Se verificó el funcionamiento con `employee_reports_screen_test.dart` antes y después de la refactorización.
 
+- **`lib/features/history/presentation/screens/history_screen.dart`**
+  - **Acción:** Refactorizado. Se extrajeron componentes como tarjetas de indicadores, botón de cargar más y tablas de datos a `history_components.dart`.
+  - **Tests:** Se creó `test/features/history/presentation/screens/history_screen_test.dart` y se comprobó el funcionamiento antes y después del refactor.
+
 ## Próximos Candidatos (Pendientes)
-13. `lib/features/history/presentation/screens/history_screen.dart`
 14. `lib/features/companies/presentation/widgets/company_card.dart`
 15. `lib/features/companies/presentation/widgets/company_form.dart`
 16. `lib/features/attendance/presentation/widgets/admin_attendance_view.dart`
