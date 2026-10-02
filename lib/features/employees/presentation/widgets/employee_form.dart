@@ -11,6 +11,7 @@ import '../../../authentication/presentation/providers/auth_provider.dart';
 import '../../../workplaces/presentation/providers/workplace_notifier.dart';
 import '../providers/update_employee_notifier.dart';
 import '../providers/users_provider.dart';
+import 'employee_form_components.dart';
 
 class EmployeeForm extends ConsumerStatefulWidget {
   final bool isEditing;
@@ -53,9 +54,6 @@ class _EmployeeFormState extends ConsumerState<EmployeeForm> {
     }
   }
 
-  bool _obscurePassword = true;
-  bool _obscureConfirm = true;
-
   @override
   void dispose() {
     _nombreController.dispose();
@@ -66,98 +64,6 @@ class _EmployeeFormState extends ConsumerState<EmployeeForm> {
     _passwordController.dispose();
     _confirmPasswordController.dispose();
     super.dispose();
-  }
-
-  InputDecoration _inputDeco(String label, {IconData? icon, String? hint}) {
-    return InputDecoration(
-      labelText: label,
-      hintText: hint,
-      labelStyle: const TextStyle(color: AppColors.textMuted, fontSize: 14),
-      hintStyle: TextStyle(
-          color: AppColors.textMuted.withValues(alpha: 0.5), fontSize: 14),
-      prefixIcon: icon != null
-          ? Icon(icon,
-              color: AppColors.gold.withValues(alpha: 0.85), size: 20)
-          : null,
-      filled: true,
-      fillColor: Colors.black.withValues(alpha: 0.25),
-      contentPadding:
-          const EdgeInsets.symmetric(vertical: 16, horizontal: 12),
-      border: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(AppTheme.radiusLg),
-        borderSide: BorderSide(
-            color: AppColors.gold.withValues(alpha: 0.25)),
-      ),
-      enabledBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(AppTheme.radiusLg),
-        borderSide: BorderSide(
-            color: AppColors.gold.withValues(alpha: 0.25)),
-      ),
-      focusedBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(AppTheme.radiusLg),
-        borderSide: const BorderSide(
-            color: AppColors.gold, width: 1.4),
-      ),
-      errorBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(AppTheme.radiusLg),
-        borderSide: const BorderSide(
-            color: AppColors.error, width: 1.2),
-      ),
-      focusedErrorBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(AppTheme.radiusLg),
-        borderSide: const BorderSide(
-            color: AppColors.error, width: 1.4),
-      ),
-    );
-  }
-
-  Widget _buildWorkplaceDropdown() {
-    final workplacesAsync = ref.watch(activeWorkplacesProvider);
-    return workplacesAsync.when(
-      data: (workplaces) {
-        if (workplaces.isEmpty) {
-          return TextFormField(
-            enabled: false,
-            decoration: _inputDeco('Lugar de trabajo',
-                icon: Icons.business_outlined,
-                hint: 'Sin lugares de trabajo disponibles'),
-          );
-        }
-        return DropdownButtonFormField<String?>(
-          initialValue: _selectedWorkplaceId,
-          decoration: _inputDeco('Lugar de trabajo (opcional)',
-              icon: Icons.business_outlined),
-          items: [
-            const DropdownMenuItem<String?>(
-              value: null,
-              child: Text('Sin asignar',
-                  style: TextStyle(color: AppColors.textWhite)),
-            ),
-            ...workplaces.map(
-              (w) => DropdownMenuItem<String?>(
-                value: w.id,
-                child:
-                    Text(w.nombre, style: const TextStyle(color: AppColors.textWhite)),
-              ),
-            ),
-          ],
-          onChanged: (value) {
-            setState(() => _selectedWorkplaceId = value);
-          },
-        );
-      },
-      loading: () => TextFormField(
-        enabled: false,
-        decoration: _inputDeco('Lugar de trabajo',
-            icon: Icons.business_outlined, hint: 'Cargando...'),
-      ),
-      error: (_, _) => TextFormField(
-        enabled: false,
-        decoration: _inputDeco('Lugar de trabajo',
-            icon: Icons.business_outlined,
-            hint: 'Sin lugares de trabajo disponibles'),
-      ),
-    );
   }
 
   String? _validateDni(String? value, List<UserModel>? existingUsers) {
@@ -238,7 +144,7 @@ class _EmployeeFormState extends ConsumerState<EmployeeForm> {
                   controller: _nombreController,
                   style: const TextStyle(
                       color: AppColors.textWhite, fontSize: 14),
-                  decoration: _inputDeco('Nombre *',
+                  decoration: buildEmployeeInputDeco('Nombre *',
                       icon: Icons.person_outline),
                   validator: (value) =>
                       Validators.required(value, 'El nombre'),
@@ -250,7 +156,7 @@ class _EmployeeFormState extends ConsumerState<EmployeeForm> {
                   controller: _apellidoController,
                   style: const TextStyle(
                       color: AppColors.textWhite, fontSize: 14),
-                  decoration: _inputDeco('Apellido *',
+                  decoration: buildEmployeeInputDeco('Apellido *',
                       icon: Icons.person_outline),
                   validator: (value) =>
                       Validators.required(value, 'El apellido'),
@@ -265,7 +171,7 @@ class _EmployeeFormState extends ConsumerState<EmployeeForm> {
             keyboardType: TextInputType.emailAddress,
             style: const TextStyle(
                 color: AppColors.textWhite, fontSize: 14),
-            decoration: _inputDeco('Correo electrónico *',
+            decoration: buildEmployeeInputDeco('Correo electrónico *',
                 icon: Icons.email_outlined),
             validator: (value) => Validators.email(value),
           ),
@@ -278,7 +184,7 @@ class _EmployeeFormState extends ConsumerState<EmployeeForm> {
                   keyboardType: TextInputType.number,
                   style: const TextStyle(
                       color: AppColors.textWhite, fontSize: 14),
-                  decoration: _inputDeco('DNI *',
+                  decoration: buildEmployeeInputDeco('DNI *',
                       icon: Icons.badge_outlined),
                   validator: (value) => _validateDni(value, existingUsers),
                 ),
@@ -290,7 +196,7 @@ class _EmployeeFormState extends ConsumerState<EmployeeForm> {
                   keyboardType: TextInputType.phone,
                   style: const TextStyle(
                       color: AppColors.textWhite, fontSize: 14),
-                  decoration: _inputDeco('Teléfono (opcional)',
+                  decoration: buildEmployeeInputDeco('Teléfono (opcional)',
                       icon: Icons.phone_outlined),
                 ),
               ),
@@ -298,184 +204,27 @@ class _EmployeeFormState extends ConsumerState<EmployeeForm> {
           ),
           if (!widget.isEditing) ...[
             const SizedBox(height: AppSizes.md),
-            Row(
-              children: [
-                Expanded(
-                  child: TextFormField(
-                    controller: _passwordController,
-                    obscureText: _obscurePassword,
-                    style: const TextStyle(
-                        color: AppColors.textWhite, fontSize: 14),
-                    decoration: InputDecoration(
-                      labelText: 'Contraseña *',
-                      labelStyle: const TextStyle(
-                          color: AppColors.textMuted, fontSize: 14),
-                      filled: true,
-                      fillColor:
-                          Colors.black.withValues(alpha: 0.25),
-                      contentPadding: const EdgeInsets.symmetric(
-                          vertical: 16, horizontal: 12),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(
-                            AppTheme.radiusLg),
-                        borderSide: BorderSide(
-                            color: AppColors.gold
-                                .withValues(alpha: 0.25)),
-                      ),
-                      enabledBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(
-                            AppTheme.radiusLg),
-                        borderSide: BorderSide(
-                            color: AppColors.gold
-                                .withValues(alpha: 0.25)),
-                      ),
-                      focusedBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(
-                            AppTheme.radiusLg),
-                        borderSide: const BorderSide(
-                            color: AppColors.gold, width: 1.4),
-                      ),
-                      errorBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(
-                            AppTheme.radiusLg),
-                        borderSide: const BorderSide(
-                            color: AppColors.error, width: 1.2),
-                      ),
-                      focusedErrorBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(
-                            AppTheme.radiusLg),
-                        borderSide: const BorderSide(
-                            color: AppColors.error, width: 1.4),
-                      ),
-                      suffixIcon: IconButton(
-                        icon: Icon(
-                          _obscurePassword
-                              ? Icons.visibility_off
-                              : Icons.visibility,
-                          color: AppColors.textMuted,
-                        ),
-                        onPressed: () => setState(() =>
-                            _obscurePassword = !_obscurePassword),
-                      ),
-                    ),
-                    validator: (value) =>
-                        Validators.password(value),
-                  ),
-                ),
-                const SizedBox(width: AppSizes.md),
-                Expanded(
-                  child: TextFormField(
-                    controller: _confirmPasswordController,
-                    obscureText: _obscureConfirm,
-                    style: const TextStyle(
-                        color: AppColors.textWhite, fontSize: 14),
-                    decoration: InputDecoration(
-                      labelText: 'Confirmar contraseña *',
-                      labelStyle: const TextStyle(
-                          color: AppColors.textMuted, fontSize: 14),
-                      filled: true,
-                      fillColor:
-                          Colors.black.withValues(alpha: 0.25),
-                      contentPadding: const EdgeInsets.symmetric(
-                          vertical: 16, horizontal: 12),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(
-                            AppTheme.radiusLg),
-                        borderSide: BorderSide(
-                            color: AppColors.gold
-                                .withValues(alpha: 0.25)),
-                      ),
-                      enabledBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(
-                            AppTheme.radiusLg),
-                        borderSide: BorderSide(
-                            color: AppColors.gold
-                                .withValues(alpha: 0.25)),
-                      ),
-                      focusedBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(
-                            AppTheme.radiusLg),
-                        borderSide: const BorderSide(
-                            color: AppColors.gold, width: 1.4),
-                      ),
-                      errorBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(
-                            AppTheme.radiusLg),
-                        borderSide: const BorderSide(
-                            color: AppColors.error, width: 1.2),
-                      ),
-                      focusedErrorBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(
-                            AppTheme.radiusLg),
-                        borderSide: const BorderSide(
-                            color: AppColors.error, width: 1.4),
-                      ),
-                      suffixIcon: IconButton(
-                        icon: Icon(
-                          _obscureConfirm
-                              ? Icons.visibility_off
-                              : Icons.visibility,
-                          color: AppColors.textMuted,
-                        ),
-                        onPressed: () => setState(() =>
-                            _obscureConfirm = !_obscureConfirm),
-                      ),
-                    ),
-                    validator: (value) {
-                      if (value == null || value.isEmpty) {
-                        return 'Confirme la contraseña';
-                      }
-                      if (value != _passwordController.text) {
-                        return 'Las contraseñas no coinciden';
-                      }
-                      return null;
-                    },
-                  ),
-                ),
-              ],
+            EmployeePasswordFields(
+              passwordController: _passwordController,
+              confirmPasswordController: _confirmPasswordController,
             ),
           ],
           const SizedBox(height: AppSizes.md),
-          DropdownButtonFormField<UserRole>(
-            initialValue: _selectedRole,
-            decoration: _inputDeco('Rol *',
-                icon: Icons.admin_panel_settings_outlined),
-            items: [
-              if (ref.watch(userRoleProvider) == UserRole.superadmin)
-                const DropdownMenuItem(
-                  value: UserRole.superadmin,
-                  child: Text('Super Administrador',
-                      style: TextStyle(color: AppColors.textWhite)),
-                ),
-              if (ref.watch(userRoleProvider) == UserRole.superadmin)
-                const DropdownMenuItem(
-                  value: UserRole.admin,
-                  child: Text('Administrador',
-                      style: TextStyle(color: AppColors.textWhite)),
-                ),
-              const DropdownMenuItem(
-                value: UserRole.employee,
-                child: Text('Empleado',
-                    style: TextStyle(color: AppColors.textWhite)),
-              ),
-              const DropdownMenuItem(
-                value: UserRole.supervisor,
-                child: Text('Supervisor',
-                    style: TextStyle(color: AppColors.textWhite)),
-              ),
-            ],
+          EmployeeRoleDropdown(
+            selectedRole: _selectedRole,
             onChanged: (value) {
               if (value != null) {
                 setState(() => _selectedRole = value);
               }
             },
-            validator: (value) {
-              if (value == null) return 'Seleccione un rol';
-              return null;
-            },
           ),
           const SizedBox(height: AppSizes.md),
-          _buildWorkplaceDropdown(),
+          EmployeeWorkplaceDropdown(
+            selectedWorkplaceId: _selectedWorkplaceId,
+            onChanged: (value) {
+              setState(() => _selectedWorkplaceId = value);
+            },
+          ),
           const SizedBox(height: AppSizes.lg),
           SizedBox(
             width: double.infinity,
