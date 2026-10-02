@@ -23,8 +23,11 @@ Este archivo mantiene un registro de todos los archivos que han sido refactoriza
   - **Acción:** Refactorizado. Se dividió el largo formulario en pequeños componentes extraídos en `onboarding_form_sections.dart`.
   - **Tests:** Se creó `test/features/companies/presentation/screens/onboarding_screen_test.dart` y se comprobó que todas las pruebas pasaran exitosamente tras el refactor.
 
+- **`lib/features/companies/presentation/widgets/superadmin_settings_panel.dart`**
+  - **Acción:** Refactorizado. Se extrajeron los chips de métricas y la tabla de pagos a `superadmin_settings_components.dart`.
+  - **Tests:** Se creó `test/features/companies/presentation/widgets/superadmin_settings_panel_test.dart` comprobando el comportamiento sin mutaciones.
+
 ## Próximos Candidatos (Pendientes)
-3. `lib/features/companies/presentation/widgets/superadmin_settings_panel.dart`
 4. `lib/features/dashboard/presentation/screens/employee_home_screen.dart`
 5. `lib/features/reports/presentation/screens/reports_screen.dart`
 6. `lib/features/employees/presentation/widgets/employee_form.dart`
