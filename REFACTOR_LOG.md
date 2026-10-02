@@ -39,12 +39,28 @@ Este archivo mantiene un registro de todos los archivos que han sido refactoriza
   - **Acción:** Refactorizado. Se extrajeron los campos de contraseñas, dropdowns de roles y lugares de trabajo, junto con estilos de inputs, a `employee_form_components.dart`.
   - **Tests:** Comprobados en `employee_form_dni_test.dart`.
 
+- **`lib/features/profile/presentation/screens/profile_screen.dart`**
+  - **Acción:** Refactorizado. Se extrajeron las secciones de UI (editar, tarjetas de información, seguridad) a `profile_components.dart`.
+  - **Tests:** Se creó `test/features/profile/presentation/screens/profile_screen_test.dart` y se comprobó el correcto funcionamiento tras el refactor.
+
+- **`lib/core/theme/app_theme.dart`**
+  - **Acción:** Refactorizado. Se extrajeron los decoradores visuales a `app_theme_decorations.dart` y los widgets a `app_theme_components.dart`.
+  - **Tests:** Se creó `test/core/theme/app_theme_test.dart` antes del refactor para garantizar cero cambios en el comportamiento.
+
+- **`lib/features/workplaces/presentation/widgets/workplace_map_picker.dart`**
+  - **Acción:** Refactorizado. Se dividió la pantalla en varios subcomponentes en `workplace_map_picker_components.dart`.
+  - **Tests:** Se verificó usando `test/features/workplaces/presentation/widgets/workplace_map_picker_test.dart`.
+
+- **`lib/features/employees/presentation/widgets/employee_card.dart`**
+  - **Acción:** Refactorizado. Se extrajeron los elementos del UI como avatares, detalles, el menú de acciones y diálogos a `employee_card_components.dart`. Además se solucionó un problema de `RenderFlex overflow` oculto en tests al abrir los PopupMenuItem.
+  - **Tests:** Se creó `test/features/employees/presentation/widgets/employee_card_test.dart` y se comprobó su funcionamiento.
+
+- **`lib/features/workplaces/presentation/screens/workplaces_screen.dart`**
+  - **Acción:** Refactorizado. Se extrajeron los chips de filtrado, la tarjeta `WorkplaceCard` y los diálogos a `workplaces_screen_components.dart`.
+  - **Tests:** Se creó `test/features/workplaces/presentation/screens/workplaces_screen_test.dart` y se comprobó el funcionamiento antes y después del refactor.
+
 ## Próximos Candidatos (Pendientes)
-7. `lib/features/profile/presentation/screens/profile_screen.dart`
-8. `lib/features/employees/presentation/widgets/employee_card.dart`
-9. `lib/features/workplaces/presentation/screens/workplaces_screen.dart`
-10. `lib/features/workplaces/presentation/widgets/workplace_map_picker.dart`
-11. `lib/features/medical_documents/presentation/widgets/medical_document_form.dart`
+54. `lib/features/medical_documents/presentation/widgets/medical_document_form.dart`
 12. `lib/features/reports/presentation/screens/employee_reports_screen.dart`
 13. `lib/features/history/presentation/screens/history_screen.dart`
 14. `lib/features/companies/presentation/widgets/company_card.dart`
@@ -52,7 +68,6 @@ Este archivo mantiene un registro de todos los archivos que han sido refactoriza
 16. `lib/features/attendance/presentation/widgets/admin_attendance_view.dart`
 17. `lib/features/medical_documents/presentation/screens/medical_documents_screen.dart`
 18. `lib/features/incidences/presentation/screens/incidences_screen.dart`
-19. `lib/core/theme/app_theme.dart`
-20. `lib/features/medical_documents/presentation/providers/medical_documents_provider.dart`
-21. `lib/features/attendance/presentation/providers/attendance_notifier.dart`
-22. `lib/core/services/report_exporter.dart`
+19. `lib/features/medical_documents/presentation/providers/medical_documents_provider.dart`
+20. `lib/features/attendance/presentation/providers/attendance_notifier.dart`
+21. `lib/core/services/report_exporter.dart`
