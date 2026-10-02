@@ -1,4 +1,4 @@
-import '../../../../core/models/user_model.dart';
+import '../../../core/models/user_model.dart';
 
 /// Busca dentro de la lista de usuarios de la empresa un DNI igual al dado.
 ///

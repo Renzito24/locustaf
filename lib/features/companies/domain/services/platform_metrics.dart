@@ -1,4 +1,4 @@
-import '../../../../../core/models/company_model.dart';
+import '../../../../core/models/company_model.dart';
 
 /// Métricas de la plataforma (solo superadmin). Calculadas en dominio puro
 /// para ser testeables sin Firebase (TASK-011).

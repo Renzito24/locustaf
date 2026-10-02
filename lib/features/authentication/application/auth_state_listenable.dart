@@ -5,7 +5,7 @@ import 'package:flutter/foundation.dart';
 
 import '../../../core/models/user_model.dart';
 import '../../../core/models/company_model.dart';
-import '../../../../core/services/firestore_service.dart';
+import '../../../core/services/firestore_service.dart';
 
 /// Regla de bloqueo por empresa inactiva (TASK-016).
 ///

@@ -10,7 +10,7 @@ import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 import 'package:printing/printing.dart';
 
-import '../../../features/reports/presentation/providers/reports_provider.dart';
+import '../../features/reports/presentation/providers/reports_provider.dart';
 import 'file_exists.dart';
 
 /// Resultado interpretado de [FilePicker.platform.saveFile] en móviles:
