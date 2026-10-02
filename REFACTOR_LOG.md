@@ -83,8 +83,11 @@ Este archivo mantiene un registro de todos los archivos que han sido refactoriza
   - **Acción:** Refactorizado. Se extrajeron los componentes `AdminAttendanceHeader`, `AdminAttendanceList` y `AdminAttendanceDialogs` a `admin_attendance_components.dart`.
   - **Tests:** Se creó `test/features/attendance/presentation/widgets/admin_attendance_view_test.dart` y se comprobó el funcionamiento.
 
+- **`lib/features/medical_documents/presentation/screens/medical_documents_screen.dart`**
+  - **Acción:** Refactorizado. Se extrajeron `MedicalDocumentsHeader` y `MedicalDocumentsSliverContent` a `medical_documents_components.dart`.
+  - **Tests:** Ya existía `test/features/medical_documents/presentation/screens/medical_documents_screen_test.dart`. Se ejecutó y comprobó exitosamente el funcionamiento luego de la refactorización.
+
 ## Próximos Candidatos (Pendientes)
-17. `lib/features/medical_documents/presentation/screens/medical_documents_screen.dart`
 18. `lib/features/incidences/presentation/screens/incidences_screen.dart`
 19. `lib/features/medical_documents/presentation/providers/medical_documents_provider.dart`
 20. `lib/features/attendance/presentation/providers/attendance_notifier.dart`
