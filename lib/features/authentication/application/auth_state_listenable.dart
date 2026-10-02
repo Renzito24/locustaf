@@ -134,8 +134,10 @@ class AuthStateListenable extends ChangeNotifier {
         _profileLoading = false;
         _userModel = userModel;
         if (userModel == null) {
-          // El usuario no tiene documento en 'users'
-          _profileError = 'No se encontró un perfil registrado para este usuario (users/$uid).';
+          // El usuario aún no tiene documento en 'users' (p. ej. recién se
+          // registró con Google y debe completar el onboarding). Se deja sin
+          // datos para que el router lo derive a /onboarding en lugar de
+          // bloquearlo con un error.
           _role = null;
           _isActive = null;
           _isDeleted = null;
