@@ -28,8 +28,8 @@ Este archivo mantiene un registro de todos los archivos que han sido refactoriza
   - **Tests:** Se creó `test/features/companies/presentation/widgets/superadmin_settings_panel_test.dart` comprobando el comportamiento sin mutaciones.
 
 - **`lib/features/dashboard/presentation/screens/employee_home_screen.dart`**
-  - **Acción:** Refactorizado. Se extrajeron las tarjetas de métricas y detalles del lugar de trabajo a `employee_home_components.dart`.
-  - **Tests:** Tests verificados en `employee_home_screen_test.dart`.
+  - **Acción:** Refactorizado y modularizado a fondo (<180 líneas). Se extrajeron las tarjetas de métricas, detalles del lugar de trabajo, etiquetas de sección y tarjetas de información a `employee_home_components.dart`.
+  - **Tests:** Tests verificados en `employee_home_screen_test.dart` y `employee_home_screen_incidences_warning_test.dart` (12 tests pasando al 100%).
 
 - **`lib/features/reports/presentation/screens/reports_screen.dart`**
   - **Acción:** Refactorizado. Se extrajeron los filtros, cabecera, tabla y tarjetas de métricas a `reports_components.dart`.

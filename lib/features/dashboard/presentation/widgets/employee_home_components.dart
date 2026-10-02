@@ -1,7 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/constants/app_colors.dart';
+import '../../../../core/models/user_model.dart';
+import '../../../../core/theme/app_theme.dart';
 import '../../../../core/widgets/widgets.dart';
+import '../../../reports/domain/services/employee_report_stats.dart';
 import '../../../workplaces/data/models/workplace_model.dart';
 
 /// Datos tipados para cada métrica.
@@ -194,3 +198,240 @@ class EmployeeDataRowVertical extends StatelessWidget {
     );
   }
 }
+
+/// Tarjeta con ícono, título y subtítulo para estados informativos o de alerta.
+class EmployeeInfoCard extends StatelessWidget {
+  const EmployeeInfoCard({
+    super.key,
+    required this.icon,
+    required this.color,
+    required this.title,
+    required this.subtitle,
+  });
+
+  final IconData icon;
+  final Color color;
+  final String title;
+  final String subtitle;
+
+  @override
+  Widget build(BuildContext context) {
+    return AppCard(
+      child: Row(
+        children: [
+          Container(
+            width: 40,
+            height: 40,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: color.withValues(alpha: 0.12),
+            ),
+            child: Icon(icon, color: color, size: 20),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: const TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w600,
+                    color: AppColors.textWhite,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(subtitle, style: AppTheme.bodyMd),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Etiqueta de sección en mayúsculas.
+class EmployeeSectionLabel extends StatelessWidget {
+  const EmployeeSectionLabel(this.text, {super.key});
+
+  final String text;
+
+  @override
+  Widget build(BuildContext context) {
+    return Text(
+      text.toUpperCase(),
+      style: const TextStyle(
+        fontSize: 12,
+        fontWeight: FontWeight.w600,
+        letterSpacing: 1.2,
+        color: AppColors.textMuted,
+      ),
+    );
+  }
+}
+
+/// Tarjeta del lugar de trabajo asignado al empleado.
+class EmployeeWorkplaceCard extends StatelessWidget {
+  const EmployeeWorkplaceCard({
+    super.key,
+    required this.user,
+    required this.workplacesAsync,
+  });
+
+  final UserModel? user;
+  final AsyncValue<List<WorkplaceModel>> workplacesAsync;
+
+  @override
+  Widget build(BuildContext context) {
+    final String? workplaceId = user?.lugarDeTrabajoId;
+    if (workplaceId == null || workplaceId.isEmpty) {
+      return const EmployeeInfoCard(
+        icon: Icons.location_off_outlined,
+        color: AppColors.warning,
+        title: 'Sin lugar de trabajo asignado',
+        subtitle:
+            'Contactá al administrador para asignarte tu lugar de trabajo.',
+      );
+    }
+
+    return AppCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                width: 40,
+                height: 40,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: AppColors.gold.withValues(alpha: 0.15),
+                ),
+                child: const Icon(
+                  Icons.business_outlined,
+                  color: AppColors.gold,
+                  size: 20,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  'Tu lugar de trabajo',
+                  style: AppTheme.headingMd.copyWith(
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 20),
+          workplacesAsync.when(
+            data: (list) {
+              WorkplaceModel? found;
+              for (final w in list) {
+                if (w.id == workplaceId) {
+                  found = w;
+                  break;
+                }
+              }
+              if (found == null) {
+                return const EmployeeInfoCard(
+                  icon: Icons.location_off_outlined,
+                  color: AppColors.warning,
+                  title: 'Lugar no disponible',
+                  subtitle:
+                      'No pudimos encontrar tu lugar asignado. Contactá al administrador.',
+                );
+              }
+              return EmployeeWorkplaceDetailsCard(found: found);
+            },
+            loading: () =>
+                AppTheme.loadingState(message: 'Cargando lugar de trabajo...'),
+            error: (_, _) => const EmployeeInfoCard(
+              icon: Icons.error_outline,
+              color: AppColors.error,
+              title: 'Error al cargar el lugar de trabajo',
+              subtitle: 'Intentá nuevamente en unos minutos.',
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Grilla de métricas mensuales del empleado.
+class EmployeeMetricsGrid extends StatelessWidget {
+  const EmployeeMetricsGrid({
+    super.key,
+    required this.stats,
+  });
+
+  final EmployeeReportStats stats;
+
+  @override
+  Widget build(BuildContext context) {
+    final metrics = [
+      EmployeeMetricData(
+        icon: Icons.calendar_today,
+        label: 'Días trabajados',
+        value: stats.daysWorked.toString(),
+        color: AppColors.goldLight,
+      ),
+      EmployeeMetricData(
+        icon: Icons.access_time,
+        label: 'Horas trabajadas',
+        value: stats.formattedHours,
+        color: AppColors.gold,
+      ),
+      EmployeeMetricData(
+        icon: Icons.schedule,
+        label: 'Llegadas tarde',
+        value: stats.lateArrivals.toString(),
+        color: stats.lateArrivals > 0 ? AppColors.warning : AppColors.success,
+      ),
+      EmployeeMetricData(
+        icon: Icons.cancel_outlined,
+        label: 'Ausencias injustificadas',
+        value: stats.absences.toString(),
+        color: stats.absences > 0 ? AppColors.error : AppColors.success,
+      ),
+      EmployeeMetricData(
+        icon: Icons.description_outlined,
+        label: 'Justificativos',
+        value: stats.justifications.toString(),
+        color: AppColors.goldLight,
+      ),
+      EmployeeMetricData(
+        icon: Icons.warning_amber_outlined,
+        label: 'Incidencias propias',
+        value: stats.ownIncidences.toString(),
+        color: stats.ownIncidences > 0 ? AppColors.error : AppColors.success,
+      ),
+    ];
+
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final width = constraints.maxWidth;
+        final isMobile = width < 600;
+        final crossAxisCount = isMobile ? 2 : (width > 900 ? 3 : 2);
+
+        return GridView.builder(
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+            crossAxisCount: crossAxisCount,
+            crossAxisSpacing: 16,
+            mainAxisSpacing: 16,
+            childAspectRatio: isMobile ? 0.82 : 1.15,
+          ),
+          itemCount: 6,
+          itemBuilder: (_, index) => EmployeeMetricCardV2(metrics[index]),
+        );
+      },
+    );
+  }
+}
+
