@@ -47,8 +47,9 @@ void main() {
     MedicalDocumentModel doc, {
     String? downloadUrl,
     Uint8List? bytes,
+    bool isAdmin = false,
   }) async {
-    final overrides = [isAdminProvider.overrideWithValue(false)];
+    final overrides = [isAdminProvider.overrideWithValue(isAdmin)];
     if (downloadUrl != null && bytes != null) {
       overrides.add(
         medicalAttachmentBytesProvider(
@@ -178,5 +179,23 @@ void main() {
     expect(find.text(url), findsNothing);
     expect(find.text('recibo.txt'), findsOneWidget);
     expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('botones de aprobar/rechazar se muestran si es admin y estado pendiente', (tester) async {
+    const url = 'https://firebasestorage.googleapis.com/recibo.txt?token=abc';
+    await pumpDialog(
+      tester,
+      buildDoc(
+        archivoUrl: url,
+        archivoNombre: 'recibo.txt',
+        mimeType: 'text/plain',
+      ),
+      isAdmin: true,
+    );
+
+    expect(find.text('Aprobar'), findsOneWidget);
+    // Pueden haber dos si cuenta también el texto del OutlinedButton
+    expect(find.widgetWithText(FilledButton, 'Aprobar'), findsOneWidget);
+    expect(find.widgetWithText(OutlinedButton, 'Rechazar'), findsOneWidget);
   });
 }

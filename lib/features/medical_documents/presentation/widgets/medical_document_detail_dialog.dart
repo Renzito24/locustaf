@@ -10,6 +10,8 @@ import '../../../authentication/presentation/providers/auth_provider.dart';
 import '../../data/models/medical_document_model.dart';
 import '../../domain/file_attachment_kind.dart';
 import '../providers/medical_documents_provider.dart';
+import 'medical_document_attachment.dart';
+import 'medical_document_detail_row.dart';
 
 class MedicalDocumentDetailDialog extends ConsumerWidget {
   final MedicalDocumentModel document;
@@ -96,33 +98,33 @@ class MedicalDocumentDetailDialog extends ConsumerWidget {
                   height: 24,
                   color: AppColors.gold.withValues(alpha: 0.15),
                 ),
-                _DetailRow(label: 'Empleado', value: employeeName),
-                _DetailRow(label: 'Email', value: employeeEmail),
-                _DetailRow(label: 'Tipo', value: document.tipo.label),
-                _DetailRow(label: 'Emisión', value: issue),
-                _DetailRow(label: 'Vencimiento', value: expiry),
-                _DetailRow(
+                MedicalDocumentDetailRow(label: 'Empleado', value: employeeName),
+                MedicalDocumentDetailRow(label: 'Email', value: employeeEmail),
+                MedicalDocumentDetailRow(label: 'Tipo', value: document.tipo.label),
+                MedicalDocumentDetailRow(label: 'Emisión', value: issue),
+                MedicalDocumentDetailRow(label: 'Vencimiento', value: expiry),
+                MedicalDocumentDetailRow(
                   label: 'Vigencia',
                   value: document.vigencia.label,
                   valueColor: _vigenciaColor(document.vigencia),
                 ),
-                _DetailRow(
+                MedicalDocumentDetailRow(
                   label: 'Estado',
                   value: document.estado.label,
                   valueColor: _estadoColor(document.estado),
                 ),
                 if (document.motivo.isNotEmpty)
-                  _DetailRow(label: 'Observaciones', value: document.motivo),
+                  MedicalDocumentDetailRow(label: 'Observaciones', value: document.motivo),
                 if (document.observacionRechazo != null &&
                     document.observacionRechazo!.isNotEmpty)
-                  _DetailRow(
+                  MedicalDocumentDetailRow(
                     label: 'Motivo de rechazo',
                     value: document.observacionRechazo!,
                     valueColor: AppColors.error,
                   ),
                 if (document.archivoUrl != null &&
                     document.archivoUrl!.isNotEmpty)
-                  _ArchivoAdjunto(
+                  MedicalDocumentAttachment(
                     fileName: document.archivoNombre ?? document.archivoUrl!,
                     url: document.archivoUrl!,
                     kind: fileAttachmentKind(
@@ -259,330 +261,3 @@ class MedicalDocumentDetailDialog extends ConsumerWidget {
   }
 }
 
-/// Muestra el adjunto según su tipo: imágenes como vista previa real, PDFs con
-/// un botón "Abrir PDF" y otros tipos como el enlace copiable original.
-///
-/// Fase B — Corrección: antes todos los adjuntos se mostraban como un enlace
-/// (el URL de Storage en lugar de la imagen). Ahora la URL nunca se muestra
-/// como sustituto de la previsualización.
-class _ArchivoAdjunto extends StatelessWidget {
-  final String fileName;
-  final String url;
-  final FileAttachmentKind kind;
-
-  const _ArchivoAdjunto({
-    required this.fileName,
-    required this.url,
-    required this.kind,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    if (kind == FileAttachmentKind.other) {
-      return _FileRow(fileName: fileName, url: url);
-    }
-
-    final content = kind == FileAttachmentKind.image
-        ? _ImageAdjunto(fileName: fileName, url: url)
-        : _PdfAdjunto(fileName: fileName, url: url);
-
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 6),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const SizedBox(
-            width: 130,
-            child: Text(
-              'Archivo',
-              style: TextStyle(color: AppColors.textMuted, fontSize: 14),
-            ),
-          ),
-          Expanded(child: content),
-        ],
-      ),
-    );
-  }
-}
-
-/// Vista previa real de una imagen adjunta (JPG/JPEG/PNG/...).
-class _ImageAdjunto extends ConsumerWidget {
-  final String fileName;
-  final String url;
-
-  const _ImageAdjunto({required this.fileName, required this.url});
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final bytesAsync = ref.watch(medicalAttachmentBytesProvider(url));
-
-    final preview = bytesAsync.when(
-      data: (bytes) => Image.memory(
-        bytes,
-        width: double.infinity,
-        fit: BoxFit.contain,
-        errorBuilder: (context, error, stackTrace) => _previewError(),
-      ),
-      error: (error, stackTrace) => _previewError(),
-      loading: _previewLoading,
-    );
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        ClipRRect(
-          borderRadius: BorderRadius.circular(AppTheme.radiusLg),
-          child: Container(
-            color: Colors.black.withValues(alpha: 0.25),
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(maxHeight: 260),
-              child: preview,
-            ),
-          ),
-        ),
-        const SizedBox(height: 8),
-        Row(
-          children: [
-            const Icon(Icons.attach_file, size: 16, color: AppColors.gold),
-            const SizedBox(width: 4),
-            Flexible(
-              child: Text(
-                fileName,
-                style: const TextStyle(
-                  color: AppColors.textWhite,
-                  fontSize: 13,
-                ),
-                overflow: TextOverflow.ellipsis,
-              ),
-            ),
-            const SizedBox(width: 4),
-            InkWell(
-              onTap: () => Clipboard.setData(ClipboardData(text: url)),
-              child: const Icon(
-                Icons.copy,
-                size: 14,
-                color: AppColors.textMuted,
-              ),
-            ),
-          ],
-        ),
-      ],
-    );
-  }
-}
-
-Widget _previewLoading() {
-  return const SizedBox(
-    height: 120,
-    child: Center(
-      child: SizedBox(
-        width: 24,
-        height: 24,
-        child: CircularProgressIndicator(
-          strokeWidth: 2,
-          color: AppColors.gold,
-        ),
-      ),
-    ),
-  );
-}
-
-Widget _previewError() {
-  return const SizedBox(
-    height: 120,
-    child: Center(
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(Icons.broken_image_outlined, color: AppColors.textMuted, size: 32),
-          SizedBox(height: 8),
-          Text(
-            'No se pudo cargar la vista previa',
-            style: TextStyle(color: AppColors.textMuted, fontSize: 13),
-          ),
-        ],
-      ),
-    ),
-  );
-}
-
-/// Adjunto PDF: permite abrirlo/compartirlo sin mostrar el URL como sustituto.
-class _PdfAdjunto extends ConsumerStatefulWidget {
-  final String fileName;
-  final String url;
-
-  const _PdfAdjunto({required this.fileName, required this.url});
-
-  @override
-  ConsumerState<_PdfAdjunto> createState() => _PdfAdjuntoState();
-}
-
-class _PdfAdjuntoState extends ConsumerState<_PdfAdjunto> {
-  bool _busy = false;
-
-  Future<void> _openPdf() async {
-    setState(() => _busy = true);
-    try {
-      final bytes = await ref.read(storageServiceProvider).readFileBytes(widget.url);
-      await Printing.sharePdf(
-        bytes: bytes,
-        filename: widget.fileName.endsWith('.pdf')
-            ? widget.fileName
-            : '${widget.fileName}.pdf',
-      );
-    } catch (_) {
-      if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(AppTheme.errorSnackBar('No se pudo abrir el PDF'));
-      }
-    } finally {
-      if (mounted) setState(() => _busy = false);
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          children: [
-            const Icon(Icons.picture_as_pdf, size: 16, color: AppColors.gold),
-            const SizedBox(width: 4),
-            Flexible(
-              child: Text(
-                widget.fileName,
-                style: const TextStyle(
-                  color: AppColors.textWhite,
-                  fontSize: 13,
-                ),
-                overflow: TextOverflow.ellipsis,
-              ),
-            ),
-            const SizedBox(width: 4),
-            InkWell(
-              onTap: () => Clipboard.setData(ClipboardData(text: widget.url)),
-              child: const Icon(
-                Icons.copy,
-                size: 14,
-                color: AppColors.textMuted,
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 8),
-        SizedBox(
-          width: double.infinity,
-          child: OutlinedButton.icon(
-            onPressed: _busy ? null : _openPdf,
-            icon: _busy
-                ? const SizedBox(
-                    width: 16,
-                    height: 16,
-                    child: CircularProgressIndicator(strokeWidth: 2),
-                  )
-                : const Icon(Icons.picture_as_pdf, size: 18),
-            label: const Text('Abrir PDF'),
-            style: OutlinedButton.styleFrom(
-              foregroundColor: AppColors.gold,
-              side: const BorderSide(color: AppColors.gold),
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-class _FileRow extends StatelessWidget {
-  final String fileName;
-  final String url;
-
-  const _FileRow({required this.fileName, required this.url});
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 6),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const SizedBox(
-            width: 130,
-            child: Text(
-              'Archivo',
-              style: TextStyle(color: AppColors.textMuted, fontSize: 14),
-            ),
-          ),
-          Expanded(
-            child: GestureDetector(
-              onTap: () => Clipboard.setData(ClipboardData(text: url)),
-              child: Row(
-                children: [
-                  const Icon(
-                    Icons.attach_file,
-                    size: 16,
-                    color: AppColors.gold,
-                  ),
-                  const SizedBox(width: 4),
-                  Flexible(
-                    child: Text(
-                      fileName,
-                      style: const TextStyle(
-                        color: AppColors.gold,
-                        fontSize: 14,
-                        fontWeight: FontWeight.w500,
-                        decoration: TextDecoration.underline,
-                      ),
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ),
-                  const SizedBox(width: 4),
-                  const Icon(Icons.copy, size: 14, color: AppColors.textMuted),
-                ],
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _DetailRow extends StatelessWidget {
-  final String label;
-  final String value;
-  final Color? valueColor;
-
-  const _DetailRow({required this.label, required this.value, this.valueColor});
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 6),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          SizedBox(
-            width: 130,
-            child: Text(
-              label,
-              style: const TextStyle(color: AppColors.textMuted, fontSize: 14),
-            ),
-          ),
-          Expanded(
-            child: Text(
-              value,
-              style: TextStyle(
-                color: valueColor ?? AppColors.textWhite,
-                fontSize: 14,
-                fontWeight: FontWeight.w500,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
