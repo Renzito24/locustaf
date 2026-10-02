@@ -75,8 +75,11 @@ Este archivo mantiene un registro de todos los archivos que han sido refactoriza
   - **Acción:** Refactorizado. Se extrajeron componentes como `CompanyHeaderInfo`, `CompanyStatusBadge`, `SubscriptionInfoBadge` y `CompanyActionButtons` a `company_card_components.dart`.
   - **Tests:** Se creó `test/features/companies/presentation/widgets/company_card_test.dart` y se comprobó el funcionamiento antes y después del refactor.
 
+- **`lib/features/companies/presentation/widgets/company_form.dart`**
+  - **Acción:** Refactorizado. Se extrajeron las distintas secciones del formulario en `CompanyFormBasicFields`, `CompanyFormConfigFields` y `CompanyFormSubmitButton` a `company_form_components.dart`.
+  - **Tests:** Se creó `test/features/companies/presentation/widgets/company_form_test.dart` y se comprobó el funcionamiento antes y después del refactor.
+
 ## Próximos Candidatos (Pendientes)
-15. `lib/features/companies/presentation/widgets/company_form.dart`
 16. `lib/features/attendance/presentation/widgets/admin_attendance_view.dart`
 17. `lib/features/medical_documents/presentation/screens/medical_documents_screen.dart`
 18. `lib/features/incidences/presentation/screens/incidences_screen.dart`
