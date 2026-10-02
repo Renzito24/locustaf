@@ -35,8 +35,11 @@ Este archivo mantiene un registro de todos los archivos que han sido refactoriza
   - **Acción:** Refactorizado. Se extrajeron los filtros, cabecera, tabla y tarjetas de métricas a `reports_components.dart`.
   - **Tests:** Se verificó usando `reports_screen_test.dart`.
 
+- **`lib/features/employees/presentation/widgets/employee_form.dart`**
+  - **Acción:** Refactorizado. Se extrajeron los campos de contraseñas, dropdowns de roles y lugares de trabajo, junto con estilos de inputs, a `employee_form_components.dart`.
+  - **Tests:** Comprobados en `employee_form_dni_test.dart`.
+
 ## Próximos Candidatos (Pendientes)
-6. `lib/features/employees/presentation/widgets/employee_form.dart`
 7. `lib/features/profile/presentation/screens/profile_screen.dart`
 8. `lib/features/employees/presentation/widgets/employee_card.dart`
 9. `lib/features/workplaces/presentation/screens/workplaces_screen.dart`
