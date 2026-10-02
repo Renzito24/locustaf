@@ -1,17 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../../core/constants/app_colors.dart';
 import '../../../../core/models/user_model.dart';
 import '../../../../core/services/report_exporter.dart';
 import '../../../../core/theme/app_theme.dart';
-import '../../../../core/widgets/widgets.dart';
 import '../../../attendance/data/models/attendance_model.dart';
 import '../../../attendance/presentation/providers/attendance_notifier.dart';
 import '../../../authentication/presentation/providers/auth_provider.dart';
 import '../../../workplaces/data/models/workplace_model.dart';
 import '../../../workplaces/presentation/providers/workplace_notifier.dart';
 import '../providers/reports_provider.dart';
+import 'employee_reports_components.dart';
 
 /// Reportes del empleado (Ronda 3A — B5).
 ///
@@ -60,86 +59,30 @@ class _EmployeeReportsScreenState extends ConsumerState<EmployeeReportsScreen> {
             style: AppTheme.bodyLg,
           ),
           const SizedBox(height: 24),
-          _buildFilterBar(),
+          EmployeeReportsFilterBar(
+            selectedMonth: _selectedMonth,
+            selectedYear: _selectedYear,
+            onMonthChanged: (v) => setState(() => _selectedMonth = v ?? DateTime.now().month),
+            onYearChanged: (v) => setState(() => _selectedYear = v ?? DateTime.now().year),
+          ),
           const SizedBox(height: 20),
           attendancesAsync.when(
             data: (allAttendances) {
               final filtered = _filterByMonth(allAttendances);
               final rows = _buildRows(filtered, userAsync.value, workplacesAsync);
-              return _buildExportSection(
-                context,
-                rows,
-                exporter,
-                workplacesAsync.hasValue,
+              return EmployeeReportsExportSection(
+                selectedMonth: _selectedMonth,
+                selectedYear: _selectedYear,
+                rowsCount: rows.length,
+                workplacesReady: workplacesAsync.hasValue,
+                onExportExcel: () => _exportExcel(context, rows, exporter),
+                onExportPdf: () => _exportPdf(context, rows, exporter),
               );
             },
             loading: () => AppTheme.loadingState(message: 'Cargando reportes...'),
             error: (e, _) => AppTheme.errorState('Error al cargar reportes: $e'),
           ),
         ],
-      ),
-    );
-  }
-
-  Widget _buildFilterBar() {
-    const months = [
-      'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
-      'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre',
-    ];
-
-    return AppCard(
-      padding: const EdgeInsets.all(16),
-      child: LayoutBuilder(
-        builder: (context, constraints) {
-          final monthField = SizedBox(
-            width: double.infinity,
-            child: DropdownButtonFormField<int>(
-              initialValue: _selectedMonth,
-              isExpanded: true,
-              decoration: AppTheme.inputDecoration(label: 'Mes', icon: Icons.calendar_today),
-              dropdownColor: AppColors.cardDark,
-              style: const TextStyle(color: AppColors.textWhite),
-              items: List.generate(12, (i) => DropdownMenuItem(
-                value: i + 1,
-                child: Text(months[i]),
-              )),
-              onChanged: (v) => setState(() => _selectedMonth = v ?? DateTime.now().month),
-            ),
-          );
-          final yearField = SizedBox(
-            width: double.infinity,
-            child: DropdownButtonFormField<int>(
-              initialValue: _selectedYear,
-              isExpanded: true,
-              decoration: AppTheme.inputDecoration(label: 'Año', icon: Icons.date_range),
-              dropdownColor: AppColors.cardDark,
-              style: const TextStyle(color: AppColors.textWhite),
-              items: List.generate(5, (i) {
-                final year = DateTime.now().year - i;
-                return DropdownMenuItem(value: year, child: Text('$year'));
-              }),
-              onChanged: (v) => setState(() => _selectedYear = v ?? DateTime.now().year),
-            ),
-          );
-
-          final isNarrow = constraints.maxWidth < 500;
-          if (isNarrow) {
-            return Column(
-              children: [
-                monthField,
-                const SizedBox(height: 12),
-                yearField,
-              ],
-            );
-          }
-          return Row(
-            children: [
-              SizedBox(width: 200, child: monthField),
-              const SizedBox(width: 16),
-              SizedBox(width: 140, child: yearField),
-            ],
-          );
-        },
       ),
     );
   }
@@ -177,133 +120,6 @@ class _EmployeeReportsScreenState extends ConsumerState<EmployeeReportsScreen> {
         durationMinutes: a.durationMinutes,
       );
     }).toList();
-  }
-
-  Widget _buildExportSection(
-    BuildContext context,
-    List<AttendanceReportRow> rows,
-    ReportExporter exporter,
-    bool workplacesReady,
-  ) {
-    final monthName = _monthName(_selectedMonth);
-    // Nunca exportar mientras falte el stream de lugares: las filas saldrían
-    // con "Lugar de trabajo" sin resolver.
-    final canExport = rows.isNotEmpty && workplacesReady;
-
-    return AppCard(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            'Reporte de asistencia de $monthName de $_selectedYear',
-            style: AppTheme.headingMd,
-          ),
-          const SizedBox(height: 4),
-          if (rows.isEmpty)
-            Text(
-              'Sin registros para el período seleccionado.',
-              style: AppTheme.bodyMd,
-            )
-          else
-            Row(
-              children: [
-                Text(
-                  '${rows.length}',
-                  style: const TextStyle(
-                    fontSize: 22,
-                    fontWeight: FontWeight.bold,
-                    color: AppColors.goldLight,
-                  ),
-                ),
-                const SizedBox(width: 6),
-                Expanded(
-                  child: Text(
-                    'jornada(s) completadas.',
-                    style: AppTheme.bodyMd,
-                  ),
-                ),
-              ],
-            ),
-          if (rows.isEmpty) ...[
-            const SizedBox(height: 12),
-            Text(
-              'No se pueden exportar reportes si no hay asistencias completadas.',
-              style: AppTheme.bodyMd.copyWith(color: AppColors.warning),
-            ),
-          ] else if (!workplacesReady) ...[
-            const SizedBox(height: 12),
-            Row(
-              children: [
-                const SizedBox(
-                  width: 12,
-                  height: 12,
-                  child: CircularProgressIndicator(
-                    strokeWidth: 2,
-                    color: AppColors.gold,
-                  ),
-                ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Text(
-                    'Cargando lugares de trabajo... La exportación se habilita al terminar.',
-                    style: AppTheme.bodyMd.copyWith(color: AppColors.textMuted),
-                  ),
-                ),
-              ],
-            ),
-          ],
-          const SizedBox(height: 16),
-          LayoutBuilder(
-            builder: (context, constraints) {
-              final isNarrow = constraints.maxWidth < 480;
-              final excelButton = OutlinedButton.icon(
-                onPressed: canExport ? () => _exportExcel(context, rows, exporter) : null,
-                icon: const Icon(Icons.grid_on, size: 18),
-                label: const Text('Excel'),
-                style: OutlinedButton.styleFrom(
-                  foregroundColor: AppColors.gold,
-                  side: const BorderSide(color: AppColors.gold),
-                ),
-              );
-              final pdfButton = OutlinedButton.icon(
-                onPressed: canExport ? () => _exportPdf(context, rows, exporter) : null,
-                icon: const Icon(Icons.picture_as_pdf, size: 18),
-                label: const Text('PDF'),
-                style: OutlinedButton.styleFrom(
-                  foregroundColor: AppColors.gold,
-                  side: const BorderSide(color: AppColors.gold),
-                ),
-              );
-
-              if (isNarrow) {
-                return Row(
-                  children: [
-                    Expanded(child: excelButton),
-                    const SizedBox(width: 8),
-                    Expanded(child: pdfButton),
-                  ],
-                );
-              }
-              return Row(
-                children: [
-                  excelButton,
-                  const SizedBox(width: 8),
-                  pdfButton,
-                ],
-              );
-            },
-          ),
-        ],
-      ),
-    );
-  }
-
-  String _monthName(int month) {
-    const months = [
-      'enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio',
-      'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre',
-    ];
-    return months[month - 1];
   }
 
   String _periodSuffix() {

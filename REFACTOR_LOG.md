@@ -63,8 +63,11 @@ Este archivo mantiene un registro de todos los archivos que han sido refactoriza
   - **Acción:** Refactorizado. Se extrajeron los inputs, el file picker y los date pickers a `medical_document_form_components.dart`.
   - **Tests:** Se arregló y ejecutó el test `test/features/medical_documents/presentation/widgets/medical_document_form_test.dart` antes y después de la refactorización.
 
+- **`lib/features/reports/presentation/screens/employee_reports_screen.dart`**
+  - **Acción:** Refactorizado. Se extrajeron la barra de filtros y la sección de exportación a `employee_reports_components.dart`.
+  - **Tests:** Se verificó el funcionamiento con `employee_reports_screen_test.dart` antes y después de la refactorización.
+
 ## Próximos Candidatos (Pendientes)
-12. `lib/features/reports/presentation/screens/employee_reports_screen.dart`
 13. `lib/features/history/presentation/screens/history_screen.dart`
 14. `lib/features/companies/presentation/widgets/company_card.dart`
 15. `lib/features/companies/presentation/widgets/company_form.dart`
