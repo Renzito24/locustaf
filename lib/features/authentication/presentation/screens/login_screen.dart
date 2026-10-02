@@ -9,7 +9,9 @@ import '../../../../core/theme/app_theme.dart';
 import '../../../../core/widgets/widgets.dart';
 import '../providers/auth_provider.dart';
 import '../../../../core/errors/error_handler.dart';
-
+import '../widgets/forgot_password_dialog.dart';
+import '../widgets/google_sign_in_section.dart';
+import '../widgets/login_header_logo.dart';
 class LoginScreen extends ConsumerStatefulWidget {
   const LoginScreen({super.key});
 
@@ -200,7 +202,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
   Future<void> _showForgotPasswordDialog() async {
     final success = await showDialog<bool>(
       context: context,
-      builder: (dialogContext) => const _ForgotPasswordDialog(),
+      builder: (dialogContext) => const ForgotPasswordDialog(),
     );
     if (success == true && mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -254,48 +256,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
                           child: Column(
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
-                              ScaleTransition(
-                                scale: _logoScaleAnim,
-                                child: Container(
-                                  width: 72,
-                                  height: 72,
-                                  decoration: BoxDecoration(
-                                    shape: BoxShape.circle,
-                                    gradient: AppTheme.goldGradient,
-                                    boxShadow: [
-                                      BoxShadow(
-                                        color: AppColors.gold.withValues(alpha: 0.35),
-                                        blurRadius: 24,
-                                        spreadRadius: 2,
-                                      ),
-                                    ],
-                                  ),
-                                  child: const Icon(
-                                    Icons.lock_outline_rounded,
-                                    color: AppColors.bgDarkTop,
-                                    size: 32,
-                                  ),
-                                ),
-                              ),
-                              const SizedBox(height: 20),
-                              ShaderMask(
-                                shaderCallback: (bounds) => AppTheme.goldGradient.createShader(bounds),
-                                child: const Text(
-                                  'LOCUSTAF',
-                                  style: TextStyle(
-                                    fontSize: 30,
-                                    fontWeight: FontWeight.bold,
-                                    letterSpacing: 4,
-                                    color: Colors.white,
-                                  ),
-                                ),
-                              ),
-                              const SizedBox(height: 8),
-                              const Text(
-                                'Sistema de control de asistencia',
-                                style: AppTheme.bodyMd,
-                              ),
-                              const SizedBox(height: 36),
+                              LoginHeaderLogo(scaleAnim: _logoScaleAnim),
                               TextFormField(
                                 controller: emailController,
                                 keyboardType: TextInputType.emailAddress,
@@ -446,57 +407,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
                                 ),
                               ),
                               const SizedBox(height: 12),
-                              Row(
-                                children: [
-                                  Expanded(child: Divider(color: AppColors.textMuted.withValues(alpha: 0.3))),
-                                  Padding(
-                                    padding: const EdgeInsets.symmetric(horizontal: 12),
-                                    child: Text(
-                                      '¿Sos nuevo?',
-                                      style: TextStyle(
-                                        color: AppColors.textMuted.withValues(alpha: 0.8),
-                                        fontSize: 13,
-                                      ),
-                                    ),
-                                  ),
-                                  Expanded(child: Divider(color: AppColors.textMuted.withValues(alpha: 0.3))),
-                                ],
-                              ),
-                              const SizedBox(height: 16),
-                              SizedBox(
-                                width: double.infinity,
-                                height: 52,
-                                child: OutlinedButton.icon(
-                                  onPressed: isLoading ? null : loginWithGoogle,
-                                  icon: const Icon(Icons.g_mobiledata, color: AppColors.textWhite, size: 26),
-                                  label: const Text(
-                                    'Iniciar sesión con Google',
-                                    style: TextStyle(
-                                      fontSize: 15,
-                                      fontWeight: FontWeight.w600,
-                                      color: AppColors.textWhite,
-                                    ),
-                                  ),
-                                  style: OutlinedButton.styleFrom(
-                                    side: BorderSide(
-                                      color: AppColors.gold.withValues(alpha: 0.5),
-                                    ),
-                                    shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(AppTheme.radiusLg),
-                                    ),
-                                  ),
-                                ),
-                              ),
-                              const SizedBox(height: 10),
-                              Center(
-                                child: Text(
-                                  'Si tu cuenta fue creada con Google, usá "Iniciar sesión con Google". Si fue creada con correo y contraseña, usá el formulario de arriba.',
-                                  style: TextStyle(
-                                    color: AppColors.textMuted.withValues(alpha: 0.7),
-                                    fontSize: 12,
-                                  ),
-                                  textAlign: TextAlign.center,
-                                ),
+                              GoogleSignInSection(
+                                isLoading: isLoading,
+                                onGoogleSignIn: loginWithGoogle,
                               ),
                               const SizedBox(height: 24),
                               Center(
@@ -524,113 +437,3 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
   }
 }
 
-class _ForgotPasswordDialog extends ConsumerStatefulWidget {
-  const _ForgotPasswordDialog();
-
-  @override
-  ConsumerState<_ForgotPasswordDialog> createState() =>
-      _ForgotPasswordDialogState();
-}
-
-class _ForgotPasswordDialogState extends ConsumerState<_ForgotPasswordDialog> {
-  final resetController = TextEditingController();
-  final _formKey = GlobalKey<FormState>();
-  bool _sending = false;
-
-  @override
-  void dispose() {
-    resetController.dispose();
-    super.dispose();
-  }
-
-  Future<void> _enviarEnlace() async {
-    if (!_formKey.currentState!.validate()) return;
-    setState(() => _sending = true);
-    try {
-      final authRepo = ref.read(authRepositoryProvider);
-      await authRepo.sendPasswordReset(resetController.text.trim());
-      if (!mounted) return;
-      Navigator.of(context).pop(true);
-    } on Exception catch (e) {
-      setState(() => _sending = false);
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        AppTheme.errorSnackBar(
-          'Error al enviar el correo: ${ErrorHandler.parse(e).message}',
-        ),
-      );
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return AlertDialog(
-      backgroundColor: AppColors.cardDark,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(AppTheme.radiusXl),
-        side: BorderSide(color: AppColors.gold.withValues(alpha: 0.18)),
-      ),
-      title: const Text(
-        'Recuperar contraseña',
-        style: TextStyle(color: AppColors.textWhite),
-      ),
-      content: Form(
-        key: _formKey,
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text(
-              'Ingresá el correo con el que te registraste y te enviaremos un enlace para restablecer tu contraseña.',
-              style: TextStyle(color: AppColors.textMuted, fontSize: 13),
-            ),
-            const SizedBox(height: 16),
-            TextFormField(
-              controller: resetController,
-              keyboardType: TextInputType.emailAddress,
-              style: const TextStyle(color: AppColors.textWhite),
-              cursorColor: AppColors.gold,
-              decoration: AppTheme.inputDecoration(
-                label: 'Correo electrónico',
-                icon: Icons.email_outlined,
-              ),
-              validator: (value) {
-                if (value == null || value.trim().isEmpty) {
-                  return 'Ingrese su correo electrónico';
-                }
-                final emailRegex = RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$');
-                if (!emailRegex.hasMatch(value.trim())) {
-                  return 'Ingrese un correo electrónico válido';
-                }
-                return null;
-              },
-            ),
-          ],
-        ),
-      ),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.of(context).pop(),
-          child: const Text('Cancelar',
-              style: TextStyle(color: AppColors.textMuted)),
-        ),
-        TextButton(
-          onPressed: _sending ? null : _enviarEnlace,
-          style: TextButton.styleFrom(
-            foregroundColor: AppColors.gold,
-          ),
-          child: _sending
-              ? const SizedBox(
-                  width: 18,
-                  height: 18,
-                  child: CircularProgressIndicator(
-                    strokeWidth: 2,
-                    color: AppColors.gold,
-                  ),
-                )
-              : const Text('Enviar enlace'),
-        ),
-      ],
-    );
-  }
-}
