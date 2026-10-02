@@ -1,3 +1,4 @@
+import 'package:app_locustaf/core/services/attendance_report_builder.dart';
 import 'package:app_locustaf/core/services/report_exporter.dart';
 import 'package:app_locustaf/features/reports/presentation/providers/reports_provider.dart';
 import 'package:excel/excel.dart';
@@ -12,7 +13,7 @@ void main() {
 
   group('ReportExporter.buildAttendanceExcelBytes (AUI-03)', () {
     test('genera un .xlsx con encabezados y una fila completa', () {
-      final bytes = ReportExporter.buildAttendanceExcelBytes([
+      final bytes = AttendanceReportBuilder.buildExcelBytes([
         AttendanceReportRow(
           employeeName: 'María, González',
           workplaceName: 'Sucursal Central',
@@ -43,7 +44,7 @@ void main() {
     });
 
     test('marca el lugar de trabajo como "-" cuando no se pudo resolver', () {
-      final bytes = ReportExporter.buildAttendanceExcelBytes([
+      final bytes = AttendanceReportBuilder.buildExcelBytes([
         AttendanceReportRow(
           employeeName: 'Juan Pérez',
           workplaceName: null,
@@ -66,7 +67,7 @@ void main() {
     });
 
     test('con filas vacías genera únicamente los encabezados', () {
-      final bytes = ReportExporter.buildAttendanceExcelBytes([]);
+      final bytes = AttendanceReportBuilder.buildExcelBytes([]);
 
       expect(bytes, isNotNull);
       final decoded = Excel.decodeBytes(bytes!);
@@ -79,7 +80,7 @@ void main() {
 
   group('ReportExporter.buildAttendancePdfBytes', () {
     test('genera bytes de un PDF con filas (Fase B – Corrección)', () async {
-      final bytes = await ReportExporter.buildAttendancePdfBytes([
+      final bytes = await AttendanceReportBuilder.buildPdfBytes([
         AttendanceReportRow(
           employeeName: 'María, González',
           workplaceName: 'Sucursal Central',

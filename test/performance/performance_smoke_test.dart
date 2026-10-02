@@ -1,4 +1,5 @@
-import 'package:app_locustaf/core/services/report_exporter.dart';
+import 'package:app_locustaf/core/services/attendance_report_builder.dart';
+
 import 'package:app_locustaf/features/reports/presentation/providers/reports_provider.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -30,7 +31,7 @@ void main() {
     final rows = await buildRows();
 
     final clock = Stopwatch()..start();
-    final bytes = ReportExporter.buildAttendanceExcelBytes(rows);
+    final bytes = AttendanceReportBuilder.buildExcelBytes(rows);
     clock.stop();
 
     expect(bytes, isNotNull);
@@ -49,7 +50,7 @@ void main() {
     final rows = await buildRows();
 
     final clock = Stopwatch()..start();
-    final bytes = await ReportExporter.buildAttendancePdfBytes(rows);
+    final bytes = await AttendanceReportBuilder.buildPdfBytes(rows);
     clock.stop();
 
     expect(bytes.length, greaterThan(100000), reason: 'el archivo debe contener las filas');

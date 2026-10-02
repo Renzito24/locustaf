@@ -53,7 +53,7 @@ void main() {
         ],
       );
 
-      container.listen(filteredMedicalDocumentsProvider, (_, __) {});
+      container.listen(filteredMedicalDocumentsProvider, (_, _) {});
       await Future.delayed(const Duration(milliseconds: 50));
 
       final total = container.read(totalMedicalDocumentsProvider);
@@ -125,7 +125,7 @@ void main() {
         ],
       );
 
-      container.listen(filteredMedicalDocumentsProvider, (_, __) {});
+      container.listen(filteredMedicalDocumentsProvider, (_, _) {});
       await Future.delayed(const Duration(milliseconds: 50));
 
       var filtered = container.read(filteredMedicalDocumentsProvider);
