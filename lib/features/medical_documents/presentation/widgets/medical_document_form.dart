@@ -7,6 +7,7 @@ import '../../../../core/theme/app_theme.dart';
 import '../../../../core/models/user_model.dart';
 import '../../../employees/presentation/providers/users_provider.dart';
 import '../../data/models/medical_document_model.dart';
+import 'medical_document_form_components.dart';
 
 class MedicalDocumentFormData {
   final String userId;
@@ -113,25 +114,13 @@ class _MedicalDocumentFormState extends ConsumerState<MedicalDocumentForm> {
               data: (users) {
                 final employees =
                     users.where((u) => u.rol == UserRole.employee && !u.isDeleted).toList();
-                return DropdownButtonFormField<String>(
-                  initialValue: _userId.isEmpty ? null : _userId,
-                  decoration: AppTheme.inputDecoration(label: 'Empleado', icon: Icons.person),
-                  dropdownColor: AppColors.cardDark,
-                  style: const TextStyle(color: AppColors.textWhite),
-                  items: employees
-                      .map((e) => DropdownMenuItem<String>(
-                            value: e.id,
-                            child: Text(e.nombreCompleto),
-                          ))
-                      .toList(),
-                  onChanged: isEditing
-                      ? null
-                      : (value) {
-                          setState(() => _userId = value ?? '');
-                        },
-                  validator: (value) {
-                    if (value == null || value.isEmpty) return 'Seleccione un empleado';
-                    return null;
+                return MedicalDocumentEmployeeDropdown(
+                  fixedUserId: widget.fixedUserId,
+                  userId: _userId,
+                  employees: employees,
+                  isEditing: isEditing,
+                  onChanged: (value) {
+                    setState(() => _userId = value ?? '');
                   },
                 );
               },
@@ -144,32 +133,18 @@ class _MedicalDocumentFormState extends ConsumerState<MedicalDocumentForm> {
                 enabled: false,
               ),
             ),
-            const SizedBox(height: 16),
           ],
-          DropdownButtonFormField<MedicalDocumentTipo>(
-            initialValue: _tipo,
-            decoration: AppTheme.inputDecoration(label: 'Tipo de documento', icon: Icons.description),
-            dropdownColor: AppColors.cardDark,
-            style: const TextStyle(color: AppColors.textWhite),
-            items: MedicalDocumentTipo.values
-                .map((t) => DropdownMenuItem<MedicalDocumentTipo>(
-                      value: t,
-                      child: Text(t.label),
-                    ))
-                .toList(),
+          MedicalDocumentTypeDropdown(
+            tipo: _tipo,
             onChanged: (value) {
               if (value != null) setState(() => _tipo = value);
-            },
-            validator: (value) {
-              if (value == null) return 'Seleccione un tipo';
-              return null;
             },
           ),
           const SizedBox(height: 16),
           Row(
             children: [
               Expanded(
-                child: _buildDatePicker(
+                child: MedicalDocumentDatePicker(
                   label: 'Fecha de emisión',
                   value: _fechaInicio,
                   onChanged: (d) => setState(() => _fechaInicio = d),
@@ -177,7 +152,7 @@ class _MedicalDocumentFormState extends ConsumerState<MedicalDocumentForm> {
               ),
               const SizedBox(width: 16),
               Expanded(
-                child: _buildDatePicker(
+                child: MedicalDocumentDatePicker(
                   label: 'Fecha de vencimiento',
                   value: _fechaFin,
                   onChanged: (d) => setState(() => _fechaFin = d),
@@ -204,7 +179,13 @@ class _MedicalDocumentFormState extends ConsumerState<MedicalDocumentForm> {
             },
           ),
           const SizedBox(height: 16),
-          _buildFilePickerSection(),
+          MedicalDocumentFilePicker(
+            isLoading: widget.isLoading,
+            archivoFile: _archivoFile,
+            archivoUrl: _archivoUrl,
+            onPickFile: _pickFile,
+            onClearFile: () => setState(() => _archivoFile = null),
+          ),
           const SizedBox(height: 16),
           if (_isUploading)
             Column(
@@ -256,54 +237,6 @@ class _MedicalDocumentFormState extends ConsumerState<MedicalDocumentForm> {
     );
   }
 
-  Widget _buildFilePickerSection() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        if (_archivoFile != null || _archivoUrl != null)
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-            margin: const EdgeInsets.only(bottom: 8),
-            decoration: BoxDecoration(
-              color: AppColors.cardDark,
-              border: Border.all(color: AppColors.gold.withValues(alpha: 0.25)),
-              borderRadius: BorderRadius.circular(AppTheme.radiusMd),
-            ),
-            child: Row(
-              children: [
-                const Icon(Icons.attach_file, size: 18, color: AppColors.gold),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Text(
-                    _archivoFile?.name ?? _archivoUrl!,
-                    style: const TextStyle(fontSize: 13, color: AppColors.textWhite),
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ),
-                if (_archivoFile != null)
-                  IconButton(
-                    icon: const Icon(Icons.close, size: 16, color: AppColors.textMuted),
-                    onPressed: () => setState(() => _archivoFile = null),
-                    visualDensity: VisualDensity.compact,
-                  ),
-              ],
-            ),
-          ),
-        OutlinedButton.icon(
-          onPressed: widget.isLoading ? null : _pickFile,
-          icon: const Icon(Icons.upload_file, size: 18),
-          label: Text(_archivoFile != null ? 'Cambiar archivo' : 'Seleccionar archivo (opcional)'),
-          style: OutlinedButton.styleFrom(
-            foregroundColor: AppColors.gold,
-            side: BorderSide(color: AppColors.gold.withValues(alpha: 0.4)),
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppTheme.radiusMd)),
-          ),
-        ),
-      ],
-    );
-  }
-
   Future<void> _pickFile() async {
     final result = await FilePicker.platform.pickFiles(
       type: FileType.custom,
@@ -315,53 +248,6 @@ class _MedicalDocumentFormState extends ConsumerState<MedicalDocumentForm> {
         _archivoUrl = null;
       });
     }
-  }
-
-  Widget _buildDatePicker({
-    required String label,
-    required DateTime value,
-    required void Function(DateTime) onChanged,
-    String? Function(String?)? validator,
-  }) {
-    return TextFormField(
-      decoration: AppTheme.inputDecoration(
-        label: label,
-        icon: Icons.calendar_today,
-      ).copyWith(
-        suffixIcon: IconButton(
-          icon: const Icon(Icons.date_range, size: 18, color: AppColors.gold),
-          onPressed: () async {
-            final date = await showDatePicker(
-              context: context,
-              initialDate: value,
-              firstDate: DateTime(2020),
-              lastDate: DateTime(2030),
-              builder: (context, child) {
-                return Theme(
-                  data: Theme.of(context).copyWith(
-                    colorScheme: const ColorScheme.dark(
-                      primary: AppColors.gold,
-                      onPrimary: Colors.white,
-                      surface: AppColors.cardDark,
-                      onSurface: AppColors.textWhite,
-                    ),
-                  ),
-                  child: child!,
-                );
-              },
-            );
-            if (date != null) onChanged(date);
-          },
-        ),
-      ),
-      style: const TextStyle(color: AppColors.textWhite),
-      controller: TextEditingController(
-        text:
-            '${value.year}-${value.month.toString().padLeft(2, '0')}-${value.day.toString().padLeft(2, '0')}',
-      ),
-      readOnly: true,
-      validator: validator,
-    );
   }
 
   void _submit() {

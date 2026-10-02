@@ -7,8 +7,6 @@ import '../../../../core/theme/app_theme.dart';
 import '../../../../core/utils/validators.dart';
 import '../../../../core/models/user_model.dart';
 import '../../domain/user_validation.dart';
-import '../../../authentication/presentation/providers/auth_provider.dart';
-import '../../../workplaces/presentation/providers/workplace_notifier.dart';
 import '../providers/update_employee_notifier.dart';
 import '../providers/users_provider.dart';
 import 'employee_form_components.dart';

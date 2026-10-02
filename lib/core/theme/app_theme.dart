@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import '../constants/app_colors.dart';
+import 'app_theme_components.dart';
+import 'app_theme_decorations.dart';
 
 /// Sistema de diseño compartido — LOCUSTAF.
 ///
@@ -147,277 +149,61 @@ class AppTheme {
     required String label,
     required IconData icon,
     String? hint,
-  }) {
-    return InputDecoration(
-      labelText: label,
-      hintText: hint,
-      labelStyle: const TextStyle(color: AppColors.textMuted, fontSize: 14),
-      hintStyle: TextStyle(color: AppColors.textMuted.withValues(alpha: 0.5), fontSize: 14),
-      prefixIcon: Icon(icon, color: AppColors.gold.withValues(alpha: 0.85), size: 20),
-      filled: true,
-      fillColor: Colors.black.withValues(alpha: 0.25),
-      contentPadding: const EdgeInsets.symmetric(vertical: 16, horizontal: 12),
-      border: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(radiusLg),
-        borderSide: BorderSide(color: AppColors.gold.withValues(alpha: 0.25)),
-      ),
-      enabledBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(radiusLg),
-        borderSide: BorderSide(color: AppColors.gold.withValues(alpha: 0.25)),
-      ),
-      focusedBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(radiusLg),
-        borderSide: const BorderSide(color: AppColors.gold, width: 1.4),
-      ),
-      errorBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(radiusLg),
-        borderSide: const BorderSide(color: AppColors.error, width: 1.2),
-      ),
-      focusedErrorBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(radiusLg),
-        borderSide: const BorderSide(color: AppColors.error, width: 1.4),
-      ),
-      disabledBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(radiusLg),
-        borderSide: BorderSide(color: AppColors.gold.withValues(alpha: 0.1)),
-      ),
-    );
-  }
+  }) =>
+      AppThemeDecorations.inputDecoration(label: label, icon: icon, hint: hint);
 
   // ── CardDecoration ───────────────────────────────────────────────────────
-  static BoxDecoration cardDecoration({bool isHovered = false}) {
-    return BoxDecoration(
-      color: AppColors.cardDark.withValues(alpha: 0.9),
-      borderRadius: BorderRadius.circular(radiusLg),
-      border: Border.all(
-        color: isHovered
-            ? AppColors.gold.withValues(alpha: 0.4)
-            : AppColors.gold.withValues(alpha: 0.18),
-        width: 1,
-      ),
-      boxShadow: [
-        BoxShadow(
-          color: Colors.black.withValues(alpha: isHovered ? 0.35 : 0.25),
-          blurRadius: isHovered ? 24 : 16,
-          spreadRadius: 0,
-          offset: const Offset(0, 8),
-        ),
-      ],
-    );
-  }
+  static BoxDecoration cardDecoration({bool isHovered = false}) =>
+      AppThemeDecorations.cardDecoration(isHovered: isHovered);
 
   // ── Button Styles ────────────────────────────────────────────────────────
-  static ButtonStyle primaryButtonStyle({bool isLoading = false}) {
-    return ButtonStyle(
-      padding: WidgetStateProperty.all(
-        const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
-      ),
-      shape: WidgetStateProperty.all(
-        RoundedRectangleBorder(borderRadius: BorderRadius.circular(radiusLg)),
-      ),
-      elevation: WidgetStateProperty.all(isLoading ? 0 : 4),
-      shadowColor: WidgetStateProperty.all(
-        isLoading ? Colors.transparent : AppColors.gold.withValues(alpha: 0.35),
-      ),
-    );
-  }
+  static ButtonStyle primaryButtonStyle({bool isLoading = false}) =>
+      AppThemeDecorations.primaryButtonStyle(isLoading: isLoading);
 
-  static ButtonStyle secondaryButtonStyle() {
-    return ButtonStyle(
-      padding: WidgetStateProperty.all(
-        const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-      ),
-      shape: WidgetStateProperty.all(
-        RoundedRectangleBorder(borderRadius: BorderRadius.circular(radiusSm)),
-      ),
-      side: WidgetStateProperty.all(
-        BorderSide(color: AppColors.gold.withValues(alpha: 0.4)),
-      ),
-      foregroundColor: WidgetStateProperty.all(AppColors.gold),
-    );
-  }
+  static ButtonStyle secondaryButtonStyle() =>
+      AppThemeDecorations.secondaryButtonStyle();
 
   // ── SnackBar ─────────────────────────────────────────────────────────────
-  static SnackBar successSnackBar(String message) {
-    return SnackBar(
-      content: Row(
-        children: [
-          const Icon(Icons.check_circle_outline, color: Colors.white, size: 18),
-          const SizedBox(width: 8),
-          Expanded(child: Text(message)),
-        ],
-      ),
-      backgroundColor: AppColors.success,
-      behavior: SnackBarBehavior.floating,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(radiusSm)),
-    );
-  }
+  static SnackBar successSnackBar(String message) =>
+      AppThemeComponents.successSnackBar(message);
 
-  static SnackBar errorSnackBar(String message) {
-    return SnackBar(
-      content: Row(
-        children: [
-          const Icon(Icons.error_outline, color: Colors.white, size: 18),
-          const SizedBox(width: 8),
-          Expanded(child: Text(message)),
-        ],
-      ),
-      backgroundColor: AppColors.error,
-      behavior: SnackBarBehavior.floating,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(radiusSm)),
-      duration: const Duration(seconds: 5),
-    );
-  }
+  static SnackBar errorSnackBar(String message) =>
+      AppThemeComponents.errorSnackBar(message);
 
-  static SnackBar infoSnackBar(String message) {
-    return SnackBar(
-      content: Row(
-        children: [
-          const Icon(Icons.info_outline, color: Colors.white, size: 18),
-          const SizedBox(width: 8),
-          Expanded(child: Text(message)),
-        ],
-      ),
-      backgroundColor: AppColors.textMuted,
-      behavior: SnackBarBehavior.floating,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(radiusSm)),
-      duration: const Duration(seconds: 4),
-    );
-  }
+  static SnackBar infoSnackBar(String message) =>
+      AppThemeComponents.infoSnackBar(message);
 
   // ── Badge ────────────────────────────────────────────────────────────────
   static Widget badge({
     required String label,
     required Color bgColor,
     required Color textColor,
-  }) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-      decoration: BoxDecoration(
-        color: bgColor,
-        borderRadius: BorderRadius.circular(20),
-      ),
-      child: Text(
-        label,
-        style: TextStyle(
-          color: textColor,
-          fontSize: 12,
-          fontWeight: FontWeight.w600,
-        ),
-      ),
-    );
-  }
+  }) =>
+      AppThemeComponents.badge(
+          label: label, bgColor: bgColor, textColor: textColor);
 
   // ── Empty State ──────────────────────────────────────────────────────────
   static Widget emptyState({
     required IconData icon,
     required String title,
     required String subtitle,
-  }) {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(icon, size: 64, color: AppColors.textMuted.withValues(alpha: 0.4)),
-          const SizedBox(height: 16),
-          Text(
-            title,
-            style: const TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
-              color: AppColors.textWhite,
-            ),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            subtitle,
-            style: bodyLg,
-          ),
-        ],
-      ),
-    );
-  }
+  }) =>
+      AppThemeComponents.emptyState(
+          icon: icon, title: title, subtitle: subtitle);
 
   // ── Loading State ────────────────────────────────────────────────────────
-  static Widget loadingState({String? message}) {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          const SizedBox(
-            width: 32,
-            height: 32,
-            child: CircularProgressIndicator(
-              strokeWidth: 2.5,
-              color: AppColors.gold,
-            ),
-          ),
-          if (message != null) ...[
-            const SizedBox(height: 16),
-            Text(message, style: bodyLg),
-          ],
-        ],
-      ),
-    );
-  }
+  static Widget loadingState({String? message}) =>
+      AppThemeComponents.loadingState(message: message);
 
   // ── Error State ──────────────────────────────────────────────────────────
-  static Widget errorState(String message, {VoidCallback? onRetry}) {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          const Icon(Icons.error_outline, size: 64, color: AppColors.error),
-          const SizedBox(height: 16),
-          const Text(
-            'Error',
-            style: TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
-              color: AppColors.textWhite,
-            ),
-          ),
-          const SizedBox(height: 8),
-          Text(message, style: bodyLg, textAlign: TextAlign.center),
-          if (onRetry != null) ...[
-            const SizedBox(height: 20),
-            OutlinedButton.icon(
-              onPressed: onRetry,
-              icon: const Icon(Icons.refresh, size: 18),
-              label: const Text('Reintentar'),
-              style: OutlinedButton.styleFrom(
-                foregroundColor: AppColors.gold,
-                side: BorderSide(
-                  color: AppColors.gold.withValues(alpha: 0.5),
-                ),
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 20,
-                  vertical: 12,
-                ),
-              ),
-            ),
-          ],
-        ],
-      ),
-    );
-  }
+  static Widget errorState(String message, {VoidCallback? onRetry}) =>
+      AppThemeComponents.errorState(message, onRetry: onRetry);
 
   // ── Glow Circle (decorativo) ────────────────────────────────────────────
-  static Widget glowCircle({required Color color, required double size}) {
-    return Container(
-      width: size,
-      height: size,
-      decoration: BoxDecoration(
-        shape: BoxShape.circle,
-        gradient: RadialGradient(
-          colors: [color, color.withValues(alpha: 0)],
-        ),
-      ),
-    );
-  }
+  static Widget glowCircle({required Color color, required double size}) =>
+      AppThemeComponents.glowCircle(color: color, size: size);
 
   // ── Page Transition ──────────────────────────────────────────────────────
-  static Widget fadeTransition(Animation<double> animation, Widget child) {
-    return FadeTransition(opacity: animation, child: child);
-  }
+  static Widget fadeTransition(Animation<double> animation, Widget child) =>
+      AppThemeComponents.fadeTransition(animation, child);
 }
