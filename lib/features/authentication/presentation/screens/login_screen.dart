@@ -11,6 +11,7 @@ import '../providers/auth_provider.dart';
 import '../../../../core/errors/error_handler.dart';
 import '../widgets/forgot_password_dialog.dart';
 import '../widgets/google_sign_in_section.dart';
+import '../widgets/login_form_fields.dart';
 import '../widgets/login_header_logo.dart';
 class LoginScreen extends ConsumerStatefulWidget {
   const LoginScreen({super.key});
@@ -257,138 +258,22 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
                               LoginHeaderLogo(scaleAnim: _logoScaleAnim),
-                              TextFormField(
-                                controller: emailController,
-                                keyboardType: TextInputType.emailAddress,
-                                style: const TextStyle(color: AppColors.textWhite),
-                                cursorColor: AppColors.gold,
-                                decoration: AppTheme.inputDecoration(
-                                  label: 'Correo electrónico',
-                                  icon: Icons.email_outlined,
-                                ),
-                                validator: (value) {
-                                  if (value == null || value.trim().isEmpty) {
-                                    return 'Ingrese su correo electrónico';
-                                  }
-                                  final emailRegex = RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$');
-                                  if (!emailRegex.hasMatch(value.trim())) {
-                                    return 'Ingrese un correo electrónico válido';
-                                  }
-                                  return null;
-                                },
-                              ),
+                              LoginEmailField(controller: emailController),
                               const SizedBox(height: 18),
-                              TextFormField(
+                              LoginPasswordField(
                                 controller: passwordController,
-                                obscureText: _obscurePassword,
-                                style: const TextStyle(color: AppColors.textWhite),
-                                cursorColor: AppColors.gold,
-                                decoration: AppTheme.inputDecoration(
-                                  label: 'Contraseña',
-                                  icon: Icons.lock_outline_rounded,
-                                ).copyWith(
-                                  suffixIcon: IconButton(
-                                    icon: Icon(
-                                      _obscurePassword ? Icons.visibility : Icons.visibility_off,
-                                      color: AppColors.textWhite.withValues(alpha: 0.6),
-                                    ),
-                                    onPressed: () {
-                                      setState(() {
-                                        _obscurePassword = !_obscurePassword;
-                                      });
-                                    },
-                                  ),
-                                ),
-                                validator: (value) {
-                                  if (value == null || value.isEmpty) {
-                                    return 'Ingrese su contraseña';
-                                  }
-                                  return null;
+                                obscurePassword: _obscurePassword,
+                                onToggleVisibility: () {
+                                  setState(() {
+                                    _obscurePassword = !_obscurePassword;
+                                  });
                                 },
                               ),
-                              AnimatedSize(
-                                duration: const Duration(milliseconds: 250),
-                                curve: Curves.easeOut,
-                                child: errorMessage != null
-                                    ? Padding(
-                                        padding: const EdgeInsets.only(top: 14),
-                                        child: Container(
-                                          width: double.infinity,
-                                          padding: const EdgeInsets.all(12),
-                                          decoration: BoxDecoration(
-                                            color: AppColors.error.withValues(alpha: 0.12),
-                                            borderRadius: BorderRadius.circular(AppTheme.radiusMd),
-                                            border: Border.all(
-                                              color: AppColors.error.withValues(alpha: 0.35),
-                                            ),
-                                          ),
-                                          child: Row(
-                                            children: [
-                                              const Icon(Icons.error_outline_rounded, color: AppColors.error, size: 18),
-                                              const SizedBox(width: 8),
-                                              Expanded(
-                                                child: Text(
-                                                  errorMessage!,
-                                                  style: const TextStyle(color: AppColors.error, fontSize: 13),
-                                                ),
-                                              ),
-                                            ],
-                                          ),
-                                        ),
-                                      )
-                                    : const SizedBox(width: double.infinity),
-                              ),
+                              LoginErrorBox(errorMessage: errorMessage),
                               const SizedBox(height: 28),
-                              SizedBox(
-                                width: double.infinity,
-                                height: 52,
-                                child: AnimatedContainer(
-                                  duration: const Duration(milliseconds: 200),
-                                  decoration: BoxDecoration(
-                                    borderRadius: BorderRadius.circular(AppTheme.radiusLg),
-                                    gradient: LinearGradient(
-                                      colors: isLoading
-                                          ? [AppColors.gold.withValues(alpha: 0.4), AppColors.goldLight.withValues(alpha: 0.4)]
-                                          : [AppColors.gold, AppColors.goldLight],
-                                    ),
-                                    boxShadow: isLoading
-                                        ? []
-                                        : [
-                                            BoxShadow(
-                                              color: AppColors.gold.withValues(alpha: 0.35),
-                                              blurRadius: 18,
-                                              offset: const Offset(0, 8),
-                                            ),
-                                          ],
-                                  ),
-                                  child: Material(
-                                    color: Colors.transparent,
-                                    child: InkWell(
-                                      borderRadius: BorderRadius.circular(AppTheme.radiusLg),
-                                      onTap: isLoading ? null : login,
-                                      child: Center(
-                                        child: isLoading
-                                            ? const SizedBox(
-                                                width: 22,
-                                                height: 22,
-                                                child: CircularProgressIndicator(
-                                                  strokeWidth: 2,
-                                                  color: AppColors.bgDarkTop,
-                                                ),
-                                              )
-                                            : const Text(
-                                                'Iniciar sesión',
-                                                style: TextStyle(
-                                                  fontSize: 16,
-                                                  fontWeight: FontWeight.w700,
-                                                  letterSpacing: 0.5,
-                                                  color: AppColors.bgDarkTop,
-                                                ),
-                                              ),
-                                      ),
-                                    ),
-                                  ),
-                                ),
+                              LoginSubmitButton(
+                                isLoading: isLoading,
+                                onLogin: login,
                               ),
                               const SizedBox(height: 12),
                               Center(
@@ -412,15 +297,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
                                 onGoogleSignIn: loginWithGoogle,
                               ),
                               const SizedBox(height: 24),
-                              Center(
-                                child: Text(
-                                  '© 2026 LOCUSTAF. Todos los derechos reservados.',
-                                  style: TextStyle(
-                                    color: AppColors.textMuted.withValues(alpha: 0.5),
-                                    fontSize: 11,
-                                  ),
-                                ),
-                              ),
+                              const LoginFooter(),
                             ],
                           ),
                         ),
