@@ -13,6 +13,7 @@ import '../../../incidences/presentation/providers/incidences_provider.dart';
 import '../../../reports/domain/services/employee_report_stats.dart';
 import '../../../workplaces/data/models/workplace_model.dart';
 import '../../../workplaces/presentation/providers/workplace_notifier.dart';
+import '../widgets/employee_home_components.dart';
 
 /// Pantalla Principal del empleado (Ronda 3A — B3).
 ///
@@ -255,7 +256,7 @@ class _EmployeeHomeContent extends ConsumerWidget {
                       'No pudimos encontrar tu lugar asignado. Contactá al administrador.',
                 );
               }
-              return _WorkplaceDetailsCard(found: found);
+              return EmployeeWorkplaceDetailsCard(found: found);
             },
             loading: () =>
                 AppTheme.loadingState(message: 'Cargando lugar de trabajo...'),
@@ -326,37 +327,37 @@ class _EmployeeHomeContent extends ConsumerWidget {
 
   Widget _buildMetrics(EmployeeReportStats stats) {
     final metrics = [
-      _MetricData(
+      EmployeeMetricData(
         icon: Icons.calendar_today,
         label: 'Días trabajados',
         value: stats.daysWorked.toString(),
         color: AppColors.goldLight,
       ),
-      _MetricData(
+      EmployeeMetricData(
         icon: Icons.access_time,
         label: 'Horas trabajadas',
         value: stats.formattedHours,
         color: AppColors.gold,
       ),
-      _MetricData(
+      EmployeeMetricData(
         icon: Icons.schedule,
         label: 'Llegadas tarde',
         value: stats.lateArrivals.toString(),
         color: stats.lateArrivals > 0 ? AppColors.warning : AppColors.success,
       ),
-      _MetricData(
+      EmployeeMetricData(
         icon: Icons.cancel_outlined,
         label: 'Ausencias injustificadas',
         value: stats.absences.toString(),
         color: stats.absences > 0 ? AppColors.error : AppColors.success,
       ),
-      _MetricData(
+      EmployeeMetricData(
         icon: Icons.description_outlined,
         label: 'Justificativos',
         value: stats.justifications.toString(),
         color: AppColors.goldLight,
       ),
-      _MetricData(
+      EmployeeMetricData(
         icon: Icons.warning_amber_outlined,
         label: 'Incidencias propias',
         value: stats.ownIncidences.toString(),
@@ -380,199 +381,9 @@ class _EmployeeHomeContent extends ConsumerWidget {
             childAspectRatio: isMobile ? 0.82 : 1.15,
           ),
           itemCount: 6,
-          itemBuilder: (_, index) => _MetricCardV2(metrics[index]),
+          itemBuilder: (_, index) => EmployeeMetricCardV2(metrics[index]),
         );
       },
-    );
-  }
-}
-
-/// Datos tipados para cada métrica.
-class _MetricData {
-  final IconData icon;
-  final String label;
-  final String value;
-  final Color color;
-
-  const _MetricData({
-    required this.icon,
-    required this.label,
-    required this.value,
-    required this.color,
-  });
-}
-
-/// Tarjeta de métrica rediseñada: ícono en esquina superior, valor grande, etiqueta abajo.
-/// Layout 2-columnas en móvil.
-class _MetricCardV2 extends StatelessWidget {
-  final _MetricData data;
-
-  const _MetricCardV2(this.data);
-
-  @override
-  Widget build(BuildContext context) {
-    return AppCard(
-      child: Stack(
-        children: [
-          // Ícono en esquina superior derecha
-          Positioned(
-            top: 12,
-            right: 12,
-            child: Container(
-              width: 36,
-              height: 36,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: data.color.withValues(alpha: 0.15),
-              ),
-              child: Icon(data.icon, color: data.color, size: 18),
-            ),
-          ),
-          // Contenido principal centrado
-          Center(
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 20),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  FittedBox(
-                    fit: BoxFit.scaleDown,
-                    child: Text(
-                      data.value,
-                      maxLines: 1,
-                      style: TextStyle(
-                        fontSize: 32,
-                        fontWeight: FontWeight.bold,
-                        color: data.color,
-                        letterSpacing: 0.5,
-                      ),
-                      textAlign: TextAlign.center,
-                    ),
-                  ),
-                  const SizedBox(height: 6),
-                  Text(
-                    data.label,
-                    style: const TextStyle(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w500,
-                      color: AppColors.textMuted,
-                      height: 1.3,
-                    ),
-                    textAlign: TextAlign.center,
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-/// Tarjeta de detalles del lugar de trabajo con layout vertical mejorado.
-class _WorkplaceDetailsCard extends StatelessWidget {
-  final WorkplaceModel found;
-
-  const _WorkplaceDetailsCard({required this.found});
-
-  @override
-  Widget build(BuildContext context) {
-    final String capitalizedName = found.nombre.isNotEmpty
-        ? '${found.nombre[0].toUpperCase()}${found.nombre.substring(1)}'
-        : '';
-
-    final String horarioValue = found.horaInicio != null
-        ? '${found.horaInicio!} - ${found.horaFin ?? '----'}'
-        : '---- - ----';
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        _DataRowVertical(
-          label: 'Ubicación',
-          value: capitalizedName,
-          icon: Icons.location_on_outlined,
-        ),
-        const SizedBox(height: 16),
-        _DataRowVertical(
-          label: 'Horario',
-          value: horarioValue,
-          icon: Icons.access_time,
-          compact: true,
-        ),
-      ],
-    );
-  }
-}
-
-/// Fila de datos vertical: etiqueta arriba (muted, pequeño), valor abajo (blanco, destacado).
-class _DataRowVertical extends StatelessWidget {
-  final String label;
-  final String value;
-  final IconData icon;
-  final bool compact;
-
-  const _DataRowVertical({
-    required this.label,
-    required this.value,
-    required this.icon,
-    this.compact = false,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final textStyle = compact
-        ? const TextStyle(fontSize: 13, color: AppColors.textWhite, height: 1.4)
-        : const TextStyle(
-            fontSize: 15,
-            color: AppColors.textWhite,
-            height: 1.5,
-          );
-    final labelStyle = const TextStyle(
-      fontSize: 11,
-      fontWeight: FontWeight.w500,
-      color: AppColors.textMuted,
-      letterSpacing: 0.3,
-    );
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          children: [
-            Icon(icon, size: 14, color: AppColors.textMuted),
-            const SizedBox(width: 6),
-            Text(
-              label.toUpperCase(),
-              style: labelStyle.copyWith(letterSpacing: 0.5),
-            ),
-          ],
-        ),
-        const SizedBox(height: 6),
-        Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Icon(
-              Icons.chevron_right,
-              size: 14,
-              color: AppColors.textMuted.withValues(alpha: 0.5),
-            ),
-            const SizedBox(width: 6),
-            Expanded(
-              child: Text(
-                value,
-                style: textStyle,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-              ),
-            ),
-          ],
-        ),
-      ],
     );
   }
 }
