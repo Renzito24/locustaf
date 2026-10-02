@@ -87,8 +87,11 @@ Este archivo mantiene un registro de todos los archivos que han sido refactoriza
   - **Acción:** Refactorizado. Se extrajeron `MedicalDocumentsHeader` y `MedicalDocumentsSliverContent` a `medical_documents_components.dart`.
   - **Tests:** Ya existía `test/features/medical_documents/presentation/screens/medical_documents_screen_test.dart`. Se ejecutó y comprobó exitosamente el funcionamiento luego de la refactorización.
 
+- **`lib/features/incidences/presentation/screens/incidences_screen.dart`**
+  - **Acción:** Refactorizado. Se extrajeron `IncidencesHeader` y `IncidencesSliverContent` a `incidences_components.dart`.
+  - **Tests:** Ya existía `test/features/incidences/presentation/screens/incidences_screen_test.dart`. Se ejecutó y comprobó exitosamente el funcionamiento luego de la refactorización.
+
 ## Próximos Candidatos (Pendientes)
-18. `lib/features/incidences/presentation/screens/incidences_screen.dart`
 19. `lib/features/medical_documents/presentation/providers/medical_documents_provider.dart`
 20. `lib/features/attendance/presentation/providers/attendance_notifier.dart`
 21. `lib/core/services/report_exporter.dart`
