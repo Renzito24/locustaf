@@ -99,9 +99,12 @@ Este archivo mantiene un registro de todos los archivos que han sido refactoriza
   - **Acción:** Refactorizado. Se extrajeron componentes como `ImageAttachmentPreview`, `PdfAttachmentPreview`, y `OtherAttachmentPreview` a `medical_document_attachment_components.dart`.
   - **Tests:** Se creó `test/features/medical_documents/presentation/widgets/medical_document_attachment_test.dart` y se comprobó el correcto funcionamiento tras el refactor.
 
+- **`lib/features/dashboard/presentation/screens/home_screen.dart`**
+  - **Acción:** Refactorizado. Se extrajeron los widgets `DashboardHeader`, `DashboardKpiCard`, `SuperadminDashboard`, `_CompanyKpis` y `AdminDashboard` a `home_screen_components.dart`.
+  - **Tests:** Ya existía `test/features/dashboard/presentation/screens/home_screen_test.dart` y se validó que pasen todas las pruebas.
+
 ## Próximos Candidatos (Pendientes)
 19. `lib/features/medical_documents/presentation/providers/medical_documents_provider.dart`
 20. `lib/features/attendance/presentation/providers/attendance_notifier.dart`
 21. `lib/core/services/report_exporter.dart`
-22. `lib/features/dashboard/presentation/screens/home_screen.dart`
-23. `lib/features/history/presentation/widgets/history_filter_bar.dart`
+22. `lib/features/history/presentation/widgets/history_filter_bar.dart`
