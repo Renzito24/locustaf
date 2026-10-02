@@ -27,9 +27,15 @@ Este archivo mantiene un registro de todos los archivos que han sido refactoriza
   - **Acción:** Refactorizado. Se extrajeron los chips de métricas y la tabla de pagos a `superadmin_settings_components.dart`.
   - **Tests:** Se creó `test/features/companies/presentation/widgets/superadmin_settings_panel_test.dart` comprobando el comportamiento sin mutaciones.
 
+- **`lib/features/dashboard/presentation/screens/employee_home_screen.dart`**
+  - **Acción:** Refactorizado. Se extrajeron las tarjetas de métricas y detalles del lugar de trabajo a `employee_home_components.dart`.
+  - **Tests:** Tests verificados en `employee_home_screen_test.dart`.
+
+- **`lib/features/reports/presentation/screens/reports_screen.dart`**
+  - **Acción:** Refactorizado. Se extrajeron los filtros, cabecera, tabla y tarjetas de métricas a `reports_components.dart`.
+  - **Tests:** Se verificó usando `reports_screen_test.dart`.
+
 ## Próximos Candidatos (Pendientes)
-4. `lib/features/dashboard/presentation/screens/employee_home_screen.dart`
-5. `lib/features/reports/presentation/screens/reports_screen.dart`
 6. `lib/features/employees/presentation/widgets/employee_form.dart`
 7. `lib/features/profile/presentation/screens/profile_screen.dart`
 8. `lib/features/employees/presentation/widgets/employee_card.dart`
