@@ -6,9 +6,9 @@ import '../../../../core/providers/data_providers.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../authentication/presentation/providers/auth_provider.dart';
 import '../providers/attendance_notifier.dart';
-import 'widgets/active_attendance_card.dart';
-import 'widgets/admin_attendance_view.dart';
-import 'widgets/orphaned_attendance_card.dart';
+import '../widgets/active_attendance_card.dart';
+import '../widgets/admin_attendance_view.dart';
+import '../widgets/orphaned_attendance_card.dart';
 
 class AttendanceScreen extends ConsumerStatefulWidget {
   const AttendanceScreen({super.key});
