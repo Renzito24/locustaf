@@ -1,11 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../../core/constants/app_colors.dart';
 import '../../../../core/theme/app_theme.dart';
-import '../../../../core/models/user_model.dart';
 import '../../../employees/presentation/providers/users_provider.dart';
 import '../../data/models/incidence_model.dart';
+import 'incidence_form_components.dart';
 
 class IncidenceFormData {
   final String userId;
@@ -87,72 +86,28 @@ class _IncidenceFormState extends ConsumerState<IncidenceForm> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           if (widget.errorMessage != null)
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.all(12),
-              margin: const EdgeInsets.only(bottom: 16),
-              decoration: BoxDecoration(
-                color: AppColors.error.withValues(alpha: 0.1),
-                borderRadius: BorderRadius.circular(AppTheme.radiusMd),
-                border: Border.all(color: AppColors.error.withValues(alpha: 0.3)),
-              ),
-              child: Text(
-                widget.errorMessage!,
-                style: const TextStyle(color: AppColors.error, fontSize: 13),
-              ),
+            IncidenceErrorMessage(errorMessage: widget.errorMessage!),
+            
+          if (widget.fixedUserId == null)
+            IncidenceEmployeeDropdown(
+              usersAsync: usersAsync,
+              userId: _userId,
+              isEditing: isEditing,
+              onChanged: (v) => setState(() => _userId = v ?? ''),
             ),
-          if (widget.fixedUserId == null) ...[
-            usersAsync.when(
-              data: (users) {
-                final employees =
-                    users.where((u) => u.rol == UserRole.employee && !u.isDeleted).toList();
-                return DropdownButtonFormField<String>(
-                  initialValue: _userId.isEmpty ? null : _userId,
-                  decoration: AppTheme.inputDecoration(label: 'Empleado', icon: Icons.person),
-                  dropdownColor: AppColors.cardDark,
-                  style: const TextStyle(color: AppColors.textWhite),
-                  items: employees
-                      .map((e) => DropdownMenuItem<String>(
-                            value: e.id,
-                            child: Text(e.nombreCompleto),
-                          ))
-                      .toList(),
-                  onChanged: isEditing ? null : (v) => setState(() => _userId = v ?? ''),
-                  validator: (v) => (v == null || v.isEmpty) ? 'Seleccione un empleado' : null,
-                );
-              },
-              loading: () => TextField(
-                decoration: AppTheme.inputDecoration(label: 'Empleado', icon: Icons.person),
-                enabled: false,
-              ),
-              error: (_, _) => TextField(
-                decoration: AppTheme.inputDecoration(label: 'Empleado', icon: Icons.person),
-                enabled: false,
-              ),
-            ),
-            const SizedBox(height: 16),
-          ],
-          DropdownButtonFormField<IncidenceType>(
-            initialValue: _type,
-            decoration: AppTheme.inputDecoration(label: 'Tipo de incidencia', icon: Icons.category),
-            dropdownColor: AppColors.cardDark,
-            style: const TextStyle(color: AppColors.textWhite),
-            items: IncidenceType.values
-                .map((t) => DropdownMenuItem<IncidenceType>(
-                      value: t,
-                      child: Text(t.label),
-                    ))
-                .toList(),
+            
+          IncidenceTypeDropdown(
+            type: _type,
             onChanged: (v) {
               if (v != null) setState(() => _type = v);
             },
-            validator: (v) => v == null ? 'Seleccione un tipo' : null,
           ),
           const SizedBox(height: 16),
+          
           Row(
             children: [
               Expanded(
-                child: _buildDatePicker(
+                child: IncidenceDatePicker(
                   label: 'Fecha inicio',
                   value: _fechaInicio,
                   onChanged: (d) => setState(() => _fechaInicio = d),
@@ -160,7 +115,7 @@ class _IncidenceFormState extends ConsumerState<IncidenceForm> {
               ),
               const SizedBox(width: 16),
               Expanded(
-                child: _buildDatePicker(
+                child: IncidenceDatePicker(
                   label: 'Fecha fin',
                   value: _fechaFin,
                   onChanged: (d) => setState(() => _fechaFin = d),
@@ -175,100 +130,33 @@ class _IncidenceFormState extends ConsumerState<IncidenceForm> {
             ],
           ),
           const SizedBox(height: 16),
-          TextFormField(
+          
+          IncidenceTextField(
             controller: _observacionesController,
-            decoration: AppTheme.inputDecoration(label: 'Observaciones', icon: Icons.notes),
-            style: const TextStyle(color: AppColors.textWhite),
+            label: 'Observaciones',
+            icon: Icons.notes,
             maxLines: 3,
             onChanged: (v) => _observaciones = v,
             validator: (v) => (v == null || v.trim().isEmpty) ? 'Ingrese las observaciones' : null,
           ),
           const SizedBox(height: 16),
-          TextFormField(
+          
+          IncidenceTextField(
             controller: _documentoController,
-            decoration: AppTheme.inputDecoration(
-              label: 'Documento relacionado (opcional)',
-              icon: Icons.link,
-              hint: 'https://...',
-            ),
-            style: const TextStyle(color: AppColors.textWhite),
+            label: 'Documento relacionado (opcional)',
+            icon: Icons.link,
+            hint: 'https://...',
             onChanged: (_) {},
           ),
           const SizedBox(height: 24),
-          SizedBox(
-            width: double.infinity,
-            child: Container(
-              decoration: BoxDecoration(
-                gradient: AppTheme.goldGradient,
-                borderRadius: BorderRadius.circular(AppTheme.radiusLg),
-              ),
-              child: ElevatedButton(
-                onPressed: widget.isLoading ? null : _submit,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.transparent,
-                  shadowColor: Colors.transparent,
-                  foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(vertical: 14),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppTheme.radiusLg)),
-                ),
-                child: widget.isLoading
-                    ? const SizedBox(
-                        width: 20,
-                        height: 20,
-                        child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
-                      )
-                    : Text(isEditing ? 'Guardar cambios' : 'Crear incidencia'),
-              ),
-            ),
+          
+          IncidenceSubmitButton(
+            isLoading: widget.isLoading,
+            isEditing: isEditing,
+            onSubmit: _submit,
           ),
         ],
       ),
-    );
-  }
-
-  Widget _buildDatePicker({
-    required String label,
-    required DateTime value,
-    required void Function(DateTime) onChanged,
-    String? Function(String?)? validator,
-  }) {
-    return TextFormField(
-      decoration: AppTheme.inputDecoration(
-        label: label,
-        icon: Icons.calendar_today,
-      ).copyWith(
-        suffixIcon: IconButton(
-          icon: const Icon(Icons.date_range, size: 18, color: AppColors.gold),
-          onPressed: () async {
-            final date = await showDatePicker(
-              context: context,
-              initialDate: value,
-              firstDate: DateTime(2020),
-              lastDate: DateTime(2030),
-              builder: (context, child) {
-                return Theme(
-                  data: Theme.of(context).copyWith(
-                    colorScheme: const ColorScheme.dark(
-                      primary: AppColors.gold,
-                      onPrimary: Colors.white,
-                      surface: AppColors.cardDark,
-                      onSurface: AppColors.textWhite,
-                    ),
-                  ),
-                  child: child!,
-                );
-              },
-            );
-            if (date != null) onChanged(date);
-          },
-        ),
-      ),
-      style: const TextStyle(color: AppColors.textWhite),
-      controller: TextEditingController(
-        text: '${value.year}-${value.month.toString().padLeft(2, '0')}-${value.day.toString().padLeft(2, '0')}',
-      ),
-      readOnly: true,
-      validator: validator,
     );
   }
 

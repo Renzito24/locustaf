@@ -91,7 +91,14 @@ Este archivo mantiene un registro de todos los archivos que han sido refactoriza
   - **Acción:** Refactorizado. Se extrajeron `IncidencesHeader` y `IncidencesSliverContent` a `incidences_components.dart`.
   - **Tests:** Ya existía `test/features/incidences/presentation/screens/incidences_screen_test.dart`. Se ejecutó y comprobó exitosamente el funcionamiento luego de la refactorización.
 
+- **`lib/features/incidences/presentation/widgets/incidence_form.dart`**
+  - **Acción:** Refactorizado. Se extrajeron componentes como `IncidenceEmployeeDropdown`, `IncidenceTypeDropdown`, `IncidenceDatePicker`, `IncidenceTextField` y `IncidenceSubmitButton` a `incidence_form_components.dart`.
+  - **Tests:** Se creó `test/features/incidences/presentation/widgets/incidence_form_test.dart` y se comprobó el correcto funcionamiento tras el refactor.
+
 ## Próximos Candidatos (Pendientes)
 19. `lib/features/medical_documents/presentation/providers/medical_documents_provider.dart`
 20. `lib/features/attendance/presentation/providers/attendance_notifier.dart`
 21. `lib/core/services/report_exporter.dart`
+22. `lib/features/medical_documents/presentation/widgets/medical_document_attachment.dart`
+23. `lib/features/dashboard/presentation/screens/home_screen.dart`
+24. `lib/features/history/presentation/widgets/history_filter_bar.dart`
