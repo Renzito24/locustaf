@@ -7,10 +7,9 @@ import '../../../../core/providers/data_providers.dart';
 import '../../../../core/providers/async_action_state.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/widgets/widgets.dart';
-import '../../../../core/utils/validators.dart';
 import '../../data/models/workplace_model.dart';
 import '../providers/workplace_notifier.dart';
-import '../widgets/workplace_map_picker.dart';
+import '../widgets/workplace_form_sections.dart';
 
 class WorkplaceFormScreen extends ConsumerWidget {
   const WorkplaceFormScreen({super.key});
@@ -234,270 +233,46 @@ class _WorkplaceFormState extends ConsumerState<_WorkplaceForm> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    TextFormField(
-                      controller: _nombreController,
-                      style: const TextStyle(color: AppColors.textWhite),
-                      decoration: AppTheme.inputDecoration(
-                        label: 'Nombre *',
-                        icon: Icons.business_outlined,
-                      ),
-                      validator: (value) {
-                        if (value == null || value.trim().isEmpty) {
-                          return 'El nombre es obligatorio';
-                        }
-                        return null;
-                      },
+                    WorkplaceBasicInfoSection(
+                      nombreController: _nombreController,
+                      descriptionController: _descriptionController,
                     ),
                     const SizedBox(height: 16),
-                    TextFormField(
-                      controller: _descriptionController,
-                      style: const TextStyle(color: AppColors.textWhite),
-                      decoration: AppTheme.inputDecoration(
-                        label: 'Descripción',
-                        icon: Icons.description_outlined,
-                      ),
-                      maxLines: 3,
-                      validator: (value) {
-                        if (value == null || value.trim().isEmpty) {
-                          return 'La descripción es obligatoria';
-                        }
-                        return null;
-                      },
-                    ),
-                    const SizedBox(height: 16),
-                    WorkplaceMapPicker(
-                      initialLatitude: widget.initialData?.latitud,
-                      initialLongitude: widget.initialData?.longitud,
-                      initialAddress: widget.initialData?.direccion,
-                      onLatitudeChanged: (lat) {
-                        _latitudController.text = lat.toStringAsFixed(6);
-                      },
-                      onLongitudeChanged: (lng) {
-                        _longitudController.text = lng.toStringAsFixed(6);
-                      },
-                      onAddressChanged: (address) {
-                        if (address != null) {
-                          _direccionController.text = address;
-                        }
-                      },
-                    ),
-                    const SizedBox(height: 16),
-                    Row(
-                      children: [
-                        Expanded(
-                          child: TextFormField(
-                            controller: _latitudController,
-                            style: const TextStyle(color: AppColors.textWhite),
-                            decoration: AppTheme.inputDecoration(
-                              label: 'Latitud *',
-                              icon: Icons.map_outlined,
-                              hint: '-34.6037',
-                            ),
-                            keyboardType:
-                                const TextInputType.numberWithOptions(decimal: true, signed: true),
-                            validator: (value) {
-                              if (value == null || value.trim().isEmpty) {
-                                return 'Obligatorio';
-                              }
-                              final v = double.tryParse(value.trim());
-                              if (v == null) return 'Número inválido';
-                              return Validators.latitud(v);
-                            },
-                          ),
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: TextFormField(
-                            controller: _longitudController,
-                            style: const TextStyle(color: AppColors.textWhite),
-                            decoration: AppTheme.inputDecoration(
-                              label: 'Longitud *',
-                              icon: Icons.map_outlined,
-                              hint: '-58.3816',
-                            ),
-                            keyboardType:
-                                const TextInputType.numberWithOptions(decimal: true, signed: true),
-                            validator: (value) {
-                              if (value == null || value.trim().isEmpty) {
-                                return 'Obligatorio';
-                              }
-                              final v = double.tryParse(value.trim());
-                              if (v == null) return 'Número inválido';
-                              return Validators.longitud(v);
-                            },
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 16),
-                    Row(
-                      children: [
-                        Expanded(
-                          child: TextFormField(
-                            controller: _radioController,
-                            style: const TextStyle(color: AppColors.textWhite),
-                            decoration: AppTheme.inputDecoration(
-                              label: 'Radio (metros)',
-                              icon: Icons.radar_outlined,
-                              hint: '100',
-                            ),
-                            keyboardType: TextInputType.number,
-                            validator: (value) {
-                              if (value != null && value.trim().isNotEmpty) {
-                                if (double.tryParse(value.trim()) == null) {
-                                  return 'Número inválido';
-                                }
-                              }
-                              return null;
-                            },
-                          ),
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: TextFormField(
-                            controller: _codigoController,
-                            style: const TextStyle(color: AppColors.textWhite),
-                            decoration: AppTheme.inputDecoration(
-                              label: 'Código',
-                              icon: Icons.qr_code_outlined,
-                              hint: 'OF-A',
-                            ),
-                          ),
-                        ),
-                      ],
+                    WorkplaceLocationSection(
+                      initialData: widget.initialData,
+                      latitudController: _latitudController,
+                      longitudController: _longitudController,
+                      direccionController: _direccionController,
+                      radioController: _radioController,
+                      codigoController: _codigoController,
                     ),
                     if (widget.isEditing) ...[
                       const SizedBox(height: 16),
-                      SwitchListTile(
-                        title: const Text('Activo', style: TextStyle(color: AppColors.textWhite)),
-                        value: _isActive,
-                        onChanged: (value) {
-                          setState(() => _isActive = value);
-                        },
-                        activeThumbColor: AppColors.gold,
-                        contentPadding: EdgeInsets.zero,
+                      Material(
+                        color: Colors.transparent,
+                        child: SwitchListTile(
+                          title: const Text('Activo', style: TextStyle(color: AppColors.textWhite)),
+                          value: _isActive,
+                          onChanged: (value) {
+                            setState(() => _isActive = value);
+                          },
+                          activeThumbColor: AppColors.gold,
+                          contentPadding: EdgeInsets.zero,
+                        ),
                       ),
                     ],
                     const SizedBox(height: 16),
-                    Text(
-                      'Configuración de jornada',
-                      style: AppTheme.headingMd,
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      'Opcional. Si se define, se detectan llegadas tarde y jornadas huérfanas.',
-                      style: AppTheme.bodyMd,
-                    ),
-                    const SizedBox(height: 12),
-                    Row(
-                      children: [
-                        Expanded(
-                          child: TextFormField(
-                            controller: _horaInicioController,
-                            style: const TextStyle(color: AppColors.textWhite),
-                            decoration: AppTheme.inputDecoration(
-                              label: 'Hora de inicio',
-                              icon: Icons.schedule_outlined,
-                              hint: '08:00',
-                            ),
-                            validator: (value) {
-                              if (value != null && value.trim().isNotEmpty) {
-                                if (!_isValidHhmm(value.trim())) {
-                                  return 'Formato HH:mm';
-                                }
-                              }
-                              return null;
-                            },
-                          ),
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: TextFormField(
-                            controller: _horaFinController,
-                            style: const TextStyle(color: AppColors.textWhite),
-                            decoration: AppTheme.inputDecoration(
-                              label: 'Hora de fin',
-                              icon: Icons.schedule_outlined,
-                              hint: '16:00',
-                            ),
-                            validator: (value) {
-                              if (value != null && value.trim().isNotEmpty) {
-                                if (!_isValidHhmm(value.trim())) {
-                                  return 'Formato HH:mm';
-                                }
-                              }
-                              return null;
-                            },
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 12),
-                    TextFormField(
-                      controller: _toleranciaController,
-                      style: const TextStyle(color: AppColors.textWhite),
-                      decoration: AppTheme.inputDecoration(
-                        label: 'Tolerancia (minutos)',
-                        icon: Icons.timer_outlined,
-                        hint: '15',
-                      ),
-                      keyboardType: TextInputType.number,
-                      validator: (value) {
-                        if (value != null && value.trim().isNotEmpty) {
-                          final v = int.tryParse(value.trim());
-                          if (v == null || v < 0) {
-                            return 'Número válido';
-                          }
-                        }
-                        return null;
-                      },
+                    WorkplaceScheduleSection(
+                      horaInicioController: _horaInicioController,
+                      horaFinController: _horaFinController,
+                      toleranciaController: _toleranciaController,
+                      isValidHhmm: _isValidHhmm,
                     ),
                     const SizedBox(height: 24),
-                    SizedBox(
-                      width: double.infinity,
-                      height: 48,
-                      child: DecoratedBox(
-                        decoration: BoxDecoration(
-                          gradient: isSaving ? null : AppTheme.goldGradient,
-                          color: isSaving ? AppColors.gold.withValues(alpha: 0.4) : null,
-                          borderRadius: BorderRadius.circular(AppTheme.radiusLg),
-                          boxShadow: [
-                            BoxShadow(
-                              color: AppColors.gold.withValues(alpha: 0.3),
-                              blurRadius: 12,
-                              offset: const Offset(0, 4),
-                            ),
-                          ],
-                        ),
-                        child: Material(
-                          color: Colors.transparent,
-                          child: InkWell(
-                            onTap: isSaving ? null : _submit,
-                            borderRadius: BorderRadius.circular(AppTheme.radiusLg),
-                            child: Center(
-                              child: isSaving
-                                  ? const SizedBox(
-                                      width: 20,
-                                      height: 20,
-                                      child: CircularProgressIndicator(
-                                        strokeWidth: 2,
-                                        color: Color(0xFF0B0B0F),
-                                      ),
-                                    )
-                                  : Text(
-                                      widget.isEditing
-                                          ? 'Guardar cambios'
-                                          : 'Crear lugar de trabajo',
-                                      style: const TextStyle(
-                                        fontSize: 16,
-                                        fontWeight: FontWeight.w600,
-                                        color: Color(0xFF0B0B0F),
-                                      ),
-                                    ),
-                            ),
-                          ),
-                        ),
-                      ),
+                    WorkplaceSubmitButton(
+                      isSaving: isSaving,
+                      isEditing: widget.isEditing,
+                      onSubmit: _submit,
                     ),
                   ],
                 ),
