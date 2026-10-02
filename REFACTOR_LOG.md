@@ -71,8 +71,11 @@ Este archivo mantiene un registro de todos los archivos que han sido refactoriza
   - **Acción:** Refactorizado. Se extrajeron componentes como tarjetas de indicadores, botón de cargar más y tablas de datos a `history_components.dart`.
   - **Tests:** Se creó `test/features/history/presentation/screens/history_screen_test.dart` y se comprobó el funcionamiento antes y después del refactor.
 
+- **`lib/features/companies/presentation/widgets/company_card.dart`**
+  - **Acción:** Refactorizado. Se extrajeron componentes como `CompanyHeaderInfo`, `CompanyStatusBadge`, `SubscriptionInfoBadge` y `CompanyActionButtons` a `company_card_components.dart`.
+  - **Tests:** Se creó `test/features/companies/presentation/widgets/company_card_test.dart` y se comprobó el funcionamiento antes y después del refactor.
+
 ## Próximos Candidatos (Pendientes)
-14. `lib/features/companies/presentation/widgets/company_card.dart`
 15. `lib/features/companies/presentation/widgets/company_form.dart`
 16. `lib/features/attendance/presentation/widgets/admin_attendance_view.dart`
 17. `lib/features/medical_documents/presentation/screens/medical_documents_screen.dart`
