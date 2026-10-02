@@ -79,8 +79,11 @@ Este archivo mantiene un registro de todos los archivos que han sido refactoriza
   - **Acción:** Refactorizado. Se extrajeron las distintas secciones del formulario en `CompanyFormBasicFields`, `CompanyFormConfigFields` y `CompanyFormSubmitButton` a `company_form_components.dart`.
   - **Tests:** Se creó `test/features/companies/presentation/widgets/company_form_test.dart` y se comprobó el funcionamiento antes y después del refactor.
 
+- **`lib/features/attendance/presentation/widgets/admin_attendance_view.dart`**
+  - **Acción:** Refactorizado. Se extrajeron los componentes `AdminAttendanceHeader`, `AdminAttendanceList` y `AdminAttendanceDialogs` a `admin_attendance_components.dart`.
+  - **Tests:** Se creó `test/features/attendance/presentation/widgets/admin_attendance_view_test.dart` y se comprobó el funcionamiento.
+
 ## Próximos Candidatos (Pendientes)
-16. `lib/features/attendance/presentation/widgets/admin_attendance_view.dart`
 17. `lib/features/medical_documents/presentation/screens/medical_documents_screen.dart`
 18. `lib/features/incidences/presentation/screens/incidences_screen.dart`
 19. `lib/features/medical_documents/presentation/providers/medical_documents_provider.dart`
