@@ -1,3 +1,4 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:equatable/equatable.dart';
 
 enum CompanyEstado { activa, inactiva }
@@ -163,6 +164,13 @@ class CompanyModel extends Equatable {
     return defaultValue;
   }
 
+  static DateTime? _parseDate(dynamic value) {
+    if (value == null) return null;
+    if (value is Timestamp) return value.toDate().toLocal();
+    if (value is String) return DateTime.parse(value).toLocal();
+    return null;
+  }
+
   factory CompanyModel.fromJson(Map<String, dynamic> json) {
     return CompanyModel(
       id: json['id'] as String,
@@ -174,10 +182,8 @@ class CompanyModel extends Equatable {
       email: json['email'] as String?,
       estado: CompanyEstadoExtension.fromString(json['estado'] as String),
       createdBy: json['createdBy'] as String?,
-      createdAt: DateTime.parse(json['createdAt'] as String).toLocal(),
-      updatedAt: json['updatedAt'] != null
-          ? DateTime.parse(json['updatedAt'] as String).toLocal()
-          : null,
+      createdAt: _parseDate(json['createdAt']) ?? DateTime.now(),
+      updatedAt: _parseDate(json['updatedAt']),
       toleranciaCheckIn: _parseInt(json['toleranciaCheckIn']),
       diasLaborables: (json['diasLaborables'] as List<dynamic>?)
               ?.map((e) => _parseInt(e, defaultValue: 1))
@@ -186,12 +192,8 @@ class CompanyModel extends Equatable {
       plan: json['plan'] != null
           ? CompanyPlanExtension.fromString(json['plan'] as String)
           : CompanyPlan.mensual,
-      paidUntil: json['paidUntil'] != null
-          ? DateTime.parse(json['paidUntil'] as String).toLocal()
-          : null,
-      lastPaymentAt: json['lastPaymentAt'] != null
-          ? DateTime.parse(json['lastPaymentAt'] as String).toLocal()
-          : null,
+      paidUntil: _parseDate(json['paidUntil']),
+      lastPaymentAt: _parseDate(json['lastPaymentAt']),
     );
   }
 

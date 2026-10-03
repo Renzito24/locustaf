@@ -1,3 +1,4 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:equatable/equatable.dart';
 
 enum UserRole { superadmin, admin, supervisor, employee }
@@ -124,6 +125,13 @@ class UserModel extends Equatable {
     );
   }
 
+  static DateTime? _parseDate(dynamic value) {
+    if (value == null) return null;
+    if (value is Timestamp) return value.toDate().toLocal();
+    if (value is String) return DateTime.parse(value).toLocal();
+    return null;
+  }
+
   factory UserModel.fromJson(Map<String, dynamic> json) {
     return UserModel(
       id: json['id'] as String,
@@ -140,13 +148,9 @@ class UserModel extends Equatable {
       isDeleted: json['isDeleted'] as bool? ?? false,
       lugarDeTrabajoId: json['lugarDeTrabajoId'] as String?,
       companyId: json['companyId'] as String?,
-      createdAt: DateTime.parse(json['createdAt'] as String).toLocal(),
-      updatedAt: json['updatedAt'] != null
-          ? DateTime.parse(json['updatedAt'] as String).toLocal()
-          : null,
-      acceptedPoliciesAt: json['acceptedPoliciesAt'] != null
-          ? DateTime.parse(json['acceptedPoliciesAt'] as String).toLocal()
-          : null,
+      createdAt: _parseDate(json['createdAt']) ?? DateTime.now(),
+      updatedAt: _parseDate(json['updatedAt']),
+      acceptedPoliciesAt: _parseDate(json['acceptedPoliciesAt']),
       termsVersion: json['termsVersion'] as String?,
       privacyVersion: json['privacyVersion'] as String?,
     );
