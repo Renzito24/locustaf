@@ -25,4 +25,9 @@ class RoutePaths {
   static const String createCompany = '/companies/create';
   static const String editCompany = '/companies/edit';
   static const String companySettings = '/settings';
+  static const String paystubs = '/paystubs';
+  static const String employeePaystubs = '/mis_recibos';
+  static const String createPaystub = '/paystubs/create';
+  static const String comunicados = '/comunicados';
+  static const String createComunicado = '/comunicados/create';
 }

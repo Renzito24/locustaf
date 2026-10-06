@@ -69,6 +69,12 @@ class Sidebar extends ConsumerWidget {
       visibleFor: {UserRole.admin, UserRole.supervisor},
     ),
     _MenuItem(
+      icon: Icons.campaign_outlined,
+      label: 'Comunicados',
+      route: RoutePaths.comunicados,
+      visibleFor: {UserRole.admin, UserRole.supervisor, UserRole.employee},
+    ),
+    _MenuItem(
       icon: Icons.bar_chart_outlined,
       label: 'Reportes',
       route: RoutePaths.reports,
@@ -78,6 +84,18 @@ class Sidebar extends ConsumerWidget {
       icon: Icons.assignment_outlined,
       label: 'Justificativos',
       route: RoutePaths.employeeJustificativos,
+      visibleFor: {UserRole.employee},
+    ),
+    _MenuItem(
+      icon: Icons.receipt_long_outlined,
+      label: 'Recibos',
+      route: RoutePaths.paystubs,
+      visibleFor: {UserRole.admin, UserRole.supervisor},
+    ),
+    _MenuItem(
+      icon: Icons.receipt_long_outlined,
+      label: 'Recibos',
+      route: RoutePaths.employeePaystubs,
       visibleFor: {UserRole.employee},
     ),
     _MenuItem(

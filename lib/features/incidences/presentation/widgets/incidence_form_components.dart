@@ -1,3 +1,4 @@
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -245,6 +246,72 @@ class IncidenceSubmitButton extends StatelessWidget {
               : Text(isEditing ? 'Guardar cambios' : 'Crear incidencia'),
         ),
       ),
+    );
+  }
+}
+
+class IncidenceFilePicker extends StatelessWidget {
+  final bool isLoading;
+  final PlatformFile? archivoFile;
+  final String? archivoUrl;
+  final VoidCallback onPickFile;
+  final VoidCallback onClearFile;
+
+  const IncidenceFilePicker({
+    super.key,
+    required this.isLoading,
+    this.archivoFile,
+    this.archivoUrl,
+    required this.onPickFile,
+    required this.onClearFile,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        if (archivoFile != null || archivoUrl != null)
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+            margin: const EdgeInsets.only(bottom: 8),
+            decoration: BoxDecoration(
+              color: AppColors.cardDark,
+              border: Border.all(color: AppColors.gold.withValues(alpha: 0.25)),
+              borderRadius: BorderRadius.circular(AppTheme.radiusMd),
+            ),
+            child: Row(
+              children: [
+                const Icon(Icons.attach_file, size: 18, color: AppColors.gold),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    archivoFile?.name ?? archivoUrl!,
+                    style: const TextStyle(fontSize: 13, color: AppColors.textWhite),
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+                if (archivoFile != null)
+                  IconButton(
+                    icon: const Icon(Icons.close, size: 16, color: AppColors.textMuted),
+                    onPressed: onClearFile,
+                    visualDensity: VisualDensity.compact,
+                  ),
+              ],
+            ),
+          ),
+        OutlinedButton.icon(
+          onPressed: isLoading ? null : onPickFile,
+          icon: const Icon(Icons.upload_file, size: 18),
+          label: Text(archivoFile != null ? 'Cambiar archivo' : 'Seleccionar archivo (opcional)'),
+          style: OutlinedButton.styleFrom(
+            foregroundColor: AppColors.gold,
+            side: BorderSide(color: AppColors.gold.withValues(alpha: 0.4)),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppTheme.radiusMd)),
+          ),
+        ),
+      ],
     );
   }
 }

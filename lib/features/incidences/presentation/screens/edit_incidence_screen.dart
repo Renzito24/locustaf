@@ -56,7 +56,10 @@ class EditIncidenceScreen extends ConsumerWidget {
                     documentoRelacionado: data.documentoRelacionado,
                     updatedAt: DateTime.now(),
                   );
-                  await ref.read(incidenceUpdateProvider.notifier).updateIncidence(updated);
+                  await ref.read(incidenceUpdateProvider.notifier).updateIncidence(
+                    incidence: updated,
+                    file: data.archivoFile,
+                  );
                   if (context.mounted) {
                     ref.read(incidenceUpdateProvider.notifier).reset();
                     context.pop();

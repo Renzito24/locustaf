@@ -57,7 +57,10 @@ class CreateIncidenceScreen extends ConsumerWidget {
                     companyId: ref.read(currentCompanyIdProvider),
                     createdAt: DateTime.now(),
                   );
-                  await ref.read(incidenceCreateProvider.notifier).createIncidence(incidence);
+                  await ref.read(incidenceCreateProvider.notifier).createIncidence(
+                    incidence: incidence,
+                    file: data.archivoFile,
+                  );
                   if (context.mounted) {
                     ref.read(incidenceCreateProvider.notifier).reset();
                     context.pop();

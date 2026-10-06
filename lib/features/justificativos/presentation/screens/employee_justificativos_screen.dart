@@ -9,15 +9,16 @@ import '../../../authentication/presentation/providers/auth_provider.dart';
 import '../../../incidences/data/models/incidence_model.dart';
 import '../../../incidences/presentation/providers/incidences_provider.dart';
 import '../../../incidences/presentation/widgets/incidence_card.dart';
+import '../../../incidences/presentation/widgets/incidence_detail_dialog.dart';
 
 class EmployeeJustificativosScreen extends ConsumerWidget {
   const EmployeeJustificativosScreen({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final userId = ref.watch(currentUserIdProvider);
+    final user = ref.watch(currentUserModelProvider);
 
-    if (userId == null) {
+    if (user == null) {
       return Padding(
         padding: const EdgeInsets.all(24),
         child: AppTheme.emptyState(
@@ -31,7 +32,7 @@ class EmployeeJustificativosScreen extends ConsumerWidget {
     final incidencesAsync = ref.watch(incidencesStreamProvider);
 
     final incidences = (incidencesAsync.value ?? [])
-        .where((i) => i.isActive && i.userId == userId)
+        .where((i) => i.isActive && i.userId == user.id)
         .toList()
       ..sort((a, b) => b.fechaInicio.compareTo(a.fechaInicio));
 
@@ -66,83 +67,18 @@ class EmployeeJustificativosScreen extends ConsumerWidget {
                 child: IncidenceCard(
                   incidence: inc,
                   employeeName: inc.type.label,
-                  onTap: () => _showIncidenceDetail(context, inc),
+                  onTap: () => IncidenceDetailDialog.show(
+                    context,
+                    incidence: inc,
+                    employeeName: '${user.nombre} ${user.apellido}',
+                    employeeEmail: user.email,
+                  ),
                 ),
               ),
             ),
         ],
       ),
     );
-  }
-
-  void _showIncidenceDetail(BuildContext context, IncidenceModel inc) {
-    showDialog(
-      context: context,
-      builder: (ctx) => Dialog(
-        backgroundColor: AppColors.cardDark,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(AppTheme.radiusXl),
-          side: BorderSide(color: AppColors.gold.withValues(alpha: 0.3)),
-        ),
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 500),
-          child: Padding(
-            padding: const EdgeInsets.all(24),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    const Icon(Icons.warning_amber_outlined, color: AppColors.gold, size: 20),
-                    const SizedBox(width: 12),
-                    Text('Detalle de incidencia', style: AppTheme.headingMd),
-                    const Spacer(),
-                    IconButton(
-                      onPressed: () => Navigator.of(ctx).pop(),
-                      icon: const Icon(Icons.close, color: AppColors.textMuted),
-                      visualDensity: VisualDensity.compact,
-                    ),
-                  ],
-                ),
-                Divider(height: 24, color: AppColors.gold.withValues(alpha: 0.15)),
-                _DetailRow(label: 'Tipo', value: inc.type.label),
-                _DetailRow(label: 'Inicio', value: _formatDate(inc.fechaInicio)),
-                _DetailRow(label: 'Fin', value: _formatDate(inc.fechaFin)),
-                _DetailRow(
-                  label: 'Aprobación',
-                  value: inc.estado.label,
-                  valueColor: _estadoColor(inc.estado),
-                ),
-                if (inc.observaciones.isNotEmpty)
-                  _DetailRow(label: 'Observaciones', value: inc.observaciones),
-                if (inc.observacionRechazo != null && inc.observacionRechazo!.isNotEmpty)
-                  _DetailRow(
-                    label: 'Motivo de rechazo',
-                    value: inc.observacionRechazo!,
-                    valueColor: AppColors.error,
-                  ),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-
-  String _formatDate(DateTime dt) {
-    return '${dt.year}-${dt.month.toString().padLeft(2, '0')}-${dt.day.toString().padLeft(2, '0')}';
-  }
-
-  Color _estadoColor(IncidenceEstado e) {
-    switch (e) {
-      case IncidenceEstado.pendiente:
-        return AppColors.warning;
-      case IncidenceEstado.aprobado:
-        return AppColors.success;
-      case IncidenceEstado.rechazado:
-        return AppColors.error;
-    }
   }
 }
 
@@ -184,47 +120,6 @@ class _SectionHeader extends StatelessWidget {
           ),
         ),
       ],
-    );
-  }
-}
-
-class _DetailRow extends StatelessWidget {
-  final String label;
-  final String value;
-  final Color? valueColor;
-
-  const _DetailRow({
-    required this.label,
-    required this.value,
-    this.valueColor,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 6),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          SizedBox(
-            width: 130,
-            child: Text(
-              label,
-              style: const TextStyle(color: AppColors.textMuted, fontSize: 14),
-            ),
-          ),
-          Expanded(
-            child: Text(
-              value,
-              style: TextStyle(
-                color: valueColor ?? AppColors.textWhite,
-                fontSize: 14,
-                fontWeight: FontWeight.w500,
-              ),
-            ),
-          ),
-        ],
-      ),
     );
   }
 }

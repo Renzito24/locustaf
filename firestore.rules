@@ -442,5 +442,35 @@ service cloud.firestore {
     // match declarado, el acceso de cualquier cliente queda cubierto por el
     // default deny de Firestore.
     // ====================================================================
+
+    // ====================================================================
+    // PAYSTUBS
+    // Superadmin : full access
+    // Admin      : full access de su empresa
+    // Superv     : read de su empresa
+    // Empl       : read own, update own (only status and rejectionReason)
+    // ====================================================================
+    match /paystubs/{docId} {
+      allow read: if isAuthenticated()
+        && (isSuperadmin()
+            || ((isAdmin() || isSupervisor()) && inCompany(resource.data.companyId))
+            || (isEmployee() && isOwner(resource.data.userId)
+                && inCompany(resource.data.companyId)));
+      allow create: if isAuthenticated()
+        && (isSuperadmin()
+            || (isAdmin() && request.resource.data.companyId == getCompanyId()
+                && request.resource.data.estado == 'pendiente'));
+      allow update: if isAuthenticated()
+        && (isSuperadmin()
+            || (isAdmin() && inCompany(resource.data.companyId))
+            || (isEmployee() && isOwner(resource.data.userId)
+                && inCompany(resource.data.companyId)
+                && noSensitiveFieldChanges('userId')
+                && request.resource.data.documentUrl == resource.data.documentUrl
+                && request.resource.data.periodo == resource.data.periodo
+                && (request.resource.data.estado == 'aceptado' || request.resource.data.estado == 'rechazado')));
+      allow delete: if isSuperadmin()
+        || (isAdmin() && inCompany(resource.data.companyId));
+    }
   }
 }

@@ -33,6 +33,11 @@ import '../../features/companies/presentation/screens/companies_screen.dart';
 import '../../features/companies/presentation/screens/company_form_screen.dart';
 import '../../features/companies/presentation/screens/company_settings_screen.dart';
 import '../../features/companies/presentation/screens/onboarding_screen.dart';
+import '../../features/paystubs/presentation/screens/paystubs_screen.dart';
+import '../../features/paystubs/presentation/screens/employee_paystubs_screen.dart';
+import '../../features/paystubs/presentation/screens/create_paystub_screen.dart';
+import '../../features/comunicados/presentation/screens/comunicados_screen.dart';
+import '../../features/comunicados/presentation/screens/create_comunicado_screen.dart';
 import 'app_routes.dart';
 import 'route_guard.dart';
 
@@ -191,6 +196,26 @@ class AppRouter {
           GoRoute(
             path: RoutePaths.editWorkplace,
             builder: (context, state) => const WorkplaceFormScreen(),
+          ),
+          GoRoute(
+            path: RoutePaths.paystubs,
+            builder: (context, state) => const PaystubsScreen(),
+          ),
+          GoRoute(
+            path: RoutePaths.employeePaystubs,
+            builder: (context, state) => const EmployeePaystubsScreen(),
+          ),
+          GoRoute(
+            path: RoutePaths.createPaystub,
+            builder: (context, state) => const CreatePaystubScreen(),
+          ),
+          GoRoute(
+            path: RoutePaths.comunicados,
+            builder: (context, state) => const ComunicadosScreen(),
+          ),
+          GoRoute(
+            path: RoutePaths.createComunicado,
+            builder: (context, state) => const CreateComunicadoScreen(),
           ),
         ],
       ),

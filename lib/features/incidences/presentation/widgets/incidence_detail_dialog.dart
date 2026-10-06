@@ -92,7 +92,7 @@ class IncidenceDetailDialog extends ConsumerWidget {
               if (incidence.observaciones.isNotEmpty)
                 _DetailRow(label: 'Observaciones', value: incidence.observaciones),
               if (incidence.documentoRelacionado != null && incidence.documentoRelacionado!.isNotEmpty)
-                _DetailRow(label: 'Documento', value: incidence.documentoRelacionado!),
+                _DocumentRow(url: incidence.documentoRelacionado!),
               if (incidence.observacionRechazo != null && incidence.observacionRechazo!.isNotEmpty)
                 _DetailRow(
                   label: 'Motivo de rechazo',
@@ -241,6 +241,102 @@ class _DetailRow extends StatelessWidget {
                 fontSize: 14,
                 fontWeight: FontWeight.w500,
               ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _DocumentRow extends StatelessWidget {
+  final String url;
+
+  const _DocumentRow({required this.url});
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 6),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const SizedBox(
+            width: 130,
+            child: Text('Documento', style: TextStyle(color: AppColors.textMuted, fontSize: 14)),
+          ),
+          Expanded(
+            child: Align(
+              alignment: Alignment.centerLeft,
+              child: TextButton.icon(
+                onPressed: () {
+                  showDialog(
+                    context: context,
+                    builder: (_) => _ImageViewerDialog(url: url),
+                  );
+                },
+                icon: const Icon(Icons.image, size: 18, color: AppColors.gold),
+                label: const Text(
+                  'Ver imagen',
+                  style: TextStyle(color: AppColors.gold, fontWeight: FontWeight.w600),
+                ),
+                style: TextButton.styleFrom(
+                  padding: EdgeInsets.zero,
+                  minimumSize: const Size(0, 0),
+                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _ImageViewerDialog extends StatelessWidget {
+  final String url;
+
+  const _ImageViewerDialog({required this.url});
+
+  @override
+  Widget build(BuildContext context) {
+    return Dialog(
+      backgroundColor: Colors.transparent,
+      insetPadding: EdgeInsets.zero,
+      child: Stack(
+        fit: StackFit.expand,
+        children: [
+          InteractiveViewer(
+            child: Image.network(
+              url,
+              fit: BoxFit.contain,
+              loadingBuilder: (context, child, loadingProgress) {
+                if (loadingProgress == null) return child;
+                return const Center(
+                  child: CircularProgressIndicator(color: AppColors.gold),
+                );
+              },
+              errorBuilder: (context, error, stackTrace) {
+                return const Center(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(Icons.broken_image, size: 64, color: AppColors.textMuted),
+                      SizedBox(height: 16),
+                      Text('No se pudo cargar la imagen', style: TextStyle(color: Colors.white)),
+                    ],
+                  ),
+                );
+              },
+            ),
+          ),
+          Positioned(
+            top: 16,
+            left: 16,
+            child: IconButton(
+              icon: const Icon(Icons.arrow_back, color: Colors.white, size: 30),
+              onPressed: () => Navigator.of(context).pop(),
             ),
           ),
         ],

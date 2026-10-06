@@ -39,6 +39,11 @@ class EmployeeBottomNavBar extends ConsumerWidget {
       label: 'Perfil',
       route: RoutePaths.profile,
     ),
+    _Destination(
+      icon: Icons.receipt_long_outlined,
+      label: 'Recibos',
+      route: RoutePaths.employeePaystubs,
+    ),
   ];
 
   @override

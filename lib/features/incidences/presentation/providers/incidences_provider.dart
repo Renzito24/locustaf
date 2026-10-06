@@ -11,6 +11,9 @@ import '../../../../core/providers/async_action_state.dart';
 import '../../../../core/services/logging_service.dart';
 import '../../../../core/services/stream_retry.dart';
 import '../../../../core/errors/error_handler.dart';
+import '../../../../core/services/storage_service.dart';
+import '../../../../core/utils/file_utils.dart';
+import 'package:file_picker/file_picker.dart';
 
 final incidenceRepositoryProvider = Provider<IncidenceRepository>((ref) {
   final companyId = ref.watch(currentCompanyIdProvider) ?? '';
@@ -149,51 +152,154 @@ final finalizadasCountProvider = Provider<int>((ref) {
   return ref.watch(filteredIncidencesProvider).where((i) => i.state == IncidenceState.finalizada).length;
 });
 
-class IncidenceCreateNotifier extends Notifier<AsyncActionState> {
-  @override
-  AsyncActionState build() => const AsyncActionState.idle();
+class IncidenceActionState {
+  final bool isLoading;
+  final double uploadProgress;
+  final String? error;
+  final bool isSuccess;
 
-  Future<void> createIncidence(IncidenceModel incidence) async {
-    state = const AsyncActionState.loading();
+  const IncidenceActionState({
+    this.isLoading = false,
+    this.uploadProgress = 0,
+    this.error,
+    this.isSuccess = false,
+  });
+
+  bool get hasError => error != null;
+
+  AsyncActionStatus get status {
+    if (isLoading) return AsyncActionStatus.loading;
+    if (isSuccess) return AsyncActionStatus.success;
+    if (error != null) return AsyncActionStatus.failure;
+    return AsyncActionStatus.idle;
+  }
+
+  const IncidenceActionState.idle() : this();
+}
+
+class IncidenceCreateNotifier extends Notifier<IncidenceActionState> {
+  @override
+  IncidenceActionState build() => const IncidenceActionState.idle();
+
+  Future<void> createIncidence({
+    required IncidenceModel incidence,
+    PlatformFile? file,
+  }) async {
+    state = const IncidenceActionState(isLoading: true, uploadProgress: 0);
+
     final repo = ref.read(incidenceRepositoryProvider);
+    final storageService = ref.read(storageServiceProvider);
+    final companyId = ref.read(currentCompanyIdProvider);
+    String? uploadedUrl;
+
     try {
-      await repo.createIncidence(incidence);
-      state = const AsyncActionState.success();
+      if (file != null) {
+        final docId = ref.read(firestoreServiceProvider).generateId('incidences');
+        final safeName = FileUtils.sanitizeFileName(file.name);
+        final storagePath = 'companies/$companyId/incidences/${incidence.userId}/${docId}_$safeName';
+
+        uploadedUrl = await storageService.uploadFile(
+          path: storagePath,
+          file: file,
+          onProgress: (progress) {
+            state = IncidenceActionState(isLoading: true, uploadProgress: progress);
+          },
+        );
+      }
+
+      state = const IncidenceActionState(isLoading: true, uploadProgress: 1);
+
+      final inc = incidence.copyWith(
+        documentoRelacionado: uploadedUrl ?? incidence.documentoRelacionado,
+      );
+
+      await repo.createIncidence(inc);
+      state = const IncidenceActionState(isSuccess: true, uploadProgress: 1);
+    } on StorageServiceException catch (e) {
+      state = IncidenceActionState(error: e.message);
     } catch (e) {
-      state = AsyncActionState.failure(ErrorHandler.parse(e).message);
+      if (uploadedUrl != null) {
+        try {
+          await storageService.deleteFile(uploadedUrl);
+        } catch (_) {}
+      }
+      state = IncidenceActionState(error: ErrorHandler.parse(e).message);
     }
   }
 
   void reset() {
-    state = const AsyncActionState.idle();
+    state = const IncidenceActionState.idle();
   }
 }
 
-final incidenceCreateProvider = NotifierProvider<IncidenceCreateNotifier, AsyncActionState>(
+final incidenceCreateProvider = NotifierProvider<IncidenceCreateNotifier, IncidenceActionState>(
   IncidenceCreateNotifier.new,
 );
 
-class IncidenceUpdateNotifier extends Notifier<AsyncActionState> {
+class IncidenceUpdateNotifier extends Notifier<IncidenceActionState> {
   @override
-  AsyncActionState build() => const AsyncActionState.idle();
+  IncidenceActionState build() => const IncidenceActionState.idle();
 
-  Future<void> updateIncidence(IncidenceModel incidence) async {
-    state = const AsyncActionState.loading();
+  Future<void> updateIncidence({
+    required IncidenceModel incidence,
+    PlatformFile? file,
+  }) async {
+    state = const IncidenceActionState(isLoading: true, uploadProgress: 0);
+
     final repo = ref.read(incidenceRepositoryProvider);
+    final storageService = ref.read(storageServiceProvider);
+    final companyId = ref.read(currentCompanyIdProvider);
+    String? uploadedUrl;
+
     try {
-      await repo.updateIncidence(incidence);
-      state = const AsyncActionState.success();
+      if (file != null) {
+        final docId = incidence.id.isEmpty
+            ? ref.read(firestoreServiceProvider).generateId('incidences')
+            : incidence.id;
+        final safeName = FileUtils.sanitizeFileName(file.name);
+        final storagePath = 'companies/$companyId/incidences/${incidence.userId}/${docId}_$safeName';
+
+        uploadedUrl = await storageService.uploadFile(
+          path: storagePath,
+          file: file,
+          onProgress: (progress) {
+            state = IncidenceActionState(isLoading: true, uploadProgress: progress);
+          },
+        );
+
+        if (incidence.documentoRelacionado != null && incidence.documentoRelacionado!.startsWith('http')) {
+          try {
+            await storageService.deleteFile(incidence.documentoRelacionado!);
+          } catch (_) {}
+        }
+      }
+
+      state = const IncidenceActionState(isLoading: true, uploadProgress: 1);
+
+      final inc = incidence.copyWith(
+        documentoRelacionado: uploadedUrl ?? incidence.documentoRelacionado,
+      );
+
+      await repo.updateIncidence(inc);
+      state = const IncidenceActionState(isSuccess: true, uploadProgress: 1);
+    } on StorageServiceException catch (e) {
+      state = IncidenceActionState(error: e.message);
     } catch (e) {
-      state = AsyncActionState.failure(ErrorHandler.parse(e).message);
+      if (uploadedUrl != null) {
+        try {
+          await storageService.deleteFile(uploadedUrl);
+        } catch (_) {}
+      }
+      state = IncidenceActionState(error: ErrorHandler.parse(e).message);
     }
   }
 
   void reset() {
-    state = const AsyncActionState.idle();
+    state = const IncidenceActionState.idle();
   }
 }
 
-final incidenceUpdateProvider = NotifierProvider<IncidenceUpdateNotifier, AsyncActionState>(
+final incidenceUpdateProvider = NotifierProvider<IncidenceUpdateNotifier, IncidenceActionState>(
   IncidenceUpdateNotifier.new,
 );
 
