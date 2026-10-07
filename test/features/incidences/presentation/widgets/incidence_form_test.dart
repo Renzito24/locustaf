@@ -44,7 +44,7 @@ void main() {
     expect(find.text('Fecha inicio'), findsOneWidget);
     expect(find.text('Fecha fin'), findsOneWidget);
     expect(find.text('Observaciones'), findsOneWidget);
-    expect(find.text('Documento relacionado (opcional)'), findsOneWidget);
+    expect(find.text('Seleccionar archivo (opcional)'), findsOneWidget);
     expect(find.text('Crear incidencia'), findsOneWidget);
   });
 

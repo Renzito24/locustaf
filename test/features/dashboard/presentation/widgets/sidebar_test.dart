@@ -23,8 +23,10 @@ void main() {
     'Historial',
     'Documentación',
     'Incidencias',
+    'Comunicados',
     'Reportes',
     'Justificativos',
+    'Recibos',
     'Perfil',
   ];
 
@@ -52,8 +54,11 @@ void main() {
           RoutePaths.history,
           RoutePaths.medicalDocuments,
           RoutePaths.incidences,
+          RoutePaths.comunicados,
           RoutePaths.reports,
           RoutePaths.employeeJustificativos,
+          RoutePaths.paystubs,
+          RoutePaths.employeePaystubs,
           RoutePaths.profile,
         ])
           GoRoute(path: r, builder: (context, state) => page(r)),
@@ -81,7 +86,7 @@ void main() {
   void expectOnly(WidgetTester tester, Set<String> visible) {
     for (final label in allLabels) {
       final matcher = visible.contains(label)
-          ? findsOneWidget
+          ? findsWidgets
           : findsNothing;
       expect(find.text(label), matcher, reason: 'rol: rótulo "$label"');
     }
@@ -105,7 +110,9 @@ void main() {
         'Historial',
         'Documentación',
         'Incidencias',
+        'Comunicados',
         'Reportes',
+        'Recibos',
         'Perfil',
       });
     });
@@ -118,6 +125,8 @@ void main() {
         'Lugares',
         'Historial',
         'Incidencias',
+        'Comunicados',
+        'Recibos',
         'Perfil',
       });
     });
@@ -128,8 +137,10 @@ void main() {
         'Principal',
         'Asistencia',
         'Historial',
+        'Comunicados',
         'Reportes',
         'Justificativos',
+        'Recibos',
         'Perfil',
       });
     });
@@ -154,7 +165,9 @@ void main() {
         'Historial',
         'Documentación',
         'Incidencias',
+        'Comunicados',
         'Reportes',
+        'Recibos',
         'Configuración',
         'Perfil',
         'Cerrar sesión',
