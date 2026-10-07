@@ -42,7 +42,8 @@ class ComunicadosList extends ConsumerWidget {
       separatorBuilder: (context, index) => const Divider(height: 1),
       itemBuilder: (context, index) {
         final com = comunicados[index];
-        final isRead = currentUser != null && com.readBy.contains(currentUser.id);
+        final readIdsAsync = ref.watch(comunicadosReadIdsProvider);
+        final isRead = currentUser != null && (readIdsAsync.value?.contains(com.id) ?? false);
 
         return ListTile(
           contentPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
@@ -98,7 +99,8 @@ class _ComunicadoDetailDialogState extends ConsumerState<ComunicadoDetailDialog>
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!widget.isAdmin) {
         final user = ref.read(currentUserModelProvider);
-        if (user != null && !widget.comunicado.readBy.contains(user.id)) {
+        final readIds = ref.read(comunicadosReadIdsProvider).value ?? [];
+        if (user != null && !readIds.contains(widget.comunicado.id)) {
           ref.read(comunicadoActionProvider.notifier).markAsRead(widget.comunicado.id);
         }
       }
@@ -163,7 +165,7 @@ class _ComunicadoDetailDialogState extends ConsumerState<ComunicadoDetailDialog>
                 style: TextStyle(fontWeight: FontWeight.bold),
               ),
               const SizedBox(height: 8),
-              _ReadByList(readByIds: widget.comunicado.readBy),
+              _ReadByList(comunicadoId: widget.comunicado.id),
             ],
             const SizedBox(height: 24),
             Align(
@@ -185,35 +187,43 @@ class _ComunicadoDetailDialogState extends ConsumerState<ComunicadoDetailDialog>
 }
 
 class _ReadByList extends ConsumerWidget {
-  final List<String> readByIds;
+  final String comunicadoId;
 
-  const _ReadByList({required this.readByIds});
+  const _ReadByList({required this.comunicadoId});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    if (readByIds.isEmpty) {
-      return const Text('Nadie ha visto este comunicado aún.', style: TextStyle(color: AppColors.textSecondary));
-    }
+    final readersAsync = ref.watch(comunicadoReadersProvider(comunicadoId));
 
-    final usersAsync = ref.watch(usersStreamProvider);
+    return readersAsync.when(
+      data: (readByIds) {
+        if (readByIds.isEmpty) {
+          return const Text('Nadie ha visto este comunicado aún.', style: TextStyle(color: AppColors.textSecondary));
+        }
 
-    return usersAsync.when(
-      data: (users) {
-        final readUsers = users.where((u) => readByIds.contains(u.id)).toList();
-        return Wrap(
-          spacing: 8,
-          runSpacing: 8,
-          children: readUsers.map((u) {
-            return Chip(
-              label: Text('${u.nombre} ${u.apellido}'),
-              backgroundColor: AppColors.gold.withValues(alpha: 0.1),
-              labelStyle: const TextStyle(color: AppColors.textPrimary, fontSize: 12),
+        final usersAsync = ref.watch(usersStreamProvider);
+
+        return usersAsync.when(
+          data: (users) {
+            final readUsers = users.where((u) => readByIds.contains(u.id)).toList();
+            return Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: readUsers.map((u) {
+                return Chip(
+                  label: Text('${u.nombre} ${u.apellido}'),
+                  backgroundColor: AppColors.gold.withValues(alpha: 0.1),
+                  labelStyle: const TextStyle(color: AppColors.textPrimary, fontSize: 12),
+                );
+              }).toList(),
             );
-          }).toList(),
+          },
+          loading: () => const CircularProgressIndicator(),
+          error: (e, st) => const Text('Error al cargar usuarios'),
         );
       },
       loading: () => const CircularProgressIndicator(),
-      error: (e, st) => const Text('Error al cargar usuarios'),
+      error: (e, st) => const Text('Error al cargar lecturas'),
     );
   }
 }

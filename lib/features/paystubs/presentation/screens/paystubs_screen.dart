@@ -12,7 +12,7 @@ class PaystubsScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final paystubs = ref.watch(filteredPaystubsProvider);
+    final paystubsAsync = ref.watch(filteredPaystubsProvider);
     final usersAsync = ref.watch(usersStreamProvider);
     final isAdmin = ref.watch(isAdminProvider);
 
@@ -31,10 +31,45 @@ class PaystubsScreen extends ConsumerWidget {
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
               elevation: 0,
               color: Colors.white,
-              child: PaystubsList(
-                paystubs: paystubs,
-                usersAsync: usersAsync,
-                isAdmin: isAdmin,
+              child: paystubsAsync.when(
+                data: (paystubs) => PaystubsList(
+                  paystubs: paystubs,
+                  usersAsync: usersAsync,
+                  isAdmin: isAdmin,
+                ),
+                loading: () => const Center(
+                  child: Padding(
+                    padding: EdgeInsets.all(32.0),
+                    child: CircularProgressIndicator(),
+                  ),
+                ),
+                error: (error, stack) => Center(
+                  child: Padding(
+                    padding: const EdgeInsets.all(32.0),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(Icons.error_outline, color: Colors.red, size: 48),
+                        const SizedBox(height: 16),
+                        Text(
+                          'Error al cargar recibos',
+                          style: Theme.of(context).textTheme.titleLarge,
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          error.toString(),
+                          textAlign: TextAlign.center,
+                          style: const TextStyle(color: Colors.red),
+                        ),
+                        const SizedBox(height: 16),
+                        ElevatedButton(
+                          onPressed: () => ref.invalidate(filteredPaystubsProvider),
+                          child: const Text('Reintentar'),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
               ),
             ),
           ),

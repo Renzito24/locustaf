@@ -87,10 +87,13 @@ final paystubsFilterProvider = NotifierProvider<PaystubsFilterNotifier, Paystubs
   PaystubsFilterNotifier.new,
 );
 
-final filteredPaystubsProvider = Provider<List<PaystubModel>>((ref) {
+final filteredPaystubsProvider = Provider<AsyncValue<List<PaystubModel>>>((ref) {
   final paystubsAsync = ref.watch(paystubsStreamProvider);
   final usersAsync = ref.watch(usersStreamProvider);
   final filter = ref.watch(paystubsFilterProvider);
+
+  if (paystubsAsync.isLoading) return const AsyncValue.loading();
+  if (paystubsAsync.hasError) return AsyncValue.error(paystubsAsync.error!, paystubsAsync.stackTrace!);
 
   final paystubs = paystubsAsync.value ?? [];
   final users = usersAsync.value ?? [];
@@ -120,11 +123,12 @@ final filteredPaystubsProvider = Provider<List<PaystubModel>>((ref) {
 
   filtered.sort((a, b) => b.createdAt.compareTo(a.createdAt));
 
-  return filtered;
+  return AsyncValue.data(filtered);
 });
 
 final totalPaystubsProvider = Provider<int>((ref) {
-  return ref.watch(filteredPaystubsProvider).length;
+  final paystubsAsync = ref.watch(filteredPaystubsProvider);
+  return paystubsAsync.value?.length ?? 0;
 });
 
 class PaystubActionState {

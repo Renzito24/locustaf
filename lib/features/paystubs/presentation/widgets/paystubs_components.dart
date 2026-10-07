@@ -35,7 +35,7 @@ class PaystubsHeader extends ConsumerWidget {
                   isAdmin ? 'Recibos de Sueldo' : 'Mis Recibos de Sueldo',
                   style: Theme.of(context).textTheme.headlineMedium?.copyWith(
                         fontWeight: FontWeight.bold,
-                        color: AppColors.textPrimary,
+                        color: AppColors.textWhite,
                       ),
                 ),
                 const SizedBox(height: 8),

@@ -37,7 +37,7 @@ class ComunicadosScreen extends ConsumerWidget {
                             'Comunicados',
                             style: Theme.of(context).textTheme.headlineMedium?.copyWith(
                                   fontWeight: FontWeight.bold,
-                                  color: AppColors.textPrimary,
+                                  color: AppColors.textWhite,
                                 ),
                           ),
                           const SizedBox(height: 8),
@@ -92,7 +92,28 @@ class ComunicadosScreen extends ConsumerWidget {
                   error: (e, _) => Center(
                     child: Padding(
                       padding: const EdgeInsets.all(32.0),
-                      child: Text('Error: $e', style: const TextStyle(color: AppColors.error)),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Icon(Icons.error_outline, color: Colors.red, size: 48),
+                          const SizedBox(height: 16),
+                          Text(
+                            'Error al cargar comunicados',
+                            style: Theme.of(context).textTheme.titleLarge,
+                          ),
+                          const SizedBox(height: 8),
+                          Text(
+                            e.toString(),
+                            textAlign: TextAlign.center,
+                            style: const TextStyle(color: Colors.red),
+                          ),
+                          const SizedBox(height: 16),
+                          ElevatedButton(
+                            onPressed: () => ref.invalidate(comunicadosForUserProvider),
+                            child: const Text('Reintentar'),
+                          ),
+                        ],
+                      ),
                     ),
                   ),
                 ),

@@ -145,7 +145,19 @@ class FirestoreService {
   }) {
     var query = _firestore.collection(path) as Query<Map<String, dynamic>>;
     filters.forEach((field, value) {
-      query = query.where(field, isEqualTo: value);
+      if (field == 'arrayContains') {
+        final map = value as Map<String, dynamic>;
+        map.forEach((k, v) {
+          query = query.where(k, arrayContains: v);
+        });
+      } else if (field == 'arrayContainsAny') {
+        final map = value as Map<String, dynamic>;
+        map.forEach((k, v) {
+          query = query.where(k, arrayContainsAny: v);
+        });
+      } else {
+        query = query.where(field, isEqualTo: value);
+      }
     });
     if (orderField != null) {
       query = query.orderBy(orderField, descending: descending);

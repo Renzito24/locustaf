@@ -453,8 +453,8 @@ service cloud.firestore {
     match /paystubs/{docId} {
       allow read: if isAuthenticated()
         && (isSuperadmin()
-            || ((isAdmin() || isSupervisor()) && inCompany(resource.data.companyId))
-            || (isEmployee() && isOwner(resource.data.userId)
+            || (isAdmin() && inCompany(resource.data.companyId))
+            || ((isSupervisor() || isEmployee()) && isOwner(resource.data.userId)
                 && inCompany(resource.data.companyId)));
       allow create: if isAuthenticated()
         && (isSuperadmin()
@@ -463,12 +463,49 @@ service cloud.firestore {
       allow update: if isAuthenticated()
         && (isSuperadmin()
             || (isAdmin() && inCompany(resource.data.companyId))
-            || (isEmployee() && isOwner(resource.data.userId)
+            || ((isSupervisor() || isEmployee()) && isOwner(resource.data.userId)
                 && inCompany(resource.data.companyId)
                 && noSensitiveFieldChanges('userId')
                 && request.resource.data.documentUrl == resource.data.documentUrl
                 && request.resource.data.periodo == resource.data.periodo
                 && (request.resource.data.estado == 'aceptado' || request.resource.data.estado == 'rechazado')));
+      allow delete: if isSuperadmin()
+        || (isAdmin() && inCompany(resource.data.companyId));
+    }
+
+    // ====================================================================
+    // COMUNICADOS
+    // Admin: full access (de su empresa)
+    // Supervisor/Employee: read (si es para todos o si está en destinatarios)
+    // ====================================================================
+    match /comunicados/{docId} {
+      allow read: if isAuthenticated()
+        && (isSuperadmin()
+            || (isAdmin() && inCompany(resource.data.companyId))
+            || ((isSupervisor() || isEmployee()) && inCompany(resource.data.companyId)
+                && (resource.data.targetType == 'all'
+                    || request.auth.uid in resource.data.targetUserIds
+                    || (getUserData() != null && getUserData().lugarDeTrabajoId in resource.data.targetWorkplaceIds))));
+      allow create: if isAuthenticated()
+        && (isSuperadmin()
+            || (isAdmin() && request.resource.data.companyId == getCompanyId()));
+      allow update: if isAuthenticated()
+        && (isSuperadmin()
+            || (isAdmin() && inCompany(resource.data.companyId)));
+      allow delete: if isSuperadmin()
+        || (isAdmin() && inCompany(resource.data.companyId));
+    }
+
+    match /communicationReads/{docId} {
+      allow read: if isAuthenticated()
+        && (isSuperadmin()
+            || (isAdmin() && inCompany(resource.data.companyId))
+            || ((isSupervisor() || isEmployee()) && isOwner(resource.data.userId)));
+      allow create: if isAuthenticated()
+        && (isSuperadmin()
+            || (isAdmin() && request.resource.data.companyId == getCompanyId())
+            || ((isSupervisor() || isEmployee()) && isOwner(request.resource.data.userId)));
+      allow update: if false;
       allow delete: if isSuperadmin()
         || (isAdmin() && inCompany(resource.data.companyId));
     }
