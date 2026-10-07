@@ -10,4 +10,4 @@ abstract class PaymentRepository {
   /// Requiere el índice compuesto (companyId ASC, createdAt DESC) en Firestore.
   Stream<List<PaymentModel>> getPaymentsByCompany(String companyId,
       {int limit = 100});
-}
+}

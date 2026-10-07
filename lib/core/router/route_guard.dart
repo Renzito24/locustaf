@@ -85,6 +85,8 @@ String? resolveRedirect(RouteGuardState s, String location) {
       '/reports',
       '/justificativos',
       '/profile',
+      '/comunicados',
+      '/mis_recibos',
     ];
     if (!allowed.any((r) => path.startsWith(r)) &&
         path != '/' &&

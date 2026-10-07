@@ -155,4 +155,4 @@ final isEmployeeProvider = Provider<bool>((ref) {
 final logoutProvider = Provider<Future<void> Function()>((ref) {
   final service = ref.read(authServiceProvider);
   return service.logout;
-});
+});
