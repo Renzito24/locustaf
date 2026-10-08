@@ -1,0 +1,15 @@
+[
+  {
+    "origin": [
+      "http://localhost:5000",
+      "https://locustaf-31ed2.web.app",
+      "https://locustaf-31ed2.firebaseapp.com"
+    ],
+    "method": ["GET"],
+    "responseHeader": [
+      "Content-Type",
+      "Authorization"
+    ],
+    "maxAgeSeconds": 3600
+  }
+]

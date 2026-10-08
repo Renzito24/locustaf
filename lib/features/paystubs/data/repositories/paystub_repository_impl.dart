@@ -1,3 +1,4 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../../../core/models/user_model.dart';
 import '../../../../core/services/firestore_service.dart';
 import '../../domain/repositories/paystub_repository.dart';
@@ -24,18 +25,18 @@ class PaystubRepositoryImpl implements PaystubRepository {
       return Stream.value(<PaystubModel>[]);
     }
     
-    if (_role == UserRole.employee || (_role == null && _userId != null)) {
+    if (_role == UserRole.employee || _role == UserRole.supervisor || (_role == null && _userId != null)) {
       if (_userId == null) return Stream.value(<PaystubModel>[]);
       return _firestoreService.queryStreamWithFilters<PaystubModel>(
         path: 'paystubs',
-        filters: {'companyId': _companyId, 'userId': _userId, 'isActive': true},
+        filters: {'companyId': _companyId, 'userId': _userId},
         fromJson: PaystubModel.fromJson,
       );
     }
     
     return _firestoreService.queryStreamWithFilters<PaystubModel>(
       path: 'paystubs',
-      filters: {'companyId': _companyId, 'isActive': true},
+      filters: {'companyId': _companyId},
       fromJson: PaystubModel.fromJson,
     );
   }
@@ -58,7 +59,8 @@ class PaystubRepositoryImpl implements PaystubRepository {
   }) async {
     final Map<String, dynamic> data = {
       'estado': estado.name,
-      'updatedAt': DateTime.now().toUtc().toIso8601String(),
+      'updatedAt': FieldValue.serverTimestamp(),
+      'respondedAt': FieldValue.serverTimestamp(),
     };
     
     if (observacionRechazo != null) {
@@ -73,14 +75,10 @@ class PaystubRepositoryImpl implements PaystubRepository {
   }
 
   @override
-  Future<void> softDeletePaystub(String id) async {
-    await _firestoreService.updateDocument(
+  Future<void> deletePaystub(String id) async {
+    await _firestoreService.deleteDocument(
       path: 'paystubs',
       documentId: id,
-      data: {
-        'isActive': false,
-        'updatedAt': DateTime.now().toUtc().toIso8601String(),
-      },
     );
   }
 }

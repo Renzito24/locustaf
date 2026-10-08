@@ -50,6 +50,11 @@ class ComunicadoRepositoryImpl implements ComunicadoRepository {
   }
 
   @override
+  Future<void> deleteComunicado(String comunicadoId) async {
+    await FirebaseFirestore.instance.collection('comunicados').doc(comunicadoId).delete();
+  }
+
+  @override
   Stream<List<ComunicadoModel>> streamComunicados() {
     if (_role == UserRole.admin || _role == UserRole.superadmin) {
       return _firestoreService.queryStreamWithFilters(

@@ -15,11 +15,16 @@ class ComunicadoModel extends Equatable {
   final String id;
   final String companyId;
   final String title;
-  final String content;
+  /// Texto del comunicado. null en comunicados nuevos (solo PDF); no vacío en
+  /// comunicados legacy de texto.
+  final String? content;
   final TargetType targetType;
   final List<String> targetWorkplaceIds;
   final List<String> targetUserIds;
-  final List<String> readBy;
+  /// Nombre original del archivo PDF (solo presentación / descarga).
+  final String? fileName;
+  /// Ruta relativa en Firebase Storage.
+  final String? storagePath;
   final String createdBy;
   final DateTime createdAt;
 
@@ -27,11 +32,12 @@ class ComunicadoModel extends Equatable {
     required this.id,
     required this.companyId,
     required this.title,
-    required this.content,
+    this.content,
     required this.targetType,
     this.targetWorkplaceIds = const [],
     this.targetUserIds = const [],
-    this.readBy = const [],
+    this.fileName,
+    this.storagePath,
     required this.createdBy,
     required this.createdAt,
   });
@@ -41,11 +47,12 @@ class ComunicadoModel extends Equatable {
       id: json['id'] ?? '',
       companyId: json['companyId'] ?? '',
       title: json['title'] ?? '',
-      content: json['content'] ?? '',
+      content: json['content'] as String?,
       targetType: TargetTypeExtension.fromString(json['targetType'] ?? 'all'),
       targetWorkplaceIds: List<String>.from(json['targetWorkplaceIds'] ?? []),
       targetUserIds: List<String>.from(json['targetUserIds'] ?? []),
-      readBy: List<String>.from(json['readBy'] ?? []),
+      fileName: json['fileName'] as String?,
+      storagePath: json['storagePath'] as String?,
       createdBy: json['createdBy'] ?? '',
       createdAt: json['createdAt'] is Timestamp 
           ? (json['createdAt'] as Timestamp).toDate().toLocal()
@@ -58,11 +65,12 @@ class ComunicadoModel extends Equatable {
       'id': id,
       'companyId': companyId,
       'title': title,
-      'content': content,
+      if (content != null) 'content': content,
       'targetType': targetType.name,
       'targetWorkplaceIds': targetWorkplaceIds,
       'targetUserIds': targetUserIds,
-      'readBy': readBy,
+      if (fileName != null) 'fileName': fileName,
+      if (storagePath != null) 'storagePath': storagePath,
       'createdBy': createdBy,
       'createdAt': Timestamp.fromDate(createdAt.toUtc()),
     };
@@ -76,7 +84,8 @@ class ComunicadoModel extends Equatable {
     TargetType? targetType,
     List<String>? targetWorkplaceIds,
     List<String>? targetUserIds,
-    List<String>? readBy,
+    String? fileName,
+    String? storagePath,
     String? createdBy,
     DateTime? createdAt,
   }) {
@@ -88,12 +97,13 @@ class ComunicadoModel extends Equatable {
       targetType: targetType ?? this.targetType,
       targetWorkplaceIds: targetWorkplaceIds ?? this.targetWorkplaceIds,
       targetUserIds: targetUserIds ?? this.targetUserIds,
-      readBy: readBy ?? this.readBy,
+      fileName: fileName ?? this.fileName,
+      storagePath: storagePath ?? this.storagePath,
       createdBy: createdBy ?? this.createdBy,
       createdAt: createdAt ?? this.createdAt,
     );
   }
 
   @override
-  List<Object?> get props => [id, companyId, title, content, targetType, targetWorkplaceIds, targetUserIds, readBy, createdBy, createdAt];
+  List<Object?> get props => [id, companyId, title, content, targetType, targetWorkplaceIds, targetUserIds, fileName, storagePath, createdBy, createdAt];
 }

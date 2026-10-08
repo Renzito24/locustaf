@@ -1,7 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:file_picker/file_picker.dart';
-
-import '../../../employees/presentation/providers/users_provider.dart';
 import '../../../authentication/presentation/providers/auth_provider.dart';
 import '../../domain/models/paystub_model.dart';
 import '../../data/repositories/paystub_repository_impl.dart';
@@ -41,30 +39,39 @@ class PaystubsFilterState {
   final String searchQuery;
   final String? employeeId;
   final PaystubEstado? state;
+  final String? periodo;
 
   const PaystubsFilterState({
     this.searchQuery = '',
     this.employeeId,
     this.state,
+    this.periodo,
   });
 
   PaystubsFilterState copyWith({
     String? searchQuery,
     String? employeeId,
     PaystubEstado? state,
+    String? periodo,
     bool clearState = false,
   }) {
     return PaystubsFilterState(
       searchQuery: searchQuery ?? this.searchQuery,
       employeeId: employeeId ?? this.employeeId,
       state: clearState ? null : (state ?? this.state),
+      periodo: periodo ?? this.periodo,
     );
   }
 }
 
 class PaystubsFilterNotifier extends Notifier<PaystubsFilterState> {
   @override
-  PaystubsFilterState build() => const PaystubsFilterState();
+  PaystubsFilterState build() {
+    final now = DateTime.now();
+    return PaystubsFilterState(
+      periodo: '${now.year}-${now.month.toString().padLeft(2, '0')}',
+    );
+  }
 
   void setSearchQuery(String value) {
     state = state.copyWith(searchQuery: value.trim().toLowerCase());
@@ -78,8 +85,15 @@ class PaystubsFilterNotifier extends Notifier<PaystubsFilterState> {
     state = state.copyWith(state: stateValue, clearState: stateValue == null);
   }
 
+  void setPeriodo(String? periodo) {
+    state = state.copyWith(periodo: periodo);
+  }
+
   void clear() {
-    state = const PaystubsFilterState();
+    final now = DateTime.now();
+    state = PaystubsFilterState(
+      periodo: '${now.year}-${now.month.toString().padLeft(2, '0')}',
+    );
   }
 }
 
@@ -89,28 +103,17 @@ final paystubsFilterProvider = NotifierProvider<PaystubsFilterNotifier, Paystubs
 
 final filteredPaystubsProvider = Provider<AsyncValue<List<PaystubModel>>>((ref) {
   final paystubsAsync = ref.watch(paystubsStreamProvider);
-  final usersAsync = ref.watch(usersStreamProvider);
   final filter = ref.watch(paystubsFilterProvider);
 
   if (paystubsAsync.isLoading) return const AsyncValue.loading();
   if (paystubsAsync.hasError) return AsyncValue.error(paystubsAsync.error!, paystubsAsync.stackTrace!);
 
   final paystubs = paystubsAsync.value ?? [];
-  final users = usersAsync.value ?? [];
 
-  final userMap = {for (final u in users) u.id: u};
+  List<PaystubModel> filtered = List.from(paystubs);
 
-  List<PaystubModel> filtered = paystubs.where((i) => i.isActive).toList();
-
-  if (filter.searchQuery.isNotEmpty) {
-    final q = filter.searchQuery;
-    filtered = filtered.where((p) {
-      final user = userMap[p.userId];
-      if (user == null) return false;
-      return user.nombre.toLowerCase().contains(q) ||
-          user.apellido.toLowerCase().contains(q) ||
-          p.periodo.toLowerCase().contains(q);
-    }).toList();
+  if (filter.periodo != null && filter.periodo!.isNotEmpty) {
+    filtered = filtered.where((p) => p.periodo == filter.periodo).toList();
   }
 
   if (filter.employeeId != null) {
@@ -193,6 +196,8 @@ class PaystubCreateNotifier extends Notifier<PaystubActionState> {
         userId: userId,
         periodo: periodo,
         documentUrl: uploadedUrl,
+        storagePath: storagePath,
+        fileName: safeName,
         estado: PaystubEstado.pendiente,
         createdAt: DateTime.now(),
         updatedAt: DateTime.now(),
@@ -226,11 +231,23 @@ class PaystubDeleteNotifier extends Notifier<AsyncActionState> {
   @override
   AsyncActionState build() => const AsyncActionState.idle();
 
-  Future<void> softDelete(String id) async {
+  Future<void> deletePaystub(PaystubModel paystub) async {
     state = const AsyncActionState.loading();
     final repo = ref.read(paystubRepositoryProvider);
+    final storageService = ref.read(storageServiceProvider);
     try {
-      await repo.softDeletePaystub(id);
+      await repo.deletePaystub(paystub.id);
+      
+      // Also delete the file from Storage to free up space
+      final pathToDelete = paystub.storagePath ?? paystub.documentUrl;
+      if (pathToDelete.isNotEmpty) {
+        try {
+          await storageService.deleteFile(pathToDelete);
+        } catch (e) {
+          LoggingService.instance.error('No se pudo borrar el archivo de Storage', error: e);
+        }
+      }
+      
       state = const AsyncActionState.success();
     } catch (e) {
       state = AsyncActionState.failure(ErrorHandler.parse(e).message);

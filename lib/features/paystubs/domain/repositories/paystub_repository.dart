@@ -8,5 +8,5 @@ abstract class PaystubRepository {
     required PaystubEstado estado,
     String? observacionRechazo,
   });
-  Future<void> softDeletePaystub(String id);
+  Future<void> deletePaystub(String id);
 }

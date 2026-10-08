@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
+import 'package:file_picker/file_picker.dart';
 
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/theme/app_theme.dart';
@@ -21,8 +22,8 @@ class CreateComunicadoScreen extends ConsumerStatefulWidget {
 class _CreateComunicadoScreenState extends ConsumerState<CreateComunicadoScreen> {
   final _formKey = GlobalKey<FormState>();
   final _titleController = TextEditingController();
-  final _contentController = TextEditingController();
-  
+
+  PlatformFile? _selectedFile;
   TargetType _targetType = TargetType.all;
   final List<String> _selectedWorkplaces = [];
   final List<String> _selectedUsers = [];
@@ -30,12 +31,38 @@ class _CreateComunicadoScreenState extends ConsumerState<CreateComunicadoScreen>
   @override
   void dispose() {
     _titleController.dispose();
-    _contentController.dispose();
     super.dispose();
+  }
+
+  Future<void> _pickFile() async {
+    final result = await FilePicker.platform.pickFiles(
+      type: FileType.custom,
+      allowedExtensions: ['pdf'],
+      withData: true,
+    );
+    if (result != null && result.files.isNotEmpty) {
+      final file = result.files.first;
+      if (file.size > 10 * 1024 * 1024) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('El archivo supera el límite de 10 MB')),
+          );
+        }
+        return;
+      }
+      setState(() => _selectedFile = file);
+    }
   }
 
   void _submit() {
     if (!_formKey.currentState!.validate()) return;
+
+    if (_selectedFile == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Debe adjuntar un archivo PDF')),
+      );
+      return;
+    }
 
     if (_targetType == TargetType.workplace && _selectedWorkplaces.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -53,7 +80,7 @@ class _CreateComunicadoScreenState extends ConsumerState<CreateComunicadoScreen>
 
     ref.read(comunicadoActionProvider.notifier).createComunicado(
       title: _titleController.text.trim(),
-      content: _contentController.text.trim(),
+      pdfFile: _selectedFile!,
       targetType: _targetType,
       targetWorkplaceIds: _selectedWorkplaces,
       targetUserIds: _selectedUsers,
@@ -101,17 +128,57 @@ class _CreateComunicadoScreenState extends ConsumerState<CreateComunicadoScreen>
                 enabled: !isLoading,
               ),
               const SizedBox(height: 16),
-              TextFormField(
-                controller: _contentController,
-                maxLines: 6,
-                decoration: const InputDecoration(
-                  labelText: 'Contenido / Mensaje',
-                  border: OutlineInputBorder(),
-                  alignLabelWithHint: true,
+              // ── Selector de archivo PDF ──────────────────────────────
+              const Text('Archivo PDF:', style: TextStyle(fontWeight: FontWeight.bold)),
+              const SizedBox(height: 8),
+              if (_selectedFile == null)
+                OutlinedButton.icon(
+                  onPressed: isLoading ? null : _pickFile,
+                  icon: const Icon(LucideIcons.paperclip),
+                  label: const Text('Seleccionar PDF (máx. 10 MB)'),
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: AppColors.gold,
+                    side: const BorderSide(color: AppColors.gold),
+                    minimumSize: const Size(double.infinity, 48),
+                  ),
+                )
+              else
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                  decoration: BoxDecoration(
+                    color: AppColors.gold.withValues(alpha: 0.08),
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: AppColors.gold.withValues(alpha: 0.4)),
+                  ),
+                  child: Row(
+                    children: [
+                      const Icon(LucideIcons.fileText, color: AppColors.gold),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              _selectedFile!.name,
+                              style: const TextStyle(fontWeight: FontWeight.w600),
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                            Text(
+                              '${(_selectedFile!.size / 1024).toStringAsFixed(0)} KB',
+                              style: const TextStyle(fontSize: 12, color: AppColors.textSecondary),
+                            ),
+                          ],
+                        ),
+                      ),
+                      if (!isLoading)
+                        IconButton(
+                          icon: const Icon(LucideIcons.x, size: 18),
+                          onPressed: () => setState(() => _selectedFile = null),
+                          tooltip: 'Quitar archivo',
+                        ),
+                    ],
+                  ),
                 ),
-                validator: (val) => val == null || val.isEmpty ? 'Requerido' : null,
-                enabled: !isLoading,
-              ),
               const SizedBox(height: 24),
               const Text('Enviar a:', style: TextStyle(fontWeight: FontWeight.bold)),
               const SizedBox(height: 8),
@@ -134,7 +201,10 @@ class _CreateComunicadoScreenState extends ConsumerState<CreateComunicadoScreen>
               
               if (_targetType == TargetType.workplace) _buildWorkplacesSelector(isLoading),
               if (_targetType == TargetType.users) _buildUsersSelector(isLoading),
-
+              
+              // ── Preview de destinatarios ──────────────────────────────
+              const SizedBox(height: 16),
+              _buildRecipientPreview(),
               const SizedBox(height: 32),
               SizedBox(
                 width: double.infinity,
@@ -150,9 +220,38 @@ class _CreateComunicadoScreenState extends ConsumerState<CreateComunicadoScreen>
                       : const Text('Enviar Comunicado'),
                 ),
               ),
+              const SizedBox(height: 24),
             ],
           ),
         ),
+      ),
+    );
+  }
+
+  Widget _buildRecipientPreview() {
+    String label;
+    if (_targetType == TargetType.all) {
+      label = 'Se enviará a todo el personal';
+    } else if (_targetType == TargetType.workplace) {
+      final n = _selectedWorkplaces.length;
+      label = n == 0 ? 'Seleccioná al menos un lugar de trabajo' : 'Se enviará a $n lugar${n == 1 ? '' : 'es'} de trabajo';
+    } else {
+      final n = _selectedUsers.length;
+      label = n == 0 ? 'Seleccioná al menos un empleado' : 'Se enviará a $n persona${n == 1 ? '' : 's'}';
+    }
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      decoration: BoxDecoration(
+        color: AppColors.gold.withValues(alpha: 0.06),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: AppColors.gold.withValues(alpha: 0.25)),
+      ),
+      child: Row(
+        children: [
+          const Icon(LucideIcons.info, size: 16, color: AppColors.gold),
+          const SizedBox(width: 8),
+          Expanded(child: Text(label, style: const TextStyle(color: AppColors.gold, fontSize: 13))),
+        ],
       ),
     );
   }

@@ -2,9 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:intl/intl.dart';
+import 'package:file_saver/file_saver.dart';
+import '../../../../core/widgets/pdf_viewer_dialog.dart';
 
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/models/user_model.dart';
+import '../../../../core/providers/firebase_providers.dart';
 import '../../domain/models/paystub_model.dart';
 import '../providers/paystubs_provider.dart';
 import '../../../../core/providers/async_action_state.dart';
@@ -35,10 +38,34 @@ class _PaystubDetailDialogState extends ConsumerState<PaystubDetailDialog> {
     super.dispose();
   }
 
-  void _handleApprove() {
-    ref.read(paystubApprovalProvider.notifier).approve(widget.paystub.id).then((_) {
-      if (mounted) Navigator.of(context).pop();
-    });
+  void _handleApprove() async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Confirmar aceptación'),
+        content: Text('¿Confirmás que estás de acuerdo con el recibo de ${widget.paystub.periodo}?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('Cancelar'),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.success,
+              foregroundColor: Colors.white,
+            ),
+            child: const Text('Sí, acepto'),
+          ),
+        ],
+      ),
+    );
+    
+    if (confirmed == true && mounted) {
+      ref.read(paystubApprovalProvider.notifier).approve(widget.paystub.id).then((_) {
+        if (mounted) Navigator.of(context).pop();
+      });
+    }
   }
 
   void _handleReject() {
@@ -55,6 +82,13 @@ class _PaystubDetailDialogState extends ConsumerState<PaystubDetailDialog> {
       );
       return;
     }
+    
+    if (_observacionController.text.trim().length > 500) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('El motivo no puede superar los 500 caracteres')),
+      );
+      return;
+    }
 
     ref.read(paystubApprovalProvider.notifier).reject(
       widget.paystub.id,
@@ -62,6 +96,27 @@ class _PaystubDetailDialogState extends ConsumerState<PaystubDetailDialog> {
     ).then((_) {
       if (mounted) Navigator.of(context).pop();
     });
+  }
+
+  Future<void> _downloadPdf() async {
+    try {
+      final String fileName = widget.paystub.fileName ?? 'recibo_${widget.paystub.periodo}.pdf';
+      final path = widget.paystub.storagePath ?? widget.paystub.documentUrl;
+      final storageService = ref.read(storageServiceProvider);
+      final bytes = await storageService.readFileBytes(path);
+      await FileSaver.instance.saveFile(
+        name: fileName,
+        bytes: bytes,
+        ext: 'pdf',
+        mimeType: MimeType.pdf,
+      );
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error al descargar el archivo: $e')),
+        );
+      }
+    }
   }
 
   @override
@@ -108,6 +163,10 @@ class _PaystubDetailDialogState extends ConsumerState<PaystubDetailDialog> {
             _buildDetailRow('Estado', widget.paystub.estado.displayName),
             const SizedBox(height: 16),
             _buildDetailRow('Fecha subida', DateFormat('dd/MM/yyyy HH:mm').format(widget.paystub.createdAt)),
+            if (widget.paystub.respondedAt != null) ...[
+              const SizedBox(height: 16),
+              _buildDetailRow('Fecha respuesta', DateFormat('dd/MM/yyyy HH:mm').format(widget.paystub.respondedAt!)),
+            ],
             
             if (widget.paystub.observacionRechazo != null && widget.paystub.observacionRechazo!.isNotEmpty) ...[
               const SizedBox(height: 16),
@@ -118,19 +177,39 @@ class _PaystubDetailDialogState extends ConsumerState<PaystubDetailDialog> {
             
             const SizedBox(height: 24),
             if (widget.paystub.documentUrl.isNotEmpty)
-              ElevatedButton.icon(
-                onPressed: () {
-                  showDialog(
-                    context: context,
-                    builder: (context) => _ImageViewerDialog(url: widget.paystub.documentUrl),
-                  );
-                },
-                icon: const Icon(LucideIcons.image),
-                label: const Text('Ver Documento'),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.gold.withValues(alpha: 0.1),
-                  foregroundColor: AppColors.gold,
-                ),
+              Row(
+                children: [
+                  ElevatedButton.icon(
+                    onPressed: () {
+                      final path = widget.paystub.storagePath ?? widget.paystub.documentUrl;
+                      final name = widget.paystub.fileName ?? 'recibo_${widget.paystub.periodo}.pdf';
+                      showDialog(
+                        context: context,
+                        builder: (context) => PdfViewerDialog(
+                          storagePath: path,
+                          downloadFileName: name,
+                          title: 'Recibo ${widget.paystub.periodo}',
+                        ),
+                      );
+                    },
+                    icon: const Icon(LucideIcons.fileText),
+                    label: const Text('Ver Documento'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppColors.gold.withValues(alpha: 0.1),
+                      foregroundColor: AppColors.gold,
+                    ),
+                  ),
+                  const SizedBox(width: 16),
+                  ElevatedButton.icon(
+                    onPressed: _downloadPdf,
+                    icon: const Icon(LucideIcons.download),
+                    label: const Text('Descargar'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppColors.gold.withValues(alpha: 0.1),
+                      foregroundColor: AppColors.gold,
+                    ),
+                  ),
+                ],
               )
             else
               const Text('No hay documento adjunto', style: TextStyle(color: AppColors.textSecondary)),
@@ -142,11 +221,14 @@ class _PaystubDetailDialogState extends ConsumerState<PaystubDetailDialog> {
               if (_isRejecting) ...[
                 TextField(
                   controller: _observacionController,
-                  decoration: const InputDecoration(
+                  decoration: InputDecoration(
                     labelText: 'Motivo del rechazo',
-                    border: OutlineInputBorder(),
+                    border: const OutlineInputBorder(),
+                    counterText: '${_observacionController.text.length} / 500',
                   ),
+                  maxLength: 500,
                   maxLines: 3,
+                  onChanged: (_) => setState(() {}),
                 ),
                 const SizedBox(height: 16),
                 Row(
@@ -158,7 +240,7 @@ class _PaystubDetailDialogState extends ConsumerState<PaystubDetailDialog> {
                     ),
                     const SizedBox(width: 16),
                     ElevatedButton(
-                      onPressed: isLoading ? null : _handleReject,
+                      onPressed: (isLoading || _observacionController.text.trim().isEmpty) ? null : _handleReject,
                       style: ElevatedButton.styleFrom(
                         backgroundColor: AppColors.error,
                         foregroundColor: Colors.white,
@@ -226,56 +308,4 @@ class _PaystubDetailDialogState extends ConsumerState<PaystubDetailDialog> {
   }
 }
 
-class _ImageViewerDialog extends StatelessWidget {
-  final String url;
 
-  const _ImageViewerDialog({required this.url});
-
-  @override
-  Widget build(BuildContext context) {
-    return Dialog(
-      backgroundColor: Colors.transparent,
-      insetPadding: const EdgeInsets.all(24),
-      child: Stack(
-        alignment: Alignment.center,
-        children: [
-          InteractiveViewer(
-            panEnabled: true,
-            minScale: 0.5,
-            maxScale: 4,
-            child: Image.network(
-              url,
-              fit: BoxFit.contain,
-              loadingBuilder: (context, child, loadingProgress) {
-                if (loadingProgress == null) return child;
-                return const Center(child: CircularProgressIndicator());
-              },
-              errorBuilder: (context, error, stackTrace) {
-                return Container(
-                  color: Colors.white,
-                  padding: const EdgeInsets.all(24),
-                  child: const Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(LucideIcons.fileWarning, size: 48, color: AppColors.error),
-                      SizedBox(height: 16),
-                      Text('No se pudo cargar el documento', style: TextStyle(color: AppColors.error)),
-                    ],
-                  ),
-                );
-              },
-            ),
-          ),
-          Positioned(
-            top: 0,
-            right: 0,
-            child: IconButton(
-              icon: const Icon(LucideIcons.x, color: Colors.white, size: 32),
-              onPressed: () => Navigator.of(context).pop(),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}

@@ -2,6 +2,7 @@ import '../models/comunicado_model.dart';
 
 abstract class ComunicadoRepository {
   Future<void> createComunicado(ComunicadoModel comunicado);
+  Future<void> deleteComunicado(String comunicadoId);
   Future<void> markAsRead(String comunicadoId, String userId);
   Stream<List<ComunicadoModel>> streamComunicados();
   Stream<List<String>> streamReadComunicadoIds(String userId);

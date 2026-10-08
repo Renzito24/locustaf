@@ -3,7 +3,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 
 import '../../../authentication/presentation/providers/auth_provider.dart';
-import '../../../employees/presentation/providers/users_provider.dart';
 import '../providers/paystubs_provider.dart';
 import '../widgets/paystubs_components.dart';
 
@@ -13,7 +12,6 @@ class EmployeePaystubsScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final paystubsAsync = ref.watch(filteredPaystubsProvider);
-    final usersAsync = ref.watch(usersStreamProvider);
     final isAdmin = ref.watch(isAdminProvider); // should be false
 
     return CustomScrollView(
@@ -32,10 +30,8 @@ class EmployeePaystubsScreen extends ConsumerWidget {
               elevation: 0,
               color: Colors.white,
               child: paystubsAsync.when(
-                data: (paystubs) => PaystubsList(
+                data: (paystubs) => EmployeePaystubsList(
                   paystubs: paystubs,
-                  usersAsync: usersAsync,
-                  isAdmin: isAdmin,
                 ),
                 loading: () => const Center(
                   child: Padding(

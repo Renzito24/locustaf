@@ -4,6 +4,7 @@ import 'package:intl/intl.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 import '../../../../core/constants/app_colors.dart';
+import '../../../../core/widgets/pdf_viewer_dialog.dart';
 import '../../../authentication/presentation/providers/auth_provider.dart';
 import '../../../employees/presentation/providers/users_provider.dart';
 import '../../domain/models/comunicado_model.dart';
@@ -18,6 +19,39 @@ class ComunicadosList extends ConsumerWidget {
     required this.comunicados,
     required this.isAdmin,
   });
+
+  void _markAsRead(WidgetRef ref, ComunicadoModel com) {
+    if (!isAdmin) {
+      final readIds = ref.read(comunicadosReadIdsProvider).value ?? [];
+      if (!readIds.contains(com.id)) {
+        ref.read(comunicadoActionProvider.notifier).markAsRead(com.id);
+      }
+    }
+  }
+
+  void _openComunicado(BuildContext context, WidgetRef ref, ComunicadoModel com) {
+    if (com.storagePath != null) {
+      // Comunicado con PDF → visor compartido
+      showDialog(
+        context: context,
+        builder: (_) => PdfViewerDialog(
+          storagePath: com.storagePath!,
+          downloadFileName: com.fileName ?? '${com.title}.pdf',
+          title: com.title,
+          onPdfLoaded: () => _markAsRead(ref, com),
+        ),
+      );
+    } else {
+      // Comunicado legacy de texto → diálogo existente
+      showDialog(
+        context: context,
+        builder: (_) => ComunicadoDetailDialog(
+          comunicado: com,
+          isAdmin: isAdmin,
+        ),
+      );
+    }
+  }
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -44,33 +78,53 @@ class ComunicadosList extends ConsumerWidget {
         final com = comunicados[index];
         final readIdsAsync = ref.watch(comunicadosReadIdsProvider);
         final isRead = currentUser != null && (readIdsAsync.value?.contains(com.id) ?? false);
+        final showReadState = !isAdmin;
 
         return ListTile(
           contentPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+          // ── ícono de sobre ───────────────────────────────────────
+          leading: showReadState
+              ? Stack(
+                  clipBehavior: Clip.none,
+                  children: [
+                    Icon(
+                      isRead ? LucideIcons.mailOpen : LucideIcons.mail,
+                      size: 28,
+                      color: isRead ? AppColors.textMuted : AppColors.gold,
+                    ),
+                    if (isRead)
+                      Positioned(
+                        right: -4,
+                        bottom: -4,
+                        child: Container(
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            shape: BoxShape.circle,
+                          ),
+                          child: const Icon(LucideIcons.checkCircle2, size: 14, color: AppColors.success),
+                        ),
+                      ),
+                  ],
+                )
+              : const Icon(LucideIcons.megaphone, size: 24, color: AppColors.textSecondary),
+          // ── título y fecha ────────────────────────────────────
+          tileColor: (showReadState && !isRead)
+              ? AppColors.gold.withValues(alpha: 0.05)
+              : null,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
           title: Text(
             com.title,
             style: TextStyle(
-              fontWeight: isRead ? FontWeight.normal : FontWeight.w700,
-              color: isRead ? AppColors.textSecondary : AppColors.textPrimary,
+              fontWeight: (showReadState && !isRead) ? FontWeight.w700 : FontWeight.normal,
+              color: (showReadState && !isRead) ? AppColors.textPrimary : AppColors.textSecondary,
             ),
           ),
           subtitle: Text(
             DateFormat('dd/MM/yyyy HH:mm').format(com.createdAt),
+            style: const TextStyle(fontSize: 12),
           ),
-          trailing: isAdmin
-              ? const Icon(LucideIcons.chevronRight, color: AppColors.textMuted)
-              : (isRead
-                  ? const Icon(LucideIcons.checkCheck, color: AppColors.success)
-                  : const Icon(LucideIcons.circle, color: AppColors.textMuted)),
-          onTap: () {
-            showDialog(
-              context: context,
-              builder: (context) => ComunicadoDetailDialog(
-                comunicado: com,
-                isAdmin: isAdmin,
-              ),
-            );
-          },
+          trailing: const Icon(LucideIcons.chevronRight, color: AppColors.textMuted),
+          onTap: () => _openComunicado(context, ref, com),
         );
       },
     );
@@ -98,9 +152,8 @@ class _ComunicadoDetailDialogState extends ConsumerState<ComunicadoDetailDialog>
     // Mark as read if not admin and not already read
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!widget.isAdmin) {
-        final user = ref.read(currentUserModelProvider);
         final readIds = ref.read(comunicadosReadIdsProvider).value ?? [];
-        if (user != null && !readIds.contains(widget.comunicado.id)) {
+        if (!readIds.contains(widget.comunicado.id)) {
           ref.read(comunicadoActionProvider.notifier).markAsRead(widget.comunicado.id);
         }
       }
@@ -151,7 +204,7 @@ class _ComunicadoDetailDialogState extends ConsumerState<ComunicadoDetailDialog>
             Flexible(
               child: SingleChildScrollView(
                 child: Text(
-                  widget.comunicado.content,
+                  widget.comunicado.content ?? '',
                   style: const TextStyle(fontSize: 16, height: 1.5),
                 ),
               ),

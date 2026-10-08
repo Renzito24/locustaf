@@ -13,7 +13,8 @@ void main() {
       targetType: TargetType.workplace,
       targetWorkplaceIds: const ['work-1'],
       targetUserIds: const [],
-      readBy: const ['user-1'],
+      fileName: 'horario.pdf',
+      storagePath: 'companies/comp-1/comunicados/com-123/com-123.pdf',
       createdBy: 'admin-1',
       createdAt: now,
     );
@@ -30,17 +31,17 @@ void main() {
       expect(parsed.content, mockModel.content);
       expect(parsed.targetType, mockModel.targetType);
       expect(parsed.targetWorkplaceIds, mockModel.targetWorkplaceIds);
-      expect(parsed.readBy, mockModel.readBy);
+      expect(parsed.fileName, mockModel.fileName);
+      expect(parsed.storagePath, mockModel.storagePath);
     });
 
     test('copyWith works correctly', () {
       final updated = mockModel.copyWith(
-        readBy: ['user-1', 'user-2'],
+        title: 'Nuevo título',
       );
 
-      expect(updated.readBy.length, 2);
-      expect(updated.readBy.contains('user-2'), isTrue);
-      expect(updated.title, mockModel.title); // Should remain same
+      expect(updated.title, 'Nuevo título');
+      expect(updated.fileName, mockModel.fileName); // Should remain same
     });
   });
 }

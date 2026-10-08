@@ -66,8 +66,17 @@ class EmployeeCreateIncidenceScreen extends ConsumerWidget {
                     file: data.archivoFile,
                   );
                   if (context.mounted) {
-                    ref.read(incidenceCreateProvider.notifier).reset();
-                    context.pop();
+                    final state = ref.read(incidenceCreateProvider);
+                    if (state.isSuccess) {
+                      ref.read(incidenceCreateProvider.notifier).reset();
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('Incidencia creada con éxito'),
+                          backgroundColor: Colors.green,
+                        ),
+                      );
+                      context.pop();
+                    }
                   }
                 },
               ),

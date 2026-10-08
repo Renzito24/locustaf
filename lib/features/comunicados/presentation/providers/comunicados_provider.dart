@@ -1,4 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:file_picker/file_picker.dart';
 
 import '../../../../core/providers/firebase_providers.dart';
 import '../../../authentication/presentation/providers/auth_provider.dart';
@@ -6,7 +8,6 @@ import '../../data/repositories/comunicado_repository_impl.dart';
 import '../../domain/models/comunicado_model.dart';
 import '../../domain/repositories/comunicado_repository.dart';
 import '../../../../core/providers/async_action_state.dart';
-
 
 final comunicadoRepositoryProvider = Provider<ComunicadoRepository>((ref) {
   final firestoreService = ref.watch(firestoreServiceProvider);
@@ -48,31 +49,50 @@ class ComunicadoActionNotifier extends Notifier<AsyncActionState> {
 
   Future<void> createComunicado({
     required String title,
-    required String content,
+    required PlatformFile pdfFile,
     required TargetType targetType,
     List<String> targetWorkplaceIds = const [],
     List<String> targetUserIds = const [],
   }) async {
     state = const AsyncActionState.loading();
+    final user = ref.read(currentUserModelProvider)!;
+    final storageService = ref.read(storageServiceProvider);
+    final companyId = user.companyId!;
+
+    // 1. Pre-generar el ID del documento de Firestore
+    final docId = FirebaseFirestore.instance.collection('comunicados').doc().id;
+    final safeName = pdfFile.name.replaceAll(RegExp(r'[^a-zA-Z0-9._-]'), '_');
+    final storagePath = 'companies/$companyId/comunicados/$docId/$docId.pdf';
+
     try {
+      // 2. Subir el archivo
+      await storageService.uploadFile(
+        path: storagePath,
+        file: pdfFile,
+        maxSize: 10 * 1024 * 1024,
+      );
+
+      // 3. Crear el documento en Firestore
       final repo = ref.read(comunicadoRepositoryProvider);
-      final user = ref.read(currentUserModelProvider)!;
-      
       final com = ComunicadoModel(
-        id: '',
-        companyId: user.companyId!,
+        id: docId,
+        companyId: companyId,
         title: title,
-        content: content,
         targetType: targetType,
         targetWorkplaceIds: targetWorkplaceIds,
         targetUserIds: targetUserIds,
+        fileName: safeName,
+        storagePath: storagePath,
         createdBy: user.id,
         createdAt: DateTime.now(),
       );
-      
       await repo.createComunicado(com);
       state = const AsyncActionState.success();
     } catch (e) {
+      // Rollback: intentar borrar el archivo si ya fue subido
+      try {
+        await storageService.deleteFile(storagePath);
+      } catch (_) {}
       state = AsyncActionState.failure(e.toString());
     }
   }

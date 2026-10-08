@@ -64,9 +64,11 @@ class StorageService {
 
   /// Elimina un archivo de Firebase Storage a partir de su URL de descarga.
   /// No lanza error si el archivo no existe (silencio seguro).
-  Future<void> deleteFile(String downloadUrl) async {
+  Future<void> deleteFile(String pathOrUrl) async {
     try {
-      final ref = _storage.refFromURL(downloadUrl);
+      final ref = pathOrUrl.startsWith('http') || pathOrUrl.startsWith('gs://')
+          ? _storage.refFromURL(pathOrUrl)
+          : _storage.ref().child(pathOrUrl);
       await ref.delete();
     } on FirebaseException catch (_) {
       // Ignorar si el archivo ya no existe
@@ -79,8 +81,10 @@ class StorageService {
   /// directa a la URL: el bucket no envía cabeceras CORS, así que en web
   /// `Image.network` / `http.get` fallan. Además valida las reglas de Storage
   /// (la URL con token no las atraviesa).
-  Future<Uint8List> readFileBytes(String downloadUrl) async {
-    final ref = _storage.refFromURL(downloadUrl);
+  Future<Uint8List> readFileBytes(String pathOrUrl) async {
+    final ref = pathOrUrl.startsWith('http') || pathOrUrl.startsWith('gs://')
+        ? _storage.refFromURL(pathOrUrl)
+        : _storage.ref().child(pathOrUrl);
     final bytes = await ref.getData();
     if (bytes == null) {
       throw StorageServiceException('El archivo no se pudo descargar.');

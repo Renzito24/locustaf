@@ -41,6 +41,14 @@ service firebase.storage {
       return isAuthenticated() && getRole() == 'admin';
     }
 
+    function isSupervisor() {
+      return isAuthenticated() && getRole() == 'supervisor';
+    }
+
+    function isEmployee() {
+      return isAuthenticated() && getRole() == 'employee';
+    }
+
     // M1: validación server-side de los archivos subidos como justificativos:
     // máximo 10 MB y solo PDF, JPEG o PNG. Antes solo se validaba en el cliente.
     function validMedicalFile() {
@@ -48,6 +56,11 @@ service firebase.storage {
         && (request.resource.contentType.matches('application/pdf')
             || request.resource.contentType.matches('image/jpeg')
             || request.resource.contentType.matches('image/png'));
+    }
+
+    function validPdfFile() {
+      return request.resource.size <= 10 * 1024 * 1024
+        && request.resource.contentType.matches('application/pdf');
     }
 
     // ====================================================================
@@ -76,6 +89,77 @@ service firebase.storage {
         && (isSuperadmin()
             || (isAdmin() && companyId == getCompanyId())
             || (request.auth.uid == userId && companyId == getCompanyId()));
+    }
+
+    // ====================================================================
+    // INCIDENCES
+    // Path: companies/{companyId}/incidences/{userId}/{fileName}
+    // Superadmin : full access
+    // Admin      : full access de su empresa
+    // Empl       : read/create own files (justificativos)
+    // ====================================================================
+    match /companies/{companyId}/incidences/{userId}/{fileName} {
+      allow read: if isAuthenticated()
+        && (isSuperadmin()
+            || (isAdmin() && companyId == getCompanyId())
+            || (request.auth.uid == userId && companyId == getCompanyId()));
+      allow create: if isAuthenticated()
+        && validMedicalFile()
+        && (isSuperadmin()
+            || (isAdmin() && companyId == getCompanyId())
+            || (request.auth.uid == userId && companyId == getCompanyId()));
+      allow update: if isAuthenticated()
+        && validMedicalFile()
+        && (isSuperadmin()
+            || (isAdmin() && companyId == getCompanyId()));
+      allow delete: if isAuthenticated()
+        && (isSuperadmin()
+            || (isAdmin() && companyId == getCompanyId()));
+    }
+
+    // ====================================================================
+    // PAYSTUBS
+    // Path: companies/{companyId}/paystubs/{userId}/{fileName}
+    // Superadmin : full access
+    // Admin      : full access de su empresa
+    // Empl       : read own files
+    // ====================================================================
+    match /companies/{companyId}/paystubs/{userId}/{fileName} {
+      allow read: if isAuthenticated()
+        && (isSuperadmin()
+            || (isAdmin() && companyId == getCompanyId())
+            || (request.auth.uid == userId && companyId == getCompanyId()));
+      allow create: if isAuthenticated()
+        && validPdfFile()
+        && (isSuperadmin()
+            || (isAdmin() && companyId == getCompanyId()));
+      allow delete: if isAuthenticated()
+        && (isSuperadmin()
+            || (isAdmin() && companyId == getCompanyId()));
+    }
+
+    // ====================================================================
+    // COMUNICADOS
+    // Path: companies/{companyId}/comunicados/{comunicadoId}/{fileName}
+    // Superadmin : full access
+    // Admin      : full access de su empresa
+    // Empl       : read si es destinatario del comunicado
+    // ====================================================================
+    match /companies/{companyId}/comunicados/{comunicadoId}/{fileName} {
+      allow read: if isAuthenticated()
+        && (isSuperadmin()
+            || (isAdmin() && companyId == getCompanyId())
+            || ((isSupervisor() || isEmployee()) && companyId == getCompanyId()
+                && (firestore.get(/databases/(default)/documents/comunicados/$(comunicadoId)).data.get('targetType', '') == 'all'
+                    || request.auth.uid in firestore.get(/databases/(default)/documents/comunicados/$(comunicadoId)).data.get('targetUserIds', [])
+                    || (getUserData() != null && getUserData().get('lugarDeTrabajoId', null) != null && getUserData().get('lugarDeTrabajoId', null) in firestore.get(/databases/(default)/documents/comunicados/$(comunicadoId)).data.get('targetWorkplaceIds', [])))));
+      allow create: if isAuthenticated()
+        && validPdfFile()
+        && (isSuperadmin()
+            || (isAdmin() && companyId == getCompanyId()));
+      allow delete: if isAuthenticated()
+        && (isSuperadmin()
+            || (isAdmin() && companyId == getCompanyId()));
     }
 
     // ====================================================================
