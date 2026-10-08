@@ -18,6 +18,10 @@ jobs:
           cache: true
       - name: Install dependencies
         run: flutter pub get
+      - name: Patch pdfrx_engine cache
+        run: |
+          sed -i 's/(blockId + 1) \* cache.blockSize/(blockId + 1) \* cache!.blockSize/g' ~/.pub-cache/hosted/pub.dev/pdfrx_engine-0.4.4/lib/src/native/pdf_file_cache.dart
+          sed -i 's/await cache.read(/await cache!.read(/g' ~/.pub-cache/hosted/pub.dev/pdfrx_engine-0.4.4/lib/src/native/pdf_file_cache.dart
       - name: Analyze
         run: flutter analyze --fatal-infos
       - name: Test
