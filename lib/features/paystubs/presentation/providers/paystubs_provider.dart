@@ -40,12 +40,14 @@ class PaystubsFilterState {
   final String? employeeId;
   final PaystubEstado? state;
   final String? periodo;
+  final bool sinRecibo;
 
   const PaystubsFilterState({
     this.searchQuery = '',
     this.employeeId,
     this.state,
     this.periodo,
+    this.sinRecibo = false,
   });
 
   PaystubsFilterState copyWith({
@@ -53,6 +55,7 @@ class PaystubsFilterState {
     String? employeeId,
     PaystubEstado? state,
     String? periodo,
+    bool? sinRecibo,
     bool clearState = false,
   }) {
     return PaystubsFilterState(
@@ -60,6 +63,7 @@ class PaystubsFilterState {
       employeeId: employeeId ?? this.employeeId,
       state: clearState ? null : (state ?? this.state),
       periodo: periodo ?? this.periodo,
+      sinRecibo: sinRecibo ?? this.sinRecibo,
     );
   }
 }
@@ -82,7 +86,19 @@ class PaystubsFilterNotifier extends Notifier<PaystubsFilterState> {
   }
 
   void setState(PaystubEstado? stateValue) {
-    state = state.copyWith(state: stateValue, clearState: stateValue == null);
+    state = state.copyWith(
+      state: stateValue,
+      clearState: stateValue == null,
+      sinRecibo: false,
+    );
+  }
+
+  void setSinRecibo(bool value) {
+    state = state.copyWith(
+      state: null,
+      clearState: value,
+      sinRecibo: value,
+    );
   }
 
   void setPeriodo(String? periodo) {

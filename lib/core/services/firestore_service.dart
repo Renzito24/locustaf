@@ -238,6 +238,11 @@ class FirestoreService {
   /// IMPORTANTE: Se escribe tanto 'id' como 'uid' para mantener compatibilidad
   /// con documentos existentes en la colección 'attendances' que usaban 'uid'.
   ///
+  /// Si se provee [documentId], el documento se crea bajo ese ID exacto (usando
+  /// el parámetro para que el ID real en Firestore coincida con el generado en
+  /// el cliente, p. ej. el usado para nombrar un archivo en Storage); si no, se
+  /// genera un ID aleatorio.
+  ///
   /// [Migración futura]: Cuando todos los documentos de 'attendances' tengan el campo
   /// 'id', se debe eliminar la escritura de 'uid' en este método y actualizar
   /// AttendanceModel.fromJson para que solo lea 'id'. Para migrar los documentos
@@ -246,8 +251,11 @@ class FirestoreService {
   Future<String> addDocument({
     required String path,
     required Map<String, dynamic> data,
+    String? documentId,
   }) async {
-    final docRef = _firestore.collection(path).doc();
+    final docRef = documentId == null
+        ? _firestore.collection(path).doc()
+        : _firestore.collection(path).doc(documentId);
     await docRef.set({
       ...data,
       'id': docRef.id,

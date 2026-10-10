@@ -32,11 +32,20 @@ class _CreatePaystubScreenState extends ConsumerState<CreatePaystubScreen> {
   Future<void> _pickFile() async {
     final result = await FilePicker.platform.pickFiles(
       type: FileType.custom,
-      allowedExtensions: ['pdf', 'jpg', 'jpeg', 'png'],
+      allowedExtensions: ['pdf'],
     );
     if (result != null) {
+      final file = result.files.first;
+      if (file.size > 10 * 1024 * 1024) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('El archivo no debe pesar más de 10 MB')),
+          );
+        }
+        return;
+      }
       setState(() {
-        _selectedFile = result.files.first;
+        _selectedFile = file;
       });
     }
   }
@@ -157,7 +166,7 @@ class _CreatePaystubScreenState extends ConsumerState<CreatePaystubScreen> {
                 OutlinedButton.icon(
                   onPressed: isLoading ? null : _pickFile,
                   icon: const Icon(LucideIcons.paperclip),
-                  label: const Text('Seleccionar Archivo (PDF, JPG, PNG)'),
+                  label: const Text('Seleccionar Archivo (PDF)'),
                   style: OutlinedButton.styleFrom(
                     padding: const EdgeInsets.all(16),
                   ),

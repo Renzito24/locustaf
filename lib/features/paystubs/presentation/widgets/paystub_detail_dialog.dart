@@ -6,6 +6,7 @@ import 'package:file_saver/file_saver.dart';
 import '../../../../core/widgets/pdf_viewer_dialog.dart';
 
 import '../../../../core/constants/app_colors.dart';
+import '../../../../core/theme/app_theme.dart';
 import '../../../../core/models/user_model.dart';
 import '../../../../core/providers/firebase_providers.dart';
 import '../../domain/models/paystub_model.dart';
@@ -62,9 +63,7 @@ class _PaystubDetailDialogState extends ConsumerState<PaystubDetailDialog> {
     );
     
     if (confirmed == true && mounted) {
-      ref.read(paystubApprovalProvider.notifier).approve(widget.paystub.id).then((_) {
-        if (mounted) Navigator.of(context).pop();
-      });
+      ref.read(paystubApprovalProvider.notifier).approve(widget.paystub.id);
     }
   }
 
@@ -93,9 +92,7 @@ class _PaystubDetailDialogState extends ConsumerState<PaystubDetailDialog> {
     ref.read(paystubApprovalProvider.notifier).reject(
       widget.paystub.id,
       observacion: _observacionController.text.trim(),
-    ).then((_) {
-      if (mounted) Navigator.of(context).pop();
-    });
+    );
   }
 
   Future<void> _downloadPdf() async {
@@ -121,6 +118,25 @@ class _PaystubDetailDialogState extends ConsumerState<PaystubDetailDialog> {
 
   @override
   Widget build(BuildContext context) {
+    ref.listen<AsyncActionState>(paystubApprovalProvider, (prev, next) {
+      if (prev?.status != AsyncActionStatus.loading) return;
+      if (next.status == AsyncActionStatus.success) {
+        ref.read(paystubApprovalProvider.notifier).reset();
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            AppTheme.successSnackBar('Estado del recibo actualizado'),
+          );
+          Navigator.of(context).pop();
+        }
+      } else if (next.status == AsyncActionStatus.failure) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            AppTheme.errorSnackBar('Error al actualizar el estado: ${next.error}'),
+          );
+        }
+      }
+    });
+
     final approvalState = ref.watch(paystubApprovalProvider);
     final isLoading = approvalState.status == AsyncActionStatus.loading;
 

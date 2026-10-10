@@ -59,7 +59,10 @@ class EmployeePaystubsScreen extends ConsumerWidget {
                         ),
                         const SizedBox(height: 16),
                         ElevatedButton(
-                          onPressed: () => ref.invalidate(filteredPaystubsProvider),
+                          onPressed: () {
+                            ref.invalidate(paystubsStreamProvider);
+                            ref.invalidate(filteredPaystubsProvider);
+                          },
                           child: const Text('Reintentar'),
                         ),
                       ],

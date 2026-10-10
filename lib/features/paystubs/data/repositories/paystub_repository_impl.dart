@@ -48,6 +48,9 @@ class PaystubRepositoryImpl implements PaystubRepository {
     await _firestoreService.addDocument(
       path: 'paystubs',
       data: data,
+      // Usamos el mismo ID con el que se nombró el archivo en Storage para que
+      // coincidan (ver PaystubCreateNotifier.createPaystub).
+      documentId: paystub.id.isEmpty ? null : paystub.id,
     );
   }
 

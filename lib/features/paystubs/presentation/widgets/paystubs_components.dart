@@ -5,6 +5,8 @@ import 'package:intl/intl.dart';
 import 'package:file_picker/file_picker.dart';
 
 import '../../../../core/constants/app_colors.dart';
+import '../../../../core/providers/async_action_state.dart';
+import '../../../../core/theme/app_theme.dart';
 
 import '../../../../core/models/user_model.dart';
 import '../../domain/models/paystub_model.dart';
@@ -63,6 +65,7 @@ class AdminPaystubsList extends ConsumerWidget {
   final String periodo;
   final String searchQuery;
   final PaystubEstado? stateFilter;
+  final bool sinRecibo;
 
   const AdminPaystubsList({
     super.key,
@@ -71,10 +74,39 @@ class AdminPaystubsList extends ConsumerWidget {
     required this.periodo,
     required this.searchQuery,
     this.stateFilter,
+    this.sinRecibo = false,
   });
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    ref.listen<PaystubActionState>(paystubCreateProvider, (prev, next) {
+      if (prev?.status != AsyncActionStatus.loading) return;
+      if (next.status == AsyncActionStatus.success) {
+        ref.read(paystubCreateProvider.notifier).reset();
+        ScaffoldMessenger.of(context).showSnackBar(
+          AppTheme.successSnackBar('Recibo subido correctamente'),
+        );
+      } else if (next.status == AsyncActionStatus.failure) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          AppTheme.errorSnackBar('Error al subir el recibo: ${next.error}'),
+        );
+      }
+    });
+
+    ref.listen<AsyncActionState>(paystubDeleteProvider, (prev, next) {
+      if (prev?.status != AsyncActionStatus.loading) return;
+      if (next.status == AsyncActionStatus.success) {
+        ref.read(paystubDeleteProvider.notifier).reset();
+        ScaffoldMessenger.of(context).showSnackBar(
+          AppTheme.successSnackBar('Recibo eliminado correctamente'),
+        );
+      } else if (next.status == AsyncActionStatus.failure) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          AppTheme.errorSnackBar('Error al eliminar el recibo: ${next.error}'),
+        );
+      }
+    });
+
     // Determine the status of each user for the given periodo
     var displayItems = users.map((u) {
       final paystub = paystubs.where((p) => p.userId == u.id && getNormalizedPeriod(p) == periodo).firstOrNull;
@@ -87,13 +119,10 @@ class AdminPaystubsList extends ConsumerWidget {
         i.user.apellido.toLowerCase().contains(searchQuery)).toList();
     }
 
-    if (stateFilter != null) {
+    if (sinRecibo) {
+      displayItems = displayItems.where((i) => i.paystub == null).toList();
+    } else if (stateFilter != null) {
       displayItems = displayItems.where((i) => i.paystub?.estado == stateFilter).toList();
-    } else {
-      // Check if there is a 'sin_recibo' logical filter
-      // Because we mapped "sin_recibo" to clear the enum in the provider but it is missing the string handling
-      // We'll leave it as is. If we want strict 'sin_recibo' filtering we could add a flag, but for now we'll just show all.
-      // Wait, actually I couldn't add 'sin_recibo' to the enum, so let's check if there is a custom UI state filter
     }
 
     if (displayItems.isEmpty) {

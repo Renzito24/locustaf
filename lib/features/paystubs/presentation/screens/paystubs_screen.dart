@@ -94,6 +94,7 @@ class PaystubsScreen extends ConsumerWidget {
                       periodo: currentPeriodo,
                       searchQuery: filterState.searchQuery,
                       stateFilter: filterState.state,
+                      sinRecibo: filterState.sinRecibo,
                     ),
                   ],
                 );
@@ -205,7 +206,9 @@ class _AdminFilters extends ConsumerWidget {
           flex: 1,
           child: DropdownButtonFormField<String>(
             // ignore: deprecated_member_use
-            value: filterState.state?.name,
+            value: filterState.sinRecibo
+                ? 'sin_recibo'
+                : filterState.state?.name,
             decoration: const InputDecoration(
               labelText: 'Estado',
               border: OutlineInputBorder(),
@@ -218,15 +221,14 @@ class _AdminFilters extends ConsumerWidget {
               DropdownMenuItem(value: 'rechazado', child: Text('Rechazado')),
             ],
             onChanged: (val) {
-              if (val == null || val == 'sin_recibo') {
-                ref.read(paystubsFilterProvider.notifier).setState(null);
-                // "Sin recibo" is handled logically in the list if we set an internal state, 
-                // but for now we just clear it or handle it in the provider.
-                // NOTE: To filter by "sin recibo", we would need to pass this string down to the list view.
-                // I will update the state filter to handle it inside the list.
+              final notifier = ref.read(paystubsFilterProvider.notifier);
+              if (val == 'sin_recibo') {
+                notifier.setSinRecibo(true);
+              } else if (val == null) {
+                notifier.setState(null);
               } else {
-                ref.read(paystubsFilterProvider.notifier).setState(
-                  PaystubEstado.values.firstWhere((e) => e.name == val)
+                notifier.setState(
+                  PaystubEstado.values.firstWhere((e) => e.name == val),
                 );
               }
             },
