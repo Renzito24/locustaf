@@ -19,10 +19,14 @@ class CreateComunicadoScreen extends ConsumerStatefulWidget {
   ConsumerState<CreateComunicadoScreen> createState() => _CreateComunicadoScreenState();
 }
 
+enum _ComunicadoMode { pdf, text }
+
 class _CreateComunicadoScreenState extends ConsumerState<CreateComunicadoScreen> {
   final _formKey = GlobalKey<FormState>();
   final _titleController = TextEditingController();
+  final _contentController = TextEditingController();
 
+  _ComunicadoMode _mode = _ComunicadoMode.pdf;
   PlatformFile? _selectedFile;
   TargetType _targetType = TargetType.all;
   final List<String> _selectedWorkplaces = [];
@@ -31,6 +35,7 @@ class _CreateComunicadoScreenState extends ConsumerState<CreateComunicadoScreen>
   @override
   void dispose() {
     _titleController.dispose();
+    _contentController.dispose();
     super.dispose();
   }
 
@@ -57,9 +62,16 @@ class _CreateComunicadoScreenState extends ConsumerState<CreateComunicadoScreen>
   void _submit() {
     if (!_formKey.currentState!.validate()) return;
 
-    if (_selectedFile == null) {
+    if (_mode == _ComunicadoMode.pdf && _selectedFile == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Debe adjuntar un archivo PDF')),
+      );
+      return;
+    }
+
+    if (_mode == _ComunicadoMode.text && _contentController.text.trim().isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Debe escribir el contenido del comunicado')),
       );
       return;
     }
@@ -80,7 +92,8 @@ class _CreateComunicadoScreenState extends ConsumerState<CreateComunicadoScreen>
 
     ref.read(comunicadoActionProvider.notifier).createComunicado(
       title: _titleController.text.trim(),
-      pdfFile: _selectedFile!,
+      pdfFile: _mode == _ComunicadoMode.pdf ? _selectedFile : null,
+      content: _mode == _ComunicadoMode.text ? _contentController.text.trim() : null,
       targetType: _targetType,
       targetWorkplaceIds: _selectedWorkplaces,
       targetUserIds: _selectedUsers,
@@ -128,9 +141,33 @@ class _CreateComunicadoScreenState extends ConsumerState<CreateComunicadoScreen>
                 enabled: !isLoading,
               ),
               const SizedBox(height: 16),
-              // ── Selector de archivo PDF ──────────────────────────────
-              const Text('Archivo PDF:', style: TextStyle(fontWeight: FontWeight.bold)),
+              // ── Selector de modo: PDF o Texto ─────────────────────────
+              const Text('Formato del comunicado:', style: TextStyle(fontWeight: FontWeight.bold)),
               const SizedBox(height: 8),
+              SegmentedButton<_ComunicadoMode>(
+                segments: const [
+                  ButtonSegment(value: _ComunicadoMode.pdf, label: Text('Archivo PDF'), icon: Icon(LucideIcons.fileText)),
+                  ButtonSegment(value: _ComunicadoMode.text, label: Text('Escritura'), icon: Icon(LucideIcons.type)),
+                ],
+                selected: {_mode},
+                onSelectionChanged: isLoading ? null : (Set<_ComunicadoMode> newSelection) {
+                  setState(() => _mode = newSelection.first);
+                },
+              ),
+              const SizedBox(height: 16),
+              if (_mode == _ComunicadoMode.text) ...[
+                TextFormField(
+                  controller: _contentController,
+                  decoration: const InputDecoration(
+                    labelText: 'Contenido del comunicado',
+                    border: OutlineInputBorder(),
+                    alignLabelWithHint: true,
+                  ),
+                  maxLines: 8,
+                  minLines: 5,
+                  enabled: !isLoading,
+                ),
+              ] else
               if (_selectedFile == null)
                 OutlinedButton.icon(
                   onPressed: isLoading ? null : _pickFile,

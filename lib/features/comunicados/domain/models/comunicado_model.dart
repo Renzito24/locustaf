@@ -15,8 +15,8 @@ class ComunicadoModel extends Equatable {
   final String id;
   final String companyId;
   final String title;
-  /// Texto del comunicado. null en comunicados nuevos (solo PDF); no vacío en
-  /// comunicados legacy de texto.
+  /// Texto del comunicado, para comunicados en formato escritura. null
+  /// cuando el comunicado se creó en formato PDF (ver [storagePath]).
   final String? content;
   final TargetType targetType;
   final List<String> targetWorkplaceIds;

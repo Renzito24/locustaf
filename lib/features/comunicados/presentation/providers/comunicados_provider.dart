@@ -47,13 +47,21 @@ class ComunicadoActionNotifier extends Notifier<AsyncActionState> {
   @override
   AsyncActionState build() => const AsyncActionState.idle();
 
+  /// Crea un comunicado en formato PDF o en formato escritura.
+  ///
+  /// Debe proveerse exactamente uno de [pdfFile] o [content].
   Future<void> createComunicado({
     required String title,
-    required PlatformFile pdfFile,
+    PlatformFile? pdfFile,
+    String? content,
     required TargetType targetType,
     List<String> targetWorkplaceIds = const [],
     List<String> targetUserIds = const [],
   }) async {
+    assert(
+      (pdfFile == null) != (content == null),
+      'Debe proveerse exactamente uno de pdfFile o content',
+    );
     state = const AsyncActionState.loading();
     final user = ref.read(currentUserModelProvider)!;
     final storageService = ref.read(storageServiceProvider);
@@ -61,16 +69,22 @@ class ComunicadoActionNotifier extends Notifier<AsyncActionState> {
 
     // 1. Pre-generar el ID del documento de Firestore
     final docId = FirebaseFirestore.instance.collection('comunicados').doc().id;
-    final safeName = pdfFile.name.replaceAll(RegExp(r'[^a-zA-Z0-9._-]'), '_');
-    final storagePath = 'companies/$companyId/comunicados/$docId/$docId.pdf';
+    String? safeName;
+    String? storagePath;
+    if (pdfFile != null) {
+      safeName = pdfFile.name.replaceAll(RegExp(r'[^a-zA-Z0-9._-]'), '_');
+      storagePath = 'companies/$companyId/comunicados/$docId/$docId.pdf';
+    }
 
     try {
-      // 2. Subir el archivo
-      await storageService.uploadFile(
-        path: storagePath,
-        file: pdfFile,
-        maxSize: 10 * 1024 * 1024,
-      );
+      // 2. Subir el archivo (solo en modo PDF)
+      if (pdfFile != null && storagePath != null) {
+        await storageService.uploadFile(
+          path: storagePath,
+          file: pdfFile,
+          maxSize: 10 * 1024 * 1024,
+        );
+      }
 
       // 3. Crear el documento en Firestore
       final repo = ref.read(comunicadoRepositoryProvider);
@@ -78,6 +92,7 @@ class ComunicadoActionNotifier extends Notifier<AsyncActionState> {
         id: docId,
         companyId: companyId,
         title: title,
+        content: content,
         targetType: targetType,
         targetWorkplaceIds: targetWorkplaceIds,
         targetUserIds: targetUserIds,
@@ -90,9 +105,11 @@ class ComunicadoActionNotifier extends Notifier<AsyncActionState> {
       state = const AsyncActionState.success();
     } catch (e) {
       // Rollback: intentar borrar el archivo si ya fue subido
-      try {
-        await storageService.deleteFile(storagePath);
-      } catch (_) {}
+      if (storagePath != null) {
+        try {
+          await storageService.deleteFile(storagePath);
+        } catch (_) {}
+      }
       state = AsyncActionState.failure(e.toString());
     }
   }

@@ -64,6 +64,38 @@ void main() {
       collection: 'medical_documents',
       fields: [('companyId', 'ASCENDING'), ('userId', 'ASCENDING')],
     ),
+    // Comunicados — listado admin/superadmin de su empresa (sin targetType).
+    (
+      collection: 'comunicados',
+      fields: [('companyId', 'ASCENDING'), ('createdAt', 'DESCENDING')],
+    ),
+    // Comunicados — dirigidos a todo el personal (targetType == 'all').
+    (
+      collection: 'comunicados',
+      fields: [
+        ('companyId', 'ASCENDING'),
+        ('targetType', 'ASCENDING'),
+        ('createdAt', 'DESCENDING'),
+      ],
+    ),
+    // Comunicados — dirigidos a usuarios puntuales (array-contains uid).
+    (
+      collection: 'comunicados',
+      fields: [
+        ('companyId', 'ASCENDING'),
+        ('targetUserIds', 'CONTAINS'),
+        ('createdAt', 'DESCENDING'),
+      ],
+    ),
+    // Comunicados — dirigidos a grupos de trabajo (array-contains workplaceId).
+    (
+      collection: 'comunicados',
+      fields: [
+        ('companyId', 'ASCENDING'),
+        ('targetWorkplaceIds', 'CONTAINS'),
+        ('createdAt', 'DESCENDING'),
+      ],
+    ),
   ];
 
   String fieldsKey(List<(String, String)> fields) =>
@@ -74,9 +106,10 @@ void main() {
         '<${fieldsKey(query.fields)}> está declarado', () {
       final matches = declared.any((index) {
         if (index['collectionGroup'] != query.collection) return false;
-        final fields = (index['fields'] as List<dynamic>)
-            .map((f) => (f['fieldPath'] as String, f['order'] as String))
-            .toList();
+        final fields = (index['fields'] as List<dynamic>).map((f) {
+          final order = f['order'] as String? ?? f['arrayConfig'] as String;
+          return (f['fieldPath'] as String, order);
+        }).toList();
         return fieldsKey(fields) == fieldsKey(query.fields);
       });
       expect(
