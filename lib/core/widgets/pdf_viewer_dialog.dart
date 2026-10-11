@@ -3,11 +3,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:pdfrx/pdfrx.dart';
-import 'package:file_saver/file_saver.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../constants/app_colors.dart';
 import '../providers/firebase_providers.dart';
+import '../services/storage_service.dart';
 
 /// Visor de PDF compartido entre Recibos y Comunicados.
 ///
@@ -68,13 +68,17 @@ class _PdfViewerDialogState extends ConsumerState<PdfViewerDialog> {
   }
 
   Future<void> _download() async {
-    if (_pdfBytes == null) return;
     try {
-      await FileSaver.instance.saveFile(
-        name: widget.downloadFileName,
-        bytes: _pdfBytes!,
-        ext: 'pdf',
-        mimeType: MimeType.pdf,
+      final storageService = ref.read(storageServiceProvider);
+      final outcome = await storageService.downloadFile(
+        pathOrUrl: widget.storagePath,
+        fileName: widget.downloadFileName,
+        existingBytes: _pdfBytes,
+      );
+      if (!mounted) return;
+      if (outcome == DownloadOutcome.cancelled) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Descarga iniciada')),
       );
     } catch (e) {
       debugPrint('[PdfViewerDialog] Error al descargar (${widget.downloadFileName}): $e');
@@ -139,7 +143,7 @@ class _PdfViewerDialogState extends ConsumerState<PdfViewerDialog> {
                     overflow: TextOverflow.ellipsis,
                   ),
                 ),
-                if (_pdfBytes != null)
+                if (_pdfBytes != null || kIsWeb)
                   IconButton(
                     tooltip: 'Descargar ${widget.downloadFileName}',
                     icon: const Icon(LucideIcons.download, color: AppColors.gold),

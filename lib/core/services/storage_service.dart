@@ -2,7 +2,13 @@ import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:file_picker/file_picker.dart';
+import 'package:file_saver/file_saver.dart';
 import 'package:firebase_storage/firebase_storage.dart';
+import 'package:flutter/foundation.dart'
+    show TargetPlatform, defaultTargetPlatform, kIsWeb;
+
+import 'file_exists.dart';
+import 'web_download.dart';
 
 /// Tamaño máximo permitido por archivo: 10 MB.
 const int kMaxFileSize = 10 * 1024 * 1024;
@@ -104,6 +110,101 @@ class StorageService {
     return ref.getDownloadURL();
   }
 
+  /// Sentinel que file_saver devuelve en web cuando el guardado del blob
+  /// se completó; y la marca de "no guardó nada" en desktop al cancelar el
+  /// diálogo nativo (misma convención que ReportExporter).
+  static const String _webDownloadSentinel = 'Downloads';
+  static const String _noSaveSentinel = 'Something went wrong';
+
+  /// Descarga [pathOrUrl] con la estrategia correcta para cada plataforma:
+  ///
+  /// - Web con bytes en memoria: descarga del blob con FileSaver.
+  /// - Web sin bytes (la lectura falla por CORS del bucket): descarga con la
+  ///   URL firmada vía un ancla con atributo `download` — es una navegación
+  ///   directa del navegador, no pasa por CORS, por eso funciona.
+  /// - Android/iOS: `FilePicker.saveFile` (SAF) para que el archivo quede en la
+  ///   ubicación visible que elige el usuario (FileSaver en móvil escribe en
+  ///   un directorio privado — ver ReportExporter).
+  /// - Desktop: FileSaver con verificación real del archivo en disco.
+  ///
+  /// Devuelve [DownloadOutcome.cancelled] si el usuario canceló el diálogo del
+  /// sistema; [DownloadOutcome.downloaded] si la descarga quedó iniciada.
+  /// Lanza error real si la escritura falló.
+  Future<DownloadOutcome> downloadFile({
+    required String pathOrUrl,
+    required String fileName,
+    Uint8List? existingBytes,
+  }) async {
+    Uint8List? bytes = existingBytes;
+    if (bytes == null) {
+      try {
+        bytes = await readFileBytes(pathOrUrl);
+      } catch (e) {
+        if (!kIsWeb) rethrow;
+        // Web: la lectura de bytes puede fallar por CORS del bucket. La
+        // descarga se hace igual con la URL firmada vía ancla (sin CORS).
+        bytes = null;
+      }
+    }
+
+    if (kIsWeb) {
+      if (bytes != null) {
+        final result = await FileSaver.instance.saveFile(
+          name: fileName,
+          bytes: bytes,
+          ext: 'pdf',
+          mimeType: MimeType.pdf,
+        );
+        if (result == _webDownloadSentinel) {
+          return DownloadOutcome.downloaded;
+        }
+        throw StateError('No se pudo completar la descarga del archivo.');
+      }
+      final url = await getDownloadUrl(pathOrUrl);
+      downloadViaAnchor(url, fileName);
+      return DownloadOutcome.downloaded;
+    }
+
+    final isMobile =
+        defaultTargetPlatform == TargetPlatform.android ||
+        defaultTargetPlatform == TargetPlatform.iOS;
+
+    if (isMobile) {
+      // El usuario elige el destino del sistema; null = canceló.
+      final path = await FilePicker.platform.saveFile(
+        dialogTitle: 'Guardar recibo',
+        fileName: fileName,
+        type: FileType.custom,
+        allowedExtensions: ['pdf'],
+        bytes: bytes,
+      );
+      return mobileOutcome(path);
+    }
+
+    final result = await FileSaver.instance.saveFile(
+      name: fileName,
+      bytes: bytes!,
+      ext: 'pdf',
+      mimeType: MimeType.pdf,
+    );
+    if (result.startsWith(_noSaveSentinel)) {
+      return DownloadOutcome.cancelled;
+    }
+    if (!fileExistsOnDisk(result)) {
+      throw StateError('No se pudo guardar el archivo en la ubicación elegida.');
+    }
+    return DownloadOutcome.downloaded;
+  }
+
+  /// Semántica del resultado de `FilePicker.saveFile` en móviles: `null`
+  /// significa que el usuario canceló; `path != null` significa que el sistema
+  /// SAF escribió el archivo (función pura, testeable).
+  static DownloadOutcome mobileOutcome(String? path) {
+    return path == null
+        ? DownloadOutcome.cancelled
+        : DownloadOutcome.downloaded;
+  }
+
   String _contentTypeFromExtension(String? ext) {
     switch (ext?.toLowerCase()) {
       case 'pdf':
@@ -118,6 +219,9 @@ class StorageService {
     }
   }
 }
+
+/// Resultado de [StorageService.downloadFile].
+enum DownloadOutcome { downloaded, cancelled }
 
 class StorageServiceException implements Exception {
   final String message;

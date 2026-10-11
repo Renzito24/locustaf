@@ -1,8 +1,9 @@
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:intl/intl.dart';
-import 'package:file_saver/file_saver.dart';
+import '../../../../core/services/storage_service.dart';
 import '../../../../core/widgets/pdf_viewer_dialog.dart';
 
 import '../../../../core/constants/app_colors.dart';
@@ -96,21 +97,33 @@ class _PaystubDetailDialogState extends ConsumerState<PaystubDetailDialog> {
   }
 
   Future<void> _downloadPdf() async {
+    final String fileName =
+        widget.paystub.fileName ?? 'recibo_${widget.paystub.periodo}.pdf';
+    final path = widget.paystub.storagePath ?? widget.paystub.documentUrl;
     try {
-      final String fileName = widget.paystub.fileName ?? 'recibo_${widget.paystub.periodo}.pdf';
-      final path = widget.paystub.storagePath ?? widget.paystub.documentUrl;
       final storageService = ref.read(storageServiceProvider);
-      final bytes = await storageService.readFileBytes(path);
-      await FileSaver.instance.saveFile(
-        name: fileName,
-        bytes: bytes,
-        ext: 'pdf',
-        mimeType: MimeType.pdf,
+      final outcome = await storageService.downloadFile(
+        pathOrUrl: path,
+        fileName: fileName,
       );
+      if (!mounted) return;
+      if (outcome == DownloadOutcome.downloaded) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          AppTheme.successSnackBar('Recibo descargado'),
+        );
+      }
+      // outcome == cancelled → el usuario canceló el diálogo: se ignora.
     } catch (e) {
+      debugPrint('[PaystubDetailDialog] Error al descargar recibo ($path): $e');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error al descargar el archivo: $e')),
+          SnackBar(
+            content: Text(
+              kIsWeb
+                  ? 'No se pudo descargar el recibo. Usá "Ver Documento" para abrirlo en una pestaña nueva.'
+                  : 'No se pudo descargar el recibo. Reintentá en unos instantes.',
+            ),
+          ),
         );
       }
     }
