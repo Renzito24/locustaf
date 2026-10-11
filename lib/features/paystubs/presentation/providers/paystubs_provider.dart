@@ -192,6 +192,19 @@ class PaystubCreateNotifier extends Notifier<PaystubActionState> {
     String? uploadedUrl;
 
     try {
+      // REC-02: bloquear recibos duplicados para el mismo empleado y período.
+      try {
+        final existing = await repo.getPaystubsForUser(userId);
+        if (existing.any((p) => p.normalizedPeriod == periodo)) {
+          state = const PaystubActionState(
+            error: 'Ya existe un recibo cargado para ese empleado en el período seleccionado.',
+          );
+          return;
+        }
+      } catch (_) {
+        // Si la verificación falla (p. ej. sin conexión), no bloqueamos la carga.
+      }
+
       final docId = ref.read(firestoreServiceProvider).generateId('paystubs');
       final safeName = FileUtils.sanitizeFileName(file.name);
       final storagePath = 'companies/$companyId/paystubs/$userId/${docId}_$safeName';

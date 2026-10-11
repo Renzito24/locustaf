@@ -121,7 +121,7 @@ class AdminPaystubsList extends ConsumerWidget {
 
     // Determine the status of each user for the given periodo
     var displayItems = users.map((u) {
-      final paystub = paystubs.where((p) => p.userId == u.id && getNormalizedPeriod(p) == periodo).firstOrNull;
+      final paystub = paystubs.where((p) => p.userId == u.id && p.normalizedPeriod == periodo).firstOrNull;
       return _AdminUserPaystubRow(user: u, paystub: paystub, periodo: periodo);
     }).toList();
 
@@ -154,13 +154,7 @@ class AdminPaystubsList extends ConsumerWidget {
       separatorBuilder: (_, i) => const SizedBox(height: 8),
       itemBuilder: (context, index) {
         final item = displayItems[index];
-        final rolName = item.user.rol.name == 'employee'
-            ? 'Empleado'
-            : item.user.rol.name == 'supervisor'
-                ? 'Supervisor'
-                : item.user.rol.name == 'admin'
-                    ? 'Administrador'
-                    : item.user.rol.name;
+        final rolName = item.user.rol.label;
 
         final Color borderColor;
         if (item.paystub == null) {
@@ -317,10 +311,6 @@ class AdminPaystubsList extends ConsumerWidget {
       ),
     );
   }
-}
-
-String getNormalizedPeriod(PaystubModel p) {
-  return p.normalizedPeriod;
 }
 
 class _AdminUserPaystubRow {

@@ -3,6 +3,7 @@ import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/constants/app_colors.dart';
+import '../../../../core/errors/error_handler.dart';
 
 import '../../../../core/models/user_model.dart';
 import '../../../authentication/presentation/providers/auth_provider.dart';
@@ -58,12 +59,12 @@ class PaystubsScreen extends ConsumerWidget {
         const SizedBox(height: 24),
         usersAsync.when(
           data: (users) {
-            final activeEmployees = users.where((u) => u.isActive && (u.rol.name == 'employee' || u.rol.name == 'supervisor')).toList();
+            final activeEmployees = users.where((u) => u.isActive && (u.rol == UserRole.employee || u.rol == UserRole.supervisor)).toList();
             
             return paystubsAsync.when(
               data: (paystubs) {
                 final currentPeriodo = filterState.periodo ?? '';
-                final currentPaystubs = paystubs.where((p) => getNormalizedPeriod(p) == currentPeriodo).toList();
+                final currentPaystubs = paystubs.where((p) => p.normalizedPeriod == currentPeriodo).toList();
                 
                 int sinRecibo = 0;
                 int pendientes = 0;
@@ -100,11 +101,11 @@ class PaystubsScreen extends ConsumerWidget {
                 );
               },
               loading: () => const Center(child: Padding(padding: EdgeInsets.all(32), child: CircularProgressIndicator())),
-              error: (error, stack) => _ErrorWidget(error: error.toString()),
+              error: (error, stack) => _ErrorWidget(error: ErrorHandler.parse(error).message),
             );
           },
           loading: () => const Center(child: Padding(padding: EdgeInsets.all(32), child: CircularProgressIndicator())),
-          error: (error, stack) => _ErrorWidget(error: error.toString()),
+          error: (error, stack) => _ErrorWidget(error: ErrorHandler.parse(error).message),
         ),
       ],
     );
@@ -114,7 +115,7 @@ class PaystubsScreen extends ConsumerWidget {
     return paystubsAsync.when(
       data: (paystubs) => EmployeePaystubsList(paystubs: paystubs),
       loading: () => const Center(child: Padding(padding: EdgeInsets.all(32), child: CircularProgressIndicator())),
-      error: (error, stack) => _ErrorWidget(error: error.toString()),
+      error: (error, stack) => _ErrorWidget(error: ErrorHandler.parse(error).message),
     );
   }
 

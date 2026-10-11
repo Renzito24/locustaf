@@ -42,6 +42,18 @@ class PaystubRepositoryImpl implements PaystubRepository {
   }
 
   @override
+  Future<List<PaystubModel>> getPaystubsForUser(String userId) {
+    if (_companyId.isEmpty) {
+      return Future.value(<PaystubModel>[]);
+    }
+    return _firestoreService.queryGetWithFilters<PaystubModel>(
+      path: 'paystubs',
+      filters: {'companyId': _companyId, 'userId': userId},
+      fromJson: PaystubModel.fromJson,
+    );
+  }
+
+  @override
   Future<void> createPaystub(PaystubModel paystub) async {
     final data = paystub.toJson();
     data['companyId'] = _companyId;

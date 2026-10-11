@@ -1,6 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 
-
 import '../../../../core/services/firestore_service.dart';
 import '../../../../core/models/user_model.dart';
 import '../../domain/models/comunicado_model.dart';
@@ -25,12 +24,15 @@ class ComunicadoRepositoryImpl implements ComunicadoRepository {
 
   @override
   Future<void> createComunicado(ComunicadoModel comunicado) async {
-    final docRef = FirebaseFirestore.instance.collection('comunicados').doc();
-    final newComunicado = comunicado.copyWith(id: docRef.id);
+    // Reusar el ID pre-generado por el provider (el mismo usado para nombrar el
+    // archivo en Storage) para que el doc y el PDF compartan identificador.
+    final documentId = comunicado.id.isNotEmpty
+        ? comunicado.id
+        : _firestoreService.generateId('comunicados');
     await _firestoreService.setDocument(
       path: 'comunicados',
-      documentId: newComunicado.id,
-      data: newComunicado.toJson(),
+      documentId: documentId,
+      data: comunicado.copyWith(id: documentId).toJson(),
     );
   }
 
@@ -51,11 +53,17 @@ class ComunicadoRepositoryImpl implements ComunicadoRepository {
 
   @override
   Future<void> deleteComunicado(String comunicadoId) async {
-    await FirebaseFirestore.instance.collection('comunicados').doc(comunicadoId).delete();
+    await _firestoreService.deleteDocument(
+      path: 'comunicados',
+      documentId: comunicadoId,
+    );
   }
 
   @override
   Stream<List<ComunicadoModel>> streamComunicados() {
+    if (_companyId.isEmpty) {
+      return Stream.value(<ComunicadoModel>[]);
+    }
     if (_role == UserRole.admin || _role == UserRole.superadmin) {
       return _firestoreService.queryStreamWithFilters(
         path: 'comunicados',
@@ -148,10 +156,16 @@ class ComunicadoRepositoryImpl implements ComunicadoRepository {
 
   @override
   Stream<List<String>> streamReadersForComunicado(String comunicadoId) {
-    return _firestoreService.queryStreamWithoutOrder(
+    if (_companyId.isEmpty) {
+      return Stream.value(<String>[]);
+    }
+    // Filtra por companyId además de comunicadoId: la regla de lectura de
+    // communicationReads para admin exige `inCompany(resource.data.companyId)`,
+    // y Firestore no aplica reglas como filtros, así que la query debe
+    // restringir explícitamente por ese campo (equality-only → index merge).
+    return _firestoreService.queryStreamWithFilters(
       path: 'communicationReads',
-      field: 'comunicadoId',
-      value: comunicadoId,
+      filters: {'companyId': _companyId, 'comunicadoId': comunicadoId},
       fromJson: (json) => json['userId'] as String,
     );
   }

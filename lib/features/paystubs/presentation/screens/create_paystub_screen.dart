@@ -5,6 +5,8 @@ import 'package:file_picker/file_picker.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 import '../../../../core/constants/app_colors.dart';
+import '../../../../core/errors/error_handler.dart';
+import '../../../../core/models/user_model.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/providers/async_action_state.dart';
 import '../../../employees/presentation/providers/users_provider.dart';
@@ -91,6 +93,7 @@ class _CreatePaystubScreenState extends ConsumerState<CreatePaystubScreen> {
     final isLoading = actionState.status == AsyncActionStatus.loading;
 
     ref.listen<PaystubActionState>(paystubCreateProvider, (prev, next) {
+      if (!mounted) return;
       if (next.status == AsyncActionStatus.success) {
         ref.read(paystubCreateProvider.notifier).reset();
         ScaffoldMessenger.of(context).showSnackBar(
@@ -148,7 +151,11 @@ class _CreatePaystubScreenState extends ConsumerState<CreatePaystubScreen> {
                     children: [
                       usersAsync.when(
                         data: (users) {
-                          final employees = users.where((u) => u.isActive && !u.isDeleted).toList();
+                          final employees = users.where((u) =>
+                            u.isActive &&
+                            !u.isDeleted &&
+                            (u.rol == UserRole.employee || u.rol == UserRole.supervisor),
+                          ).toList();
                           return DropdownButtonFormField<String>(
                             initialValue: _selectedEmployeeId,
                             decoration: baseDecoration.copyWith(labelText: 'Empleado'),
@@ -174,7 +181,7 @@ class _CreatePaystubScreenState extends ConsumerState<CreatePaystubScreen> {
                             child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.gold),
                           ),
                         ),
-                        error: (e, _) => Text('Error: $e', style: const TextStyle(color: AppColors.error)),
+                        error: (e, _) => Text(ErrorHandler.parse(e).message, style: const TextStyle(color: AppColors.error)),
                       ),
                       const SizedBox(height: 20),
                       LayoutBuilder(

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/constants/app_colors.dart';
+import '../../../../core/errors/error_handler.dart';
 
 import '../providers/paystubs_provider.dart';
 import '../widgets/paystubs_components.dart';
@@ -52,7 +53,7 @@ class EmployeePaystubsScreen extends ConsumerWidget {
                         ),
                         const SizedBox(height: 8),
                         Text(
-                          error.toString(),
+                          ErrorHandler.parse(error).message,
                           textAlign: TextAlign.center,
                           style: const TextStyle(color: Colors.red),
                         ),

@@ -2,6 +2,7 @@ import '../models/paystub_model.dart';
 
 abstract class PaystubRepository {
   Stream<List<PaystubModel>> getPaystubs();
+  Future<List<PaystubModel>> getPaystubsForUser(String userId);
   Future<void> createPaystub(PaystubModel paystub);
   Future<void> updateEstado(
     String id, {

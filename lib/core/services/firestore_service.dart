@@ -180,6 +180,26 @@ class FirestoreService {
     return _firestore.collection(path).doc(documentId).set(data);
   }
 
+  /// Consulta única (one-shot) con filtros de igualdad. Útil para validaciones
+  /// puntuales donde no se necesita un stream en tiempo real.
+  Future<List<T>> queryGetWithFilters<T>({
+    required String path,
+    required Map<String, dynamic> filters,
+    required T Function(Map<String, dynamic> json) fromJson,
+  }) async {
+    var query = _firestore.collection(path) as Query<Map<String, dynamic>>;
+    filters.forEach((field, value) {
+      query = query.where(field, isEqualTo: value);
+    });
+    final snapshot = await query.get();
+    return snapshot.docs.map((doc) {
+      return fromJson({
+        ...doc.data(),
+        'id': doc.id,
+      });
+    }).toList();
+  }
+
   /// Consulta paginada con orden estable (usa [orderField] como cursor).
   /// Requiere un índice compuesto que cubra [filters] + [orderField].
   Future<QueryPage<T>> queryPage<T>({

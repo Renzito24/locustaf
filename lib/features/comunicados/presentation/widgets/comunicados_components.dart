@@ -4,6 +4,9 @@ import 'package:intl/intl.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 import '../../../../core/constants/app_colors.dart';
+import '../../../../core/errors/error_handler.dart';
+import '../../../../core/providers/firebase_providers.dart';
+import '../../../../core/services/logging_service.dart';
 import '../../../../core/widgets/pdf_viewer_dialog.dart';
 import '../../../authentication/presentation/providers/auth_provider.dart';
 import '../../../employees/presentation/providers/users_provider.dart';
@@ -31,6 +34,9 @@ class ComunicadosList extends ConsumerWidget {
 
   void _openComunicado(BuildContext context, WidgetRef ref, ComunicadoModel com) {
     if (com.storagePath != null) {
+      // Marcar como leído al abrir, sin depender de que el PDF cargue bien
+      // (si falla la lectura de bytes por CORS, igual queda registrada la lectura).
+      _markAsRead(ref, com);
       // Comunicado con PDF → visor compartido
       showDialog(
         context: context,
@@ -38,7 +44,6 @@ class ComunicadosList extends ConsumerWidget {
           storagePath: com.storagePath!,
           downloadFileName: com.fileName ?? '${com.title}.pdf',
           title: com.title,
-          onPdfLoaded: () => _markAsRead(ref, com),
         ),
       );
     } else {
@@ -242,6 +247,18 @@ class ComunicadosList extends ConsumerWidget {
               Navigator.of(ctx).pop();
               try {
                 await ref.read(comunicadoRepositoryProvider).deleteComunicado(com.id);
+                // Borrar también el PDF de Storage para no dejar huérfanos.
+                final pathToDelete = com.storagePath;
+                if (pathToDelete != null && pathToDelete.isNotEmpty) {
+                  try {
+                    await ref.read(storageServiceProvider).deleteFile(pathToDelete);
+                  } catch (e) {
+                    LoggingService.instance.error(
+                      'No se pudo borrar el PDF del comunicado',
+                      error: e,
+                    );
+                  }
+                }
                 if (context.mounted) {
                   ScaffoldMessenger.of(context).showSnackBar(
                     const SnackBar(content: Text('Comunicado eliminado')),
@@ -250,7 +267,7 @@ class ComunicadosList extends ConsumerWidget {
               } catch (e) {
                 if (context.mounted) {
                   ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text('Error al eliminar: $e')),
+                    SnackBar(content: Text(ErrorHandler.parse(e).message)),
                   );
                 }
               }

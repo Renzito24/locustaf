@@ -5,6 +5,7 @@ import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:file_picker/file_picker.dart';
 
 import '../../../../core/constants/app_colors.dart';
+import '../../../../core/errors/error_handler.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/providers/async_action_state.dart';
 import '../../../employees/presentation/providers/users_provider.dart';
@@ -106,6 +107,7 @@ class _CreateComunicadoScreenState extends ConsumerState<CreateComunicadoScreen>
     final isLoading = actionState.status == AsyncActionStatus.loading;
 
     ref.listen<AsyncActionState>(comunicadoActionProvider, (prev, next) {
+      if (!mounted) return;
       if (next.status == AsyncActionStatus.success) {
         ref.read(comunicadoActionProvider.notifier).reset();
         ScaffoldMessenger.of(context).showSnackBar(
@@ -167,6 +169,7 @@ class _CreateComunicadoScreenState extends ConsumerState<CreateComunicadoScreen>
                         ),
                         validator: (val) => val == null || val.isEmpty ? 'Requerido' : null,
                         enabled: !isLoading,
+                        maxLength: 120,
                       ),
                       const SizedBox(height: 20),
                       // ── Selector de modo: PDF o Texto ─────────────────────────
@@ -233,6 +236,7 @@ class _CreateComunicadoScreenState extends ConsumerState<CreateComunicadoScreen>
                           maxLines: 8,
                           minLines: 5,
                           enabled: !isLoading,
+                          maxLength: 5000,
                         ),
                       ] else if (_selectedFile == null)
                         OutlinedButton.icon(
@@ -453,7 +457,7 @@ class _CreateComunicadoScreenState extends ConsumerState<CreateComunicadoScreen>
         padding: EdgeInsets.all(16.0),
         child: Center(child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.gold)),
       ),
-      error: (e, _) => Text('Error: $e', style: const TextStyle(color: AppColors.error)),
+      error: (e, _) => Text(ErrorHandler.parse(e).message, style: const TextStyle(color: AppColors.error)),
     );
   }
 
@@ -504,7 +508,7 @@ class _CreateComunicadoScreenState extends ConsumerState<CreateComunicadoScreen>
         padding: EdgeInsets.all(16.0),
         child: Center(child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.gold)),
       ),
-      error: (e, _) => Text('Error: $e', style: const TextStyle(color: AppColors.error)),
+      error: (e, _) => Text(ErrorHandler.parse(e).message, style: const TextStyle(color: AppColors.error)),
     );
   }
 }

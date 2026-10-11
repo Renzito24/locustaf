@@ -2,7 +2,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:file_picker/file_picker.dart';
 
+import '../../../../core/errors/error_handler.dart';
 import '../../../../core/providers/firebase_providers.dart';
+import '../../../../core/utils/file_utils.dart';
 import '../../../authentication/presentation/providers/auth_provider.dart';
 import '../../data/repositories/comunicado_repository_impl.dart';
 import '../../domain/models/comunicado_model.dart';
@@ -12,15 +14,14 @@ import '../../../../core/providers/async_action_state.dart';
 final comunicadoRepositoryProvider = Provider<ComunicadoRepository>((ref) {
   final firestoreService = ref.watch(firestoreServiceProvider);
   final user = ref.watch(currentUserModelProvider);
-  if (user == null || user.companyId == null) {
-    throw Exception('User or company not found');
-  }
+  // Sin usuario/empresa devolvemos un repositorio que emite listas vacías en
+  // lugar de lanzar: así la pantalla degrada a estado vacío en vez de romperse.
   return ComunicadoRepositoryImpl(
     firestoreService,
-    user.companyId!,
-    userId: user.id,
-    workplaceId: user.lugarDeTrabajoId,
-    role: user.rol,
+    user?.companyId ?? '',
+    userId: user?.id,
+    workplaceId: user?.lugarDeTrabajoId,
+    role: user?.rol,
   );
 });
 
@@ -58,12 +59,21 @@ class ComunicadoActionNotifier extends Notifier<AsyncActionState> {
     List<String> targetWorkplaceIds = const [],
     List<String> targetUserIds = const [],
   }) async {
-    assert(
-      (pdfFile == null) != (content == null),
-      'Debe proveerse exactamente uno de pdfFile o content',
-    );
+    // Validación en runtime (no `assert`: se elimina en release).
+    if ((pdfFile == null) == (content == null)) {
+      state = const AsyncActionState.failure(
+        'Debés adjuntar un PDF o escribir un contenido (solo uno).',
+      );
+      return;
+    }
     state = const AsyncActionState.loading();
-    final user = ref.read(currentUserModelProvider)!;
+    final user = ref.read(currentUserModelProvider);
+    if (user == null || user.companyId == null) {
+      state = const AsyncActionState.failure(
+        'No hay una empresa en sesión. Recargá la app e intentá de nuevo.',
+      );
+      return;
+    }
     final storageService = ref.read(storageServiceProvider);
     final companyId = user.companyId!;
 
@@ -72,7 +82,7 @@ class ComunicadoActionNotifier extends Notifier<AsyncActionState> {
     String? safeName;
     String? storagePath;
     if (pdfFile != null) {
-      safeName = pdfFile.name.replaceAll(RegExp(r'[^a-zA-Z0-9._-]'), '_');
+      safeName = FileUtils.sanitizeFileName(pdfFile.name);
       storagePath = 'companies/$companyId/comunicados/$docId/$docId.pdf';
     }
 
@@ -110,7 +120,7 @@ class ComunicadoActionNotifier extends Notifier<AsyncActionState> {
           await storageService.deleteFile(storagePath);
         } catch (_) {}
       }
-      state = AsyncActionState.failure(e.toString());
+      state = AsyncActionState.failure(ErrorHandler.parse(e).message);
     }
   }
 
