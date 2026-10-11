@@ -34,7 +34,7 @@ class PdfViewerDialog extends ConsumerStatefulWidget {
 
 class _PdfViewerDialogState extends ConsumerState<PdfViewerDialog> {
   Uint8List? _pdfBytes;
-  String? _error;
+  bool _hasError = false;
   bool _loading = true;
 
   @override
@@ -55,9 +55,12 @@ class _PdfViewerDialogState extends ConsumerState<PdfViewerDialog> {
         widget.onPdfLoaded?.call();
       }
     } catch (e) {
+      // El detalle técnico (p. ej. bloqueo CORS del navegador al leer los
+      // bytes) queda solo en el log: nunca se muestra crudo al usuario.
+      debugPrint('[PdfViewerDialog] Error al cargar PDF (${widget.storagePath}): $e');
       if (mounted) {
         setState(() {
-          _error = e.toString();
+          _hasError = true;
           _loading = false;
         });
       }
@@ -74,9 +77,10 @@ class _PdfViewerDialogState extends ConsumerState<PdfViewerDialog> {
         mimeType: MimeType.pdf,
       );
     } catch (e) {
+      debugPrint('[PdfViewerDialog] Error al descargar (${widget.downloadFileName}): $e');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error al descargar: $e')),
+          const SnackBar(content: Text('No se pudo descargar el documento. Reintentá en unos instantes.')),
         );
       }
     }
@@ -96,9 +100,10 @@ class _PdfViewerDialogState extends ConsumerState<PdfViewerDialog> {
         );
       }
     } catch (e) {
+      debugPrint('[PdfViewerDialog] Error al abrir en pestaña nueva (${widget.storagePath}): $e');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error al abrir el documento: $e')),
+          const SnackBar(content: Text('No se pudo abrir el documento en una pestaña nueva. Reintentá en unos instantes.')),
         );
       }
     }
@@ -154,7 +159,7 @@ class _PdfViewerDialogState extends ConsumerState<PdfViewerDialog> {
                 borderRadius: BorderRadius.circular(8),
                 child: _loading
                     ? const Center(child: CircularProgressIndicator(color: AppColors.gold))
-                    : _error != null
+                    : _hasError
                         ? _buildError()
                         : _pdfBytes != null
                             ? PdfViewer.data(_pdfBytes!, sourceName: widget.downloadFileName)
@@ -177,22 +182,39 @@ class _PdfViewerDialogState extends ConsumerState<PdfViewerDialog> {
             children: [
               const Icon(Icons.error_outline, color: AppColors.error, size: 48),
               const SizedBox(height: 16),
-              const Text('Error al cargar el PDF', style: TextStyle(fontWeight: FontWeight.bold)),
+              const Text(
+                'No se pudo mostrar la vista previa',
+                textAlign: TextAlign.center,
+                style: TextStyle(fontWeight: FontWeight.bold, color: AppColors.textWhite),
+              ),
               const SizedBox(height: 8),
-              Text(_error!, textAlign: TextAlign.center, style: const TextStyle(color: AppColors.textSecondary, fontSize: 12)),
-              const SizedBox(height: 16),
+              Text(
+                kIsWeb
+                    ? 'El navegador bloqueó la carga del documento dentro de la aplicación.\nPara verlo, abrí el archivo en una pestaña nueva.'
+                    : 'No se pudo cargar el documento.\nReintentá en unos instantes.',
+                textAlign: TextAlign.center,
+                style: const TextStyle(color: AppColors.textSecondary, fontSize: 13, height: 1.4),
+              ),
+              const SizedBox(height: 24),
               if (kIsWeb) ...[
                 ElevatedButton.icon(
                   onPressed: _openInNewTab,
                   icon: const Icon(LucideIcons.externalLink),
-                  label: const Text('Abrir documento en pestaña nueva'),
-                  style: ElevatedButton.styleFrom(backgroundColor: AppColors.gold, foregroundColor: Colors.white),
+                  label: const Text('Para ver el archivo, presione aquí'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.gold,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+                  ),
                 ),
                 const SizedBox(height: 12),
               ],
               OutlinedButton.icon(
                 onPressed: () {
-                  setState(() { _loading = true; _error = null; });
+                  setState(() {
+                    _loading = true;
+                    _hasError = false;
+                  });
                   _loadPdf();
                 },
                 icon: const Icon(LucideIcons.refreshCw),
