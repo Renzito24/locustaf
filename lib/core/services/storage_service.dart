@@ -92,6 +92,18 @@ class StorageService {
     return bytes;
   }
 
+  /// Obtiene la URL de descarga firmada de un archivo de Firebase Storage.
+  ///
+  /// Es el fallback para Web cuando la descarga de bytes falla (p. ej. por
+  /// políticas CORS del bucket): permite abrir el documento en una pestaña
+  /// nueva con `url_launcher`.
+  Future<String> getDownloadUrl(String pathOrUrl) async {
+    final ref = pathOrUrl.startsWith('http') || pathOrUrl.startsWith('gs://')
+        ? _storage.refFromURL(pathOrUrl)
+        : _storage.ref().child(pathOrUrl);
+    return ref.getDownloadURL();
+  }
+
   String _contentTypeFromExtension(String? ext) {
     switch (ext?.toLowerCase()) {
       case 'pdf':

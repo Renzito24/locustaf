@@ -141,157 +141,197 @@ class _PaystubDetailDialogState extends ConsumerState<PaystubDetailDialog> {
     final isLoading = approvalState.status == AsyncActionStatus.loading;
 
     return Dialog(
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-      child: Container(
-        width: 600,
-        constraints: BoxConstraints(
-          maxHeight: MediaQuery.of(context).size.height * 0.9,
+      backgroundColor: AppColors.cardDark,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
+        side: BorderSide(color: AppColors.textSecondary.withValues(alpha: 0.2)),
+      ),
+      insetPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(
+          maxWidth: 500,
         ),
-        padding: const EdgeInsets.all(32),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(
-                  'Detalle de Recibo de Sueldo',
-                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                        fontWeight: FontWeight.bold,
-                      ),
-                ),
-                IconButton(
-                  onPressed: () => Navigator.of(context).pop(),
-                  icon: const Icon(LucideIcons.x),
-                  padding: EdgeInsets.zero,
-                  constraints: const BoxConstraints(),
-                ),
-              ],
-            ),
-            const SizedBox(height: 24),
-            if (widget.isAdmin) ...[
-              _buildDetailRow('Empleado', '${widget.user?.nombre} ${widget.user?.apellido}'),
-              const SizedBox(height: 16),
-            ],
-            _buildDetailRow('Periodo', widget.paystub.periodo),
-            const SizedBox(height: 16),
-            _buildDetailRow('Estado', widget.paystub.estado.displayName),
-            const SizedBox(height: 16),
-            _buildDetailRow('Fecha subida', DateFormat('dd/MM/yyyy HH:mm').format(widget.paystub.createdAt)),
-            if (widget.paystub.respondedAt != null) ...[
-              const SizedBox(height: 16),
-              _buildDetailRow('Fecha respuesta', DateFormat('dd/MM/yyyy HH:mm').format(widget.paystub.respondedAt!)),
-            ],
-            
-            if (widget.paystub.observacionRechazo != null && widget.paystub.observacionRechazo!.isNotEmpty) ...[
-              const SizedBox(height: 16),
-              const Text('Motivo de rechazo:', style: TextStyle(fontWeight: FontWeight.bold, color: AppColors.error)),
-              const SizedBox(height: 4),
-              Text(widget.paystub.observacionRechazo!),
-            ],
-            
-            const SizedBox(height: 24),
-            if (widget.paystub.documentUrl.isNotEmpty)
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
               Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  ElevatedButton.icon(
-                    onPressed: () {
-                      final path = widget.paystub.storagePath ?? widget.paystub.documentUrl;
-                      final name = widget.paystub.fileName ?? 'recibo_${widget.paystub.periodo}.pdf';
-                      showDialog(
-                        context: context,
-                        builder: (context) => PdfViewerDialog(
-                          storagePath: path,
-                          downloadFileName: name,
-                          title: 'Recibo ${widget.paystub.periodo}',
-                        ),
-                      );
-                    },
-                    icon: const Icon(LucideIcons.fileText),
-                    label: const Text('Ver Documento'),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: AppColors.gold.withValues(alpha: 0.1),
-                      foregroundColor: AppColors.gold,
+                  Expanded(
+                    child: Text(
+                      'Detalle de Recibo',
+                      style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                            fontWeight: FontWeight.bold,
+                            color: AppColors.textWhite,
+                          ),
                     ),
                   ),
-                  const SizedBox(width: 16),
-                  ElevatedButton.icon(
-                    onPressed: _downloadPdf,
-                    icon: const Icon(LucideIcons.download),
-                    label: const Text('Descargar'),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: AppColors.gold.withValues(alpha: 0.1),
-                      foregroundColor: AppColors.gold,
-                    ),
+                  IconButton(
+                    onPressed: () => Navigator.of(context).pop(),
+                    icon: const Icon(LucideIcons.x, color: AppColors.textMuted),
+                    padding: EdgeInsets.zero,
+                    constraints: const BoxConstraints(),
                   ),
                 ],
-              )
-            else
-              const Text('No hay documento adjunto', style: TextStyle(color: AppColors.textSecondary)),
-            
-            if (!widget.isAdmin && widget.paystub.estado == PaystubEstado.pendiente) ...[
-              const SizedBox(height: 32),
-              const Divider(),
+              ),
+              const SizedBox(height: 20),
+              Divider(color: AppColors.textSecondary.withValues(alpha: 0.2)),
               const SizedBox(height: 16),
-              if (_isRejecting) ...[
-                TextField(
-                  controller: _observacionController,
-                  decoration: InputDecoration(
-                    labelText: 'Motivo del rechazo',
-                    border: const OutlineInputBorder(),
-                    counterText: '${_observacionController.text.length} / 500',
+              if (widget.isAdmin) ...[
+                _buildDetailRow('Empleado', '${widget.user?.nombre} ${widget.user?.apellido}'),
+                const SizedBox(height: 12),
+              ],
+              _buildDetailRow('Periodo', widget.paystub.periodo),
+              const SizedBox(height: 12),
+              _buildDetailRow('Estado', widget.paystub.estado.displayName),
+              const SizedBox(height: 12),
+              _buildDetailRow('Fecha subida', DateFormat('dd/MM/yyyy HH:mm').format(widget.paystub.createdAt)),
+              if (widget.paystub.respondedAt != null) ...[
+                const SizedBox(height: 12),
+                _buildDetailRow('Fecha respuesta', DateFormat('dd/MM/yyyy HH:mm').format(widget.paystub.respondedAt!)),
+              ],
+              
+              if (widget.paystub.observacionRechazo != null && widget.paystub.observacionRechazo!.isNotEmpty) ...[
+                const SizedBox(height: 14),
+                const Text('Motivo de rechazo:', style: TextStyle(fontWeight: FontWeight.bold, color: AppColors.error, fontSize: 13)),
+                const SizedBox(height: 4),
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    color: AppColors.error.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: AppColors.error.withValues(alpha: 0.3)),
                   ),
-                  maxLength: 500,
-                  maxLines: 3,
-                  onChanged: (_) => setState(() {}),
-                ),
-                const SizedBox(height: 16),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.end,
-                  children: [
-                    TextButton(
-                      onPressed: isLoading ? null : () => setState(() => _isRejecting = false),
-                      child: const Text('Cancelar'),
-                    ),
-                    const SizedBox(width: 16),
-                    ElevatedButton(
-                      onPressed: (isLoading || _observacionController.text.trim().isEmpty) ? null : _handleReject,
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: AppColors.error,
-                        foregroundColor: Colors.white,
-                      ),
-                      child: isLoading
-                          ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2))
-                          : const Text('Confirmar Rechazo'),
-                    ),
-                  ],
-                ),
-              ] else ...[
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.end,
-                  children: [
-                    TextButton(
-                      onPressed: isLoading ? null : _handleReject,
-                      style: TextButton.styleFrom(foregroundColor: AppColors.error),
-                      child: const Text('Rechazar Recibo'),
-                    ),
-                    const SizedBox(width: 16),
-                    ElevatedButton(
-                      onPressed: isLoading ? null : _handleApprove,
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: AppColors.success,
-                        foregroundColor: Colors.white,
-                      ),
-                      child: isLoading
-                          ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2))
-                          : const Text('Aceptar Recibo'),
-                    ),
-                  ],
+                  child: Text(widget.paystub.observacionRechazo!, style: const TextStyle(color: AppColors.textWhite, fontSize: 13)),
                 ),
               ],
+              
+              const SizedBox(height: 20),
+              if (widget.paystub.documentUrl.isNotEmpty)
+                Wrap(
+                  spacing: 10,
+                  runSpacing: 10,
+                  children: [
+                    ElevatedButton.icon(
+                      onPressed: () {
+                        final path = widget.paystub.storagePath ?? widget.paystub.documentUrl;
+                        final name = widget.paystub.fileName ?? 'recibo_${widget.paystub.periodo}.pdf';
+                        showDialog(
+                          context: context,
+                          builder: (context) => PdfViewerDialog(
+                            storagePath: path,
+                            downloadFileName: name,
+                            title: 'Recibo ${widget.paystub.periodo}',
+                          ),
+                        );
+                      },
+                      icon: const Icon(LucideIcons.fileText, size: 16),
+                      label: const Text('Ver Documento'),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppColors.gold.withValues(alpha: 0.15),
+                        foregroundColor: AppColors.gold,
+                        side: BorderSide(color: AppColors.gold.withValues(alpha: 0.4)),
+                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                      ),
+                    ),
+                    ElevatedButton.icon(
+                      onPressed: _downloadPdf,
+                      icon: const Icon(LucideIcons.download, size: 16),
+                      label: const Text('Descargar'),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppColors.gold.withValues(alpha: 0.15),
+                        foregroundColor: AppColors.gold,
+                        side: BorderSide(color: AppColors.gold.withValues(alpha: 0.4)),
+                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                      ),
+                    ),
+                  ],
+                )
+              else
+                const Text('No hay documento adjunto', style: TextStyle(color: AppColors.textSecondary)),
+              
+              if (!widget.isAdmin && widget.paystub.estado == PaystubEstado.pendiente) ...[
+                const SizedBox(height: 24),
+                Divider(color: AppColors.textSecondary.withValues(alpha: 0.2)),
+                const SizedBox(height: 16),
+                if (_isRejecting) ...[
+                  TextField(
+                    controller: _observacionController,
+                    style: const TextStyle(color: AppColors.textWhite),
+                    decoration: InputDecoration(
+                      labelText: 'Motivo del rechazo',
+                      labelStyle: const TextStyle(color: AppColors.textSecondary),
+                      filled: true,
+                      fillColor: AppColors.bgDarkTop,
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(10),
+                        borderSide: BorderSide(color: AppColors.textSecondary.withValues(alpha: 0.3)),
+                      ),
+                      counterText: '${_observacionController.text.length} / 500',
+                      counterStyle: const TextStyle(color: AppColors.textMuted),
+                    ),
+                    maxLength: 500,
+                    maxLines: 3,
+                    onChanged: (_) => setState(() {}),
+                  ),
+                  const SizedBox(height: 14),
+                  Wrap(
+                    spacing: 10,
+                    runSpacing: 10,
+                    alignment: WrapAlignment.end,
+                    children: [
+                      TextButton(
+                        onPressed: isLoading ? null : () => setState(() => _isRejecting = false),
+                        child: const Text('Cancelar', style: TextStyle(color: AppColors.textMuted)),
+                      ),
+                      ElevatedButton(
+                        onPressed: (isLoading || _observacionController.text.trim().isEmpty) ? null : _handleReject,
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppColors.error,
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                        ),
+                        child: isLoading
+                            ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                            : const Text('Confirmar Rechazo'),
+                      ),
+                    ],
+                  ),
+                ] else ...[
+                  Wrap(
+                    spacing: 10,
+                    runSpacing: 10,
+                    alignment: WrapAlignment.end,
+                    children: [
+                      TextButton(
+                        onPressed: isLoading ? null : _handleReject,
+                        style: TextButton.styleFrom(
+                          foregroundColor: AppColors.error,
+                          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                        ),
+                        child: const Text('Rechazar Recibo'),
+                      ),
+                      ElevatedButton(
+                        onPressed: isLoading ? null : _handleApprove,
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppColors.success,
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                        ),
+                        child: isLoading
+                            ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                            : const Text('Aceptar Recibo'),
+                      ),
+                    ],
+                  ),
+                ],
+              ],
             ],
-          ],
+          ),
         ),
       ),
     );
@@ -302,12 +342,13 @@ class _PaystubDetailDialogState extends ConsumerState<PaystubDetailDialog> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         SizedBox(
-          width: 120,
+          width: 110,
           child: Text(
             label,
             style: const TextStyle(
               fontWeight: FontWeight.w600,
               color: AppColors.textSecondary,
+              fontSize: 13,
             ),
           ),
         ),
@@ -315,7 +356,9 @@ class _PaystubDetailDialogState extends ConsumerState<PaystubDetailDialog> {
           child: Text(
             value,
             style: const TextStyle(
-              color: AppColors.textPrimary,
+              color: AppColors.textWhite,
+              fontSize: 13,
+              fontWeight: FontWeight.w500,
             ),
           ),
         ),

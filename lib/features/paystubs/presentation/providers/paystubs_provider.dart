@@ -129,7 +129,7 @@ final filteredPaystubsProvider = Provider<AsyncValue<List<PaystubModel>>>((ref) 
   List<PaystubModel> filtered = List.from(paystubs);
 
   if (filter.periodo != null && filter.periodo!.isNotEmpty) {
-    filtered = filtered.where((p) => p.periodo == filter.periodo).toList();
+    filtered = filtered.where((p) => p.normalizedPeriod == filter.periodo).toList();
   }
 
   if (filter.employeeId != null) {

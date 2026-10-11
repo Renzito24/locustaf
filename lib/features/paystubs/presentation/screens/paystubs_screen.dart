@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/constants/app_colors.dart';
@@ -35,7 +36,7 @@ class PaystubsScreen extends ConsumerWidget {
             child: Card(
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
               elevation: 0,
-              color: Colors.white,
+              color: AppColors.cardDark,
               child: Padding(
                 padding: const EdgeInsets.all(24.0),
                 child: isAdmin
@@ -61,7 +62,6 @@ class PaystubsScreen extends ConsumerWidget {
             
             return paystubsAsync.when(
               data: (paystubs) {
-                // DEBUG TEMPORAL: Imprimir valores distintos de periodo
                 final currentPeriodo = filterState.periodo ?? '';
                 final currentPaystubs = paystubs.where((p) => getNormalizedPeriod(p) == currentPeriodo).toList();
                 
@@ -119,42 +119,88 @@ class PaystubsScreen extends ConsumerWidget {
   }
 
   Widget _buildSummaryRow(int sinRecibo, int pendientes, int aceptados, int rechazados) {
-    return Wrap(
-      spacing: 16,
-      runSpacing: 8,
-      children: [
-        _summaryCard('Sin recibo', sinRecibo, Colors.grey),
-        _summaryCard('Pendientes', pendientes, AppColors.gold),
-        _summaryCard('Aceptados', aceptados, AppColors.success),
-        _summaryCard('Rechazados', rechazados, AppColors.error),
-      ],
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final cards = [
+          _summaryCard('Sin recibo', sinRecibo, Colors.grey.shade400, LucideIcons.fileX),
+          _summaryCard('Pendientes', pendientes, AppColors.warning, LucideIcons.clock),
+          _summaryCard('Aceptados', aceptados, AppColors.success, LucideIcons.circleCheck),
+          _summaryCard('Rechazados', rechazados, AppColors.error, LucideIcons.circleX),
+        ];
+        if (constraints.maxWidth >= 460) {
+          return Row(
+            children: [
+              Expanded(child: cards[0]),
+              const SizedBox(width: 10),
+              Expanded(child: cards[1]),
+              const SizedBox(width: 10),
+              Expanded(child: cards[2]),
+              const SizedBox(width: 10),
+              Expanded(child: cards[3]),
+            ],
+          );
+        }
+        return Column(
+          children: [
+            Row(children: [
+              Expanded(child: cards[0]),
+              const SizedBox(width: 10),
+              Expanded(child: cards[1]),
+            ]),
+            const SizedBox(height: 10),
+            Row(children: [
+              Expanded(child: cards[2]),
+              const SizedBox(width: 10),
+              Expanded(child: cards[3]),
+            ]),
+          ],
+        );
+      },
     );
   }
 
-  Widget _summaryCard(String label, int count, Color color) {
+  Widget _summaryCard(String label, int count, Color color, IconData icon) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.1),
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: color.withValues(alpha: 0.3)),
+        color: AppColors.bgDarkTop,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: color.withValues(alpha: 0.4)),
       ),
-      child: Row(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisSize: MainAxisSize.min,
         children: [
-          Container(
-            padding: const EdgeInsets.all(6),
-            decoration: BoxDecoration(
-              color: color.withValues(alpha: 0.2),
-              shape: BoxShape.circle,
-            ),
-            child: Text(
-              count.toString(),
-              style: TextStyle(fontWeight: FontWeight.bold, color: color),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Container(
+                padding: const EdgeInsets.all(7),
+                decoration: BoxDecoration(
+                  color: color.withValues(alpha: 0.15),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Icon(icon, color: color, size: 16),
+              ),
+              Text(
+                count.toString(),
+                style: TextStyle(
+                  fontSize: 26,
+                  fontWeight: FontWeight.bold,
+                  color: color,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Text(
+            label,
+            style: const TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
+              color: AppColors.textMuted,
             ),
           ),
-          const SizedBox(width: 8),
-          Text(label, style: TextStyle(fontWeight: FontWeight.w600, color: color)),
         ],
       ),
     );
@@ -168,73 +214,97 @@ class _AdminFilters extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    return Row(
-      children: [
-        Expanded(
-          flex: 2,
-          child: TextFormField(
-            initialValue: filterState.searchQuery,
-            decoration: const InputDecoration(
-              hintText: 'Buscar empleado...',
-              prefixIcon: Icon(Icons.search),
-              border: OutlineInputBorder(),
-            ),
-            onChanged: (val) => ref.read(paystubsFilterProvider.notifier).setSearchQuery(val),
-          ),
-        ),
-        const SizedBox(width: 16),
-        Expanded(
-          flex: 1,
-          child: DropdownButtonFormField<String>(
-            // ignore: deprecated_member_use
-            value: filterState.periodo,
-            decoration: const InputDecoration(
-              labelText: 'Mes / Año',
-              border: OutlineInputBorder(),
-            ),
-            items: _generateMonths().map((p) {
-              return DropdownMenuItem(
-                value: p,
-                child: Text(p), // YYYY-MM
-              );
-            }).toList(),
-            onChanged: (val) => ref.read(paystubsFilterProvider.notifier).setPeriodo(val),
-          ),
-        ),
-        const SizedBox(width: 16),
-        Expanded(
-          flex: 1,
-          child: DropdownButtonFormField<String>(
-            // ignore: deprecated_member_use
-            value: filterState.sinRecibo
-                ? 'sin_recibo'
-                : filterState.state?.name,
-            decoration: const InputDecoration(
-              labelText: 'Estado',
-              border: OutlineInputBorder(),
-            ),
-            items: const [
-              DropdownMenuItem(value: null, child: Text('Todos')),
-              DropdownMenuItem(value: 'sin_recibo', child: Text('Sin recibo')),
-              DropdownMenuItem(value: 'pendiente', child: Text('Pendiente')),
-              DropdownMenuItem(value: 'aceptado', child: Text('Aceptado')),
-              DropdownMenuItem(value: 'rechazado', child: Text('Rechazado')),
-            ],
-            onChanged: (val) {
-              final notifier = ref.read(paystubsFilterProvider.notifier);
-              if (val == 'sin_recibo') {
-                notifier.setSinRecibo(true);
-              } else if (val == null) {
-                notifier.setState(null);
-              } else {
-                notifier.setState(
-                  PaystubEstado.values.firstWhere((e) => e.name == val),
-                );
-              }
-            },
-          ),
-        ),
+    final border = OutlineInputBorder(
+      borderRadius: BorderRadius.circular(10),
+      borderSide: BorderSide(color: AppColors.textSecondary.withValues(alpha: 0.3)),
+    );
+    final focusedBorder = OutlineInputBorder(
+      borderRadius: BorderRadius.circular(10),
+      borderSide: const BorderSide(color: AppColors.gold),
+    );
+    final baseDecoration = InputDecoration(
+      labelStyle: const TextStyle(color: AppColors.textSecondary),
+      hintStyle: const TextStyle(color: AppColors.textSecondary),
+      filled: true,
+      fillColor: AppColors.bgDarkTop,
+      enabledBorder: border,
+      focusedBorder: focusedBorder,
+      border: border,
+    );
+
+    final searchField = TextFormField(
+      initialValue: filterState.searchQuery,
+      decoration: baseDecoration.copyWith(
+        hintText: 'Buscar empleado...',
+        prefixIcon: const Icon(Icons.search, color: AppColors.textMuted, size: 20),
+      ),
+      style: const TextStyle(color: AppColors.textWhite),
+      onChanged: (val) => ref.read(paystubsFilterProvider.notifier).setSearchQuery(val),
+    );
+
+    final monthField = DropdownButtonFormField<String>(
+      initialValue: filterState.periodo,
+      isExpanded: true,
+      decoration: baseDecoration.copyWith(labelText: 'Mes / Año'),
+      dropdownColor: AppColors.cardDark,
+      style: const TextStyle(color: AppColors.textWhite),
+      iconEnabledColor: AppColors.textMuted,
+      items: _generateMonths().map((p) => DropdownMenuItem(
+        value: p,
+        child: Text(p, style: const TextStyle(color: AppColors.textWhite)),
+      )).toList(),
+      onChanged: (val) => ref.read(paystubsFilterProvider.notifier).setPeriodo(val),
+    );
+
+    final stateField = DropdownButtonFormField<String>(
+      initialValue: filterState.sinRecibo ? 'sin_recibo' : filterState.state?.name,
+      isExpanded: true,
+      decoration: baseDecoration.copyWith(labelText: 'Estado'),
+      dropdownColor: AppColors.cardDark,
+      style: const TextStyle(color: AppColors.textWhite),
+      iconEnabledColor: AppColors.textMuted,
+      items: const [
+        DropdownMenuItem(value: null, child: Text('Todos', style: TextStyle(color: AppColors.textWhite))),
+        DropdownMenuItem(value: 'sin_recibo', child: Text('Sin recibo', style: TextStyle(color: AppColors.textWhite))),
+        DropdownMenuItem(value: 'pendiente', child: Text('Pendiente', style: TextStyle(color: AppColors.textWhite))),
+        DropdownMenuItem(value: 'aceptado', child: Text('Aceptado', style: TextStyle(color: AppColors.textWhite))),
+        DropdownMenuItem(value: 'rechazado', child: Text('Rechazado', style: TextStyle(color: AppColors.textWhite))),
       ],
+      onChanged: (val) {
+        final notifier = ref.read(paystubsFilterProvider.notifier);
+        if (val == 'sin_recibo') {
+          notifier.setSinRecibo(true);
+        } else if (val == null) {
+          notifier.setState(null);
+        } else {
+          notifier.setState(PaystubEstado.values.firstWhere((e) => e.name == val));
+        }
+      },
+    );
+
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        if (constraints.maxWidth >= 560) {
+          return Row(
+            children: [
+              Expanded(flex: 2, child: searchField),
+              const SizedBox(width: 12),
+              Expanded(child: monthField),
+              const SizedBox(width: 12),
+              Expanded(child: stateField),
+            ],
+          );
+        }
+        return Column(
+          children: [
+            searchField,
+            const SizedBox(height: 12),
+            monthField,
+            const SizedBox(height: 12),
+            stateField,
+          ],
+        );
+      },
     );
   }
 

@@ -1,9 +1,10 @@
-import 'dart:typed_data';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:pdfrx/pdfrx.dart';
 import 'package:file_saver/file_saver.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../constants/app_colors.dart';
 import '../providers/firebase_providers.dart';
@@ -81,14 +82,41 @@ class _PdfViewerDialogState extends ConsumerState<PdfViewerDialog> {
     }
   }
 
+  Future<void> _openInNewTab() async {
+    try {
+      final storageService = ref.read(storageServiceProvider);
+      final url = await storageService.getDownloadUrl(widget.storagePath);
+      final ok = await launchUrl(
+        Uri.parse(url),
+        mode: LaunchMode.externalApplication,
+      );
+      if (!ok && mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('No se pudo abrir el documento en una pestaña nueva')),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error al abrir el documento: $e')),
+        );
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final screenSize = MediaQuery.of(context).size;
     return Dialog(
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      backgroundColor: AppColors.cardDark,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
+        side: BorderSide(color: AppColors.textSecondary.withValues(alpha: 0.2)),
+      ),
+      insetPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
       child: Container(
-        width: screenSize.width * 0.88,
-        height: screenSize.height * 0.88,
+        width: screenSize.width * 0.92,
+        height: screenSize.height * 0.90,
         padding: const EdgeInsets.all(16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -101,7 +129,7 @@ class _PdfViewerDialogState extends ConsumerState<PdfViewerDialog> {
                     style: const TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.w700,
-                      color: AppColors.textPrimary,
+                      color: AppColors.textWhite,
                     ),
                     overflow: TextOverflow.ellipsis,
                   ),
@@ -113,24 +141,24 @@ class _PdfViewerDialogState extends ConsumerState<PdfViewerDialog> {
                     onPressed: _download,
                   ),
                 IconButton(
-                  icon: const Icon(LucideIcons.x),
+                  icon: const Icon(LucideIcons.x, color: AppColors.textMuted),
                   onPressed: () => Navigator.of(context).pop(),
                 ),
               ],
             ),
             const SizedBox(height: 8),
-            const Divider(height: 1),
+            Divider(height: 1, color: AppColors.textSecondary.withValues(alpha: 0.2)),
             const SizedBox(height: 8),
             Expanded(
               child: ClipRRect(
                 borderRadius: BorderRadius.circular(8),
                 child: _loading
-                    ? const Center(child: CircularProgressIndicator())
+                    ? const Center(child: CircularProgressIndicator(color: AppColors.gold))
                     : _error != null
                         ? _buildError()
                         : _pdfBytes != null
                             ? PdfViewer.data(_pdfBytes!, sourceName: widget.downloadFileName)
-                            : const Center(child: Text('No hay datos')),
+                            : const Center(child: Text('No hay datos', style: TextStyle(color: AppColors.textSecondary))),
               ),
             ),
           ],
@@ -141,25 +169,42 @@ class _PdfViewerDialogState extends ConsumerState<PdfViewerDialog> {
 
   Widget _buildError() {
     return Center(
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          const Icon(Icons.error_outline, color: AppColors.error, size: 48),
-          const SizedBox(height: 16),
-          const Text('Error al cargar el PDF', style: TextStyle(fontWeight: FontWeight.bold)),
-          const SizedBox(height: 8),
-          Text(_error!, style: const TextStyle(color: AppColors.textSecondary, fontSize: 12)),
-          const SizedBox(height: 16),
-          ElevatedButton.icon(
-            onPressed: () {
-              setState(() { _loading = true; _error = null; });
-              _loadPdf();
-            },
-            icon: const Icon(LucideIcons.refreshCw),
-            label: const Text('Reintentar'),
-            style: ElevatedButton.styleFrom(backgroundColor: AppColors.gold, foregroundColor: Colors.white),
+      child: SingleChildScrollView(
+        child: Padding(
+          padding: const EdgeInsets.all(8),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Icon(Icons.error_outline, color: AppColors.error, size: 48),
+              const SizedBox(height: 16),
+              const Text('Error al cargar el PDF', style: TextStyle(fontWeight: FontWeight.bold)),
+              const SizedBox(height: 8),
+              Text(_error!, textAlign: TextAlign.center, style: const TextStyle(color: AppColors.textSecondary, fontSize: 12)),
+              const SizedBox(height: 16),
+              if (kIsWeb) ...[
+                ElevatedButton.icon(
+                  onPressed: _openInNewTab,
+                  icon: const Icon(LucideIcons.externalLink),
+                  label: const Text('Abrir documento en pestaña nueva'),
+                  style: ElevatedButton.styleFrom(backgroundColor: AppColors.gold, foregroundColor: Colors.white),
+                ),
+                const SizedBox(height: 12),
+              ],
+              OutlinedButton.icon(
+                onPressed: () {
+                  setState(() { _loading = true; _error = null; });
+                  _loadPdf();
+                },
+                icon: const Icon(LucideIcons.refreshCw),
+                label: const Text('Reintentar'),
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: AppColors.gold,
+                  side: const BorderSide(color: AppColors.gold),
+                ),
+              ),
+            ],
           ),
-        ],
+        ),
       ),
     );
   }

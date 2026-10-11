@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../../core/constants/app_colors.dart';
 
-import '../../../authentication/presentation/providers/auth_provider.dart';
 import '../providers/paystubs_provider.dart';
 import '../widgets/paystubs_components.dart';
 
@@ -11,15 +11,14 @@ class EmployeePaystubsScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final paystubsAsync = ref.watch(filteredPaystubsProvider);
-    final isAdmin = ref.watch(isAdminProvider); // should be false
+    final paystubsAsync = ref.watch(paystubsStreamProvider);
 
     return CustomScrollView(
       slivers: [
         SliverPadding(
           padding: const EdgeInsets.fromLTRB(24, 24, 24, 0),
           sliver: SliverToBoxAdapter(
-            child: PaystubsHeader(isAdmin: isAdmin),
+            child: PaystubsHeader(isAdmin: false),
           ),
         ),
         SliverPadding(
@@ -28,7 +27,7 @@ class EmployeePaystubsScreen extends ConsumerWidget {
             child: Card(
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
               elevation: 0,
-              color: Colors.white,
+              color: AppColors.cardDark,
               child: paystubsAsync.when(
                 data: (paystubs) => EmployeePaystubsList(
                   paystubs: paystubs,

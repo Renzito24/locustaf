@@ -18,15 +18,23 @@ class CreatePaystubScreen extends ConsumerStatefulWidget {
 }
 
 class _CreatePaystubScreenState extends ConsumerState<CreatePaystubScreen> {
+  static const _meses = [
+    '', 'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
+    'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre',
+  ];
+
   final _formKey = GlobalKey<FormState>();
-  final _periodoController = TextEditingController();
   String? _selectedEmployeeId;
+  int? _selectedMonth;
+  int? _selectedYear;
   PlatformFile? _selectedFile;
 
   @override
-  void dispose() {
-    _periodoController.dispose();
-    super.dispose();
+  void initState() {
+    super.initState();
+    final now = DateTime.now();
+    _selectedMonth = now.month;
+    _selectedYear = now.year;
   }
 
   Future<void> _pickFile() async {
@@ -39,7 +47,7 @@ class _CreatePaystubScreenState extends ConsumerState<CreatePaystubScreen> {
       if (file.size > 10 * 1024 * 1024) {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('El archivo no debe pesar más de 10 MB')),
+            AppTheme.errorSnackBar('El archivo no debe pesar más de 10 MB'),
           );
         }
         return;
@@ -55,21 +63,23 @@ class _CreatePaystubScreenState extends ConsumerState<CreatePaystubScreen> {
 
     if (_selectedFile == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Debe adjuntar el archivo del recibo')),
+        AppTheme.errorSnackBar('Debe adjuntar el archivo del recibo'),
       );
       return;
     }
 
     if (_selectedEmployeeId == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Debe seleccionar un empleado')),
+        AppTheme.errorSnackBar('Debe seleccionar un empleado'),
       );
       return;
     }
 
+    final periodo = '${_selectedYear!.toString()}-${_selectedMonth!.toString().padLeft(2, '0')}';
+
     ref.read(paystubCreateProvider.notifier).createPaystub(
       userId: _selectedEmployeeId!,
-      periodo: _periodoController.text.trim(),
+      periodo: periodo,
       file: _selectedFile!,
     );
   }
@@ -94,106 +104,209 @@ class _CreatePaystubScreenState extends ConsumerState<CreatePaystubScreen> {
       }
     });
 
+    final border = OutlineInputBorder(
+      borderRadius: BorderRadius.circular(10),
+      borderSide: BorderSide(color: AppColors.textSecondary.withValues(alpha: 0.3)),
+    );
+    final focusedBorder = OutlineInputBorder(
+      borderRadius: BorderRadius.circular(10),
+      borderSide: const BorderSide(color: AppColors.gold),
+    );
+    final baseDecoration = InputDecoration(
+      labelStyle: const TextStyle(color: AppColors.textSecondary),
+      hintStyle: const TextStyle(color: AppColors.textSecondary),
+      filled: true,
+      fillColor: AppColors.bgDarkTop,
+      enabledBorder: border,
+      focusedBorder: focusedBorder,
+      border: border,
+    );
+
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: AppColors.bgDarkTop,
       appBar: AppBar(
         title: const Text('Subir Recibo de Sueldo'),
+        backgroundColor: AppColors.bgDarkTop,
+        foregroundColor: AppColors.textWhite,
+        elevation: 0,
       ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(24),
-        child: Form(
-          key: _formKey,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              usersAsync.when(
-                data: (users) {
-                  final employees = users.where((u) => u.isActive && !u.isDeleted).toList();
-                  return DropdownButtonFormField<String>(
-                    initialValue: _selectedEmployeeId,
-                    decoration: const InputDecoration(
-                      labelText: 'Empleado',
-                      border: OutlineInputBorder(),
-                    ),
-                    items: employees.map((user) {
-                      return DropdownMenuItem(
-                        value: user.id,
-                        child: Text('${user.nombre} ${user.apellido}'),
-                      );
-                    }).toList(),
-                    onChanged: isLoading ? null : (val) => setState(() => _selectedEmployeeId = val),
-                    validator: (val) => val == null ? 'Seleccione un empleado' : null,
-                  );
-                },
-                loading: () => const CircularProgressIndicator(),
-                error: (e, _) => Text('Error: $e'),
-              ),
-              const SizedBox(height: 16),
-              TextFormField(
-                controller: _periodoController,
-                decoration: const InputDecoration(
-                  labelText: 'Periodo (ej. Octubre 2026)',
-                  border: OutlineInputBorder(),
-                ),
-                validator: (val) => val == null || val.isEmpty ? 'Requerido' : null,
-                enabled: !isLoading,
-              ),
-              const SizedBox(height: 24),
-              const Text('Documento Adjunto', style: TextStyle(fontWeight: FontWeight.bold)),
-              const SizedBox(height: 8),
-              if (_selectedFile != null)
-                Container(
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    border: Border.all(color: AppColors.border),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Row(
+      body: Center(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 800),
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.all(24),
+            child: Card(
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+              elevation: 0,
+              color: AppColors.cardDark,
+              child: Padding(
+                padding: const EdgeInsets.all(24),
+                child: Form(
+                  key: _formKey,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Icon(LucideIcons.file, color: AppColors.textSecondary),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: Text(_selectedFile!.name, maxLines: 1, overflow: TextOverflow.ellipsis),
+                      usersAsync.when(
+                        data: (users) {
+                          final employees = users.where((u) => u.isActive && !u.isDeleted).toList();
+                          return DropdownButtonFormField<String>(
+                            initialValue: _selectedEmployeeId,
+                            decoration: baseDecoration.copyWith(labelText: 'Empleado'),
+                            dropdownColor: AppColors.cardDark,
+                            style: const TextStyle(color: AppColors.textWhite),
+                            iconEnabledColor: AppColors.textMuted,
+                            items: employees.map((user) {
+                              return DropdownMenuItem(
+                                value: user.id,
+                                child: Text(
+                                  '${user.nombre} ${user.apellido}',
+                                  style: const TextStyle(color: AppColors.textWhite),
+                                ),
+                              );
+                            }).toList(),
+                            onChanged: isLoading ? null : (val) => setState(() => _selectedEmployeeId = val),
+                            validator: (val) => val == null ? 'Seleccione un empleado' : null,
+                          );
+                        },
+                        loading: () => const Center(
+                          child: Padding(
+                            padding: EdgeInsets.all(16),
+                            child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.gold),
+                          ),
+                        ),
+                        error: (e, _) => Text('Error: $e', style: const TextStyle(color: AppColors.error)),
                       ),
-                      IconButton(
-                        icon: const Icon(LucideIcons.x, color: AppColors.error),
-                        onPressed: isLoading ? null : () => setState(() => _selectedFile = null),
+                      const SizedBox(height: 20),
+                      LayoutBuilder(
+                        builder: (context, constraints) {
+                          final monthField = DropdownButtonFormField<int>(
+                            initialValue: _selectedMonth,
+                            decoration: baseDecoration.copyWith(labelText: 'Mes'),
+                            dropdownColor: AppColors.cardDark,
+                            style: const TextStyle(color: AppColors.textWhite),
+                            iconEnabledColor: AppColors.textMuted,
+                            items: [
+                              for (int m = 1; m <= 12; m++)
+                                DropdownMenuItem(
+                                  value: m,
+                                  child: Text(_meses[m], style: const TextStyle(color: AppColors.textWhite)),
+                                ),
+                            ],
+                            onChanged: isLoading ? null : (val) => setState(() => _selectedMonth = val),
+                          );
+
+                          final yearField = DropdownButtonFormField<int>(
+                            initialValue: _selectedYear,
+                            decoration: baseDecoration.copyWith(labelText: 'Año'),
+                            dropdownColor: AppColors.cardDark,
+                            style: const TextStyle(color: AppColors.textWhite),
+                            iconEnabledColor: AppColors.textMuted,
+                            items: [
+                              for (int y = DateTime.now().year; y >= DateTime.now().year - 10; y--)
+                                DropdownMenuItem(
+                                  value: y,
+                                  child: Text(y.toString(), style: const TextStyle(color: AppColors.textWhite)),
+                                ),
+                            ],
+                            onChanged: isLoading ? null : (val) => setState(() => _selectedYear = val),
+                          );
+                          if (constraints.maxWidth >= 480) {
+                            return Row(
+                              children: [
+                                Expanded(child: monthField),
+                                const SizedBox(width: 12),
+                                Expanded(child: yearField),
+                              ],
+                            );
+                          }
+                          return Column(
+                            children: [
+                              monthField,
+                              const SizedBox(height: 12),
+                              yearField,
+                            ],
+                          );
+                        },
+                      ),
+                      const SizedBox(height: 24),
+                      const Text(
+                        'Documento Adjunto',
+                        style: TextStyle(fontWeight: FontWeight.bold, color: AppColors.textWhite),
+                      ),
+                      const SizedBox(height: 8),
+                      if (_selectedFile != null)
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                          decoration: BoxDecoration(
+                            color: AppColors.gold.withValues(alpha: 0.1),
+                            borderRadius: BorderRadius.circular(10),
+                            border: Border.all(color: AppColors.gold.withValues(alpha: 0.4)),
+                          ),
+                          child: Row(
+                            children: [
+                              const Icon(LucideIcons.file, color: AppColors.gold, size: 20),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: Text(
+                                  _selectedFile!.name,
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: const TextStyle(color: AppColors.textWhite),
+                                ),
+                              ),
+                              if (!isLoading)
+                                IconButton(
+                                  icon: const Icon(LucideIcons.x, color: AppColors.error, size: 18),
+                                  onPressed: () => setState(() => _selectedFile = null),
+                                ),
+                            ],
+                          ),
+                        )
+                      else
+                        OutlinedButton.icon(
+                          onPressed: isLoading ? null : _pickFile,
+                          icon: const Icon(LucideIcons.paperclip),
+                          label: const Text('Seleccionar Archivo (PDF)'),
+                          style: OutlinedButton.styleFrom(
+                            foregroundColor: AppColors.gold,
+                            side: const BorderSide(color: AppColors.gold),
+                            minimumSize: const Size(double.infinity, 50),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                          ),
+                        ),
+                      const SizedBox(height: 32),
+                      SizedBox(
+                        width: double.infinity,
+                        height: 48,
+                        child: ElevatedButton(
+                          onPressed: isLoading ? null : _submit,
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: AppColors.gold,
+                            foregroundColor: AppColors.bgDarkTop,
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                            textStyle: const TextStyle(fontWeight: FontWeight.bold),
+                          ),
+                          child: isLoading
+                              ? Row(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    const SizedBox(
+                                      width: 20,
+                                      height: 20,
+                                      child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.bgDarkTop),
+                                    ),
+                                    const SizedBox(width: 16),
+                                    Text('Subiendo... ${(actionState.uploadProgress * 100).toInt()}%'),
+                                  ],
+                                )
+                              : const Text('Guardar Recibo'),
+                        ),
                       ),
                     ],
                   ),
-                )
-              else
-                OutlinedButton.icon(
-                  onPressed: isLoading ? null : _pickFile,
-                  icon: const Icon(LucideIcons.paperclip),
-                  label: const Text('Seleccionar Archivo (PDF)'),
-                  style: OutlinedButton.styleFrom(
-                    padding: const EdgeInsets.all(16),
-                  ),
-                ),
-              const SizedBox(height: 32),
-              SizedBox(
-                width: double.infinity,
-                height: 48,
-                child: ElevatedButton(
-                  onPressed: isLoading ? null : _submit,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.gold,
-                    foregroundColor: Colors.white,
-                  ),
-                  child: isLoading
-                      ? Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white)),
-                            const SizedBox(width: 16),
-                            Text('Subiendo... ${(actionState.uploadProgress * 100).toInt()}%'),
-                          ],
-                        )
-                      : const Text('Guardar Recibo'),
                 ),
               ),
-            ],
+            ),
           ),
         ),
       ),

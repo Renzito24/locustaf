@@ -28,28 +28,40 @@ class PaystubsHeader extends ConsumerWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          crossAxisAlignment: CrossAxisAlignment.center,
           children: [
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  isAdmin ? 'Recibos de Sueldo' : 'Mis Recibos de Sueldo',
-                  style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                        fontWeight: FontWeight.bold,
-                        color: AppColors.textWhite,
-                      ),
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  isAdmin 
-                    ? 'Gestioná los recibos de sueldo de los empleados'
-                    : 'Visualizá y gestioná tus recibos de sueldo',
-                  style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                        color: AppColors.textSecondary,
-                      ),
-                ),
-              ],
+            Container(
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                color: AppColors.gold.withValues(alpha: 0.15),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: const Icon(LucideIcons.fileText, color: AppColors.gold, size: 24),
+            ),
+            const SizedBox(width: 16),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    isAdmin ? 'Recibos de Sueldo' : 'Mis Recibos de Sueldo',
+                    style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                          fontWeight: FontWeight.bold,
+                          color: AppColors.textWhite,
+                        ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    isAdmin
+                        ? 'Gestioná los recibos de sueldo de los empleados'
+                        : 'Visualizá y gestioná tus recibos de sueldo',
+                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                          color: AppColors.textSecondary,
+                        ),
+                    softWrap: true,
+                  ),
+                ],
+              ),
             ),
           ],
         ),
@@ -135,46 +147,115 @@ class AdminPaystubsList extends ConsumerWidget {
           ),
         ),
       );
-    }
-
-    return ListView.separated(
+    }    return ListView.separated(
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
       itemCount: displayItems.length,
-      separatorBuilder: (context, index) => const Divider(height: 1),
+      separatorBuilder: (_, i) => const SizedBox(height: 8),
       itemBuilder: (context, index) {
         final item = displayItems[index];
-        final rolName = item.user.rol.name == 'employee' ? 'Empleado' : 
-                        item.user.rol.name == 'supervisor' ? 'Supervisor' : 
-                        item.user.rol.name == 'admin' ? 'Administrador' : item.user.rol.name;
-        return ListTile(
-          contentPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-          title: Text('${item.user.nombre} ${item.user.apellido}', style: const TextStyle(fontWeight: FontWeight.w600)),
-          subtitle: Text('Rol: $rolName'),
-          trailing: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              _PaystubStatusBadge(estado: item.paystub?.estado),
-              const SizedBox(width: 16),
-              if (item.paystub == null)
-                IconButton(
-                  icon: const Icon(LucideIcons.upload, color: AppColors.gold),
-                  tooltip: 'Subir recibo',
-                  onPressed: () => _uploadPaystub(context, ref, item.user, periodo),
-                )
-              else ...[
-                IconButton(
-                  icon: const Icon(LucideIcons.fileText, color: AppColors.gold),
-                  tooltip: 'Ver recibo',
-                  onPressed: () => _showPaystubDetails(context, item.paystub!, item.user),
+        final rolName = item.user.rol.name == 'employee'
+            ? 'Empleado'
+            : item.user.rol.name == 'supervisor'
+                ? 'Supervisor'
+                : item.user.rol.name == 'admin'
+                    ? 'Administrador'
+                    : item.user.rol.name;
+
+        final Color borderColor;
+        if (item.paystub == null) {
+          borderColor = Colors.grey.shade500;
+        } else {
+          switch (item.paystub!.estado) {
+            case PaystubEstado.pendiente:
+              borderColor = AppColors.warning;
+            case PaystubEstado.aceptado:
+              borderColor = AppColors.success;
+            case PaystubEstado.rechazado:
+              borderColor = AppColors.error;
+          }
+        }
+
+        final initials =
+            '${item.user.nombre.isNotEmpty ? item.user.nombre[0] : '?'}'
+            '${item.user.apellido.isNotEmpty ? item.user.apellido[0] : ''}';
+
+        return Material(
+          color: AppColors.bgDarkTop,
+          borderRadius: BorderRadius.circular(12),
+          clipBehavior: Clip.antiAlias,
+          child: Container(
+            decoration: BoxDecoration(
+              border: Border(
+                left: BorderSide(color: borderColor, width: 4),
+                top: BorderSide(color: borderColor.withValues(alpha: 0.2)),
+                right: BorderSide(color: borderColor.withValues(alpha: 0.2)),
+                bottom: BorderSide(color: borderColor.withValues(alpha: 0.2)),
+              ),
+            ),
+            child: ListTile(
+            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+            leading: CircleAvatar(
+              backgroundColor: borderColor.withValues(alpha: 0.2),
+              child: Text(
+                initials.toUpperCase(),
+                style: TextStyle(
+                  color: borderColor,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 14,
                 ),
-                IconButton(
-                  icon: const Icon(LucideIcons.trash2, color: AppColors.error),
-                  tooltip: 'Eliminar',
-                  onPressed: () => _deletePaystub(context, ref, item.paystub!),
+              ),
+            ),
+            title: Text(
+              '${item.user.nombre} ${item.user.apellido}',
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(
+                fontWeight: FontWeight.w600,
+                color: AppColors.textWhite,
+              ),
+            ),
+            subtitle: Row(
+              children: [
+                Flexible(
+                  child: Text(
+                    rolName,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(color: AppColors.textMuted, fontSize: 12),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Flexible(
+                  fit: FlexFit.loose,
+                  child: _PaystubStatusBadge(estado: item.paystub?.estado),
                 ),
               ],
-            ],
+            ),
+            trailing: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                if (item.paystub == null)
+                  IconButton(
+                    icon: const Icon(LucideIcons.upload, color: AppColors.gold),
+                    tooltip: 'Subir recibo',
+                    onPressed: () => _uploadPaystub(context, ref, item.user, periodo),
+                  )
+                else ...[
+                  IconButton(
+                    icon: const Icon(LucideIcons.fileText, color: AppColors.gold),
+                    tooltip: 'Ver recibo',
+                    onPressed: () => _showPaystubDetails(context, item.paystub!, item.user),
+                  ),
+                  IconButton(
+                    icon: const Icon(LucideIcons.trash2, color: AppColors.error),
+                    tooltip: 'Eliminar',
+                    onPressed: () => _deletePaystub(context, ref, item.paystub!),
+                  ),
+                ],
+              ],
+            ),
+            ),
           ),
         );
       },
@@ -239,17 +320,7 @@ class AdminPaystubsList extends ConsumerWidget {
 }
 
 String getNormalizedPeriod(PaystubModel p) {
-  int year;
-  int month;
-  if (p.periodo.contains('-')) {
-    final parts = p.periodo.split('-');
-    year = int.tryParse(parts[0]) ?? p.createdAt.year;
-    month = parts.length > 1 ? (int.tryParse(parts[1]) ?? p.createdAt.month) : p.createdAt.month;
-  } else {
-    year = p.createdAt.year;
-    month = p.createdAt.month;
-  }
-  return '${year.toString()}-${month.toString().padLeft(2, '0')}';
+  return p.normalizedPeriod;
 }
 
 class _AdminUserPaystubRow {
@@ -299,41 +370,74 @@ class _EmployeePaystubsListState extends ConsumerState<EmployeePaystubsList> {
       return y == _selectedYear;
     }).toList();
 
-    // Sort newest first based on periodo string or createdAt
     paystubsForYear.sort((a, b) => b.periodo.compareTo(a.periodo));
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            const Text(
-              'Historial de Recibos',
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-            ),
-            DropdownButton<int>(
-              value: _selectedYear,
-              items: availableYears.map((year) {
-                return DropdownMenuItem<int>(
-                  value: year,
-                  child: Text(year.toString()),
-                );
-              }).toList(),
-              onChanged: (val) {
-                if (val != null) setState(() => _selectedYear = val);
-              },
-            ),
-          ],
+        const Text(
+          'Historial de Recibos',
+          style: TextStyle(
+            fontSize: 17,
+            fontWeight: FontWeight.bold,
+            color: AppColors.textWhite,
+          ),
         ),
-        const SizedBox(height: 16),
+        const SizedBox(height: 12),
+        // Selector de año como chips
+        SingleChildScrollView(
+          scrollDirection: Axis.horizontal,
+          child: Row(
+            children: availableYears.map((year) {
+              final selected = year == _selectedYear;
+              return Padding(
+                padding: const EdgeInsets.only(right: 8),
+                child: ChoiceChip(
+                  label: Text(year.toString()),
+                  selected: selected,
+                  onSelected: (_) => setState(() => _selectedYear = year),
+                  selectedColor: AppColors.gold,
+                  backgroundColor: AppColors.bgDarkTop,
+                  labelStyle: TextStyle(
+                    color: selected ? AppColors.bgDarkTop : AppColors.textMuted,
+                    fontWeight: FontWeight.w600,
+                  ),
+                  side: BorderSide(
+                    color: selected
+                        ? AppColors.gold
+                        : AppColors.textSecondary.withValues(alpha: 0.35),
+                  ),
+                  showCheckmark: false,
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                ),
+              );
+            }).toList(),
+          ),
+        ),
+        const SizedBox(height: 20),
         if (paystubsForYear.isEmpty)
-          const Center(
-            child: Padding(
-              padding: EdgeInsets.all(32.0),
-              child: Text(
-                'No hay recibos registrados en este año',
-                style: TextStyle(color: AppColors.textSecondary),
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 32),
+            child: Center(
+              child: Column(
+                children: [
+                  Icon(LucideIcons.inbox, size: 48, color: AppColors.textSecondary),
+                  const SizedBox(height: 16),
+                  const Text(
+                    'Sin recibos este año',
+                    style: TextStyle(
+                      color: AppColors.textSecondary,
+                      fontSize: 15,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  const SizedBox(height: 6),
+                  const Text(
+                    'Los recibos subidos por tu empresa aparecerán aquí.',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(color: AppColors.textMuted, fontSize: 13),
+                  ),
+                ],
               ),
             ),
           )
@@ -342,29 +446,17 @@ class _EmployeePaystubsListState extends ConsumerState<EmployeePaystubsList> {
             shrinkWrap: true,
             physics: const NeverScrollableScrollPhysics(),
             itemCount: paystubsForYear.length,
-            separatorBuilder: (context, index) => const SizedBox(height: 8),
+            separatorBuilder: (_, i) => const SizedBox(height: 8),
             itemBuilder: (context, index) {
               final paystub = paystubsForYear[index];
-              return Card(
-                elevation: 0,
-                shape: RoundedRectangleBorder(
-                  side: BorderSide(color: Colors.grey.withValues(alpha: 0.2)),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: ListTile(
-                  contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
-                  title: Text('Periodo: ${paystub.periodo}', style: const TextStyle(fontWeight: FontWeight.w600)),
-                  subtitle: Text('Fecha de subida: ${DateFormat('dd/MM/yyyy').format(paystub.createdAt)}'),
-                  trailing: _PaystubStatusBadge(estado: paystub.estado),
-                  onTap: () {
-                    showDialog(
-                      context: context,
-                      builder: (context) => PaystubDetailDialog(
-                        paystub: paystub,
-                        isAdmin: false,
-                      ),
-                    );
-                  },
+              return _EmployeePaystubCard(
+                paystub: paystub,
+                onTap: () => showDialog(
+                  context: context,
+                  builder: (context) => PaystubDetailDialog(
+                    paystub: paystub,
+                    isAdmin: false,
+                  ),
                 ),
               );
             },
@@ -391,6 +483,8 @@ class _PaystubStatusBadge extends StatelessWidget {
         ),
         child: const Text(
           'Sin recibo',
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
           style: TextStyle(
             color: Colors.grey,
             fontSize: 12,
@@ -404,13 +498,10 @@ class _PaystubStatusBadge extends StatelessWidget {
     switch (estado!) {
       case PaystubEstado.pendiente:
         color = AppColors.warning;
-        break;
       case PaystubEstado.aceptado:
         color = AppColors.success;
-        break;
       case PaystubEstado.rechazado:
         color = AppColors.error;
-        break;
     }
 
     return Container(
@@ -422,6 +513,8 @@ class _PaystubStatusBadge extends StatelessWidget {
       ),
       child: Text(
         estado!.displayName,
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
         style: TextStyle(
           color: color,
           fontSize: 12,
@@ -431,3 +524,107 @@ class _PaystubStatusBadge extends StatelessWidget {
     );
   }
 }
+
+class _EmployeePaystubCard extends StatelessWidget {
+  final PaystubModel paystub;
+  final VoidCallback onTap;
+
+  const _EmployeePaystubCard({required this.paystub, required this.onTap});
+
+  static const _meses = [
+    '', 'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
+    'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre',
+  ];
+
+  String get _formattedPeriodo {
+    try {
+      final parts = paystub.periodo.split('-');
+      if (parts.length >= 2) {
+        final year = int.parse(parts[0]);
+        final month = int.parse(parts[1]);
+        if (month >= 1 && month <= 12) return '${_meses[month]} $year';
+      }
+    } catch (_) {}
+    return paystub.periodo;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    Color statusColor;
+    IconData statusIcon;
+
+    switch (paystub.estado) {
+      case PaystubEstado.pendiente:
+        statusColor = AppColors.warning;
+        statusIcon = LucideIcons.clock;
+      case PaystubEstado.aceptado:
+        statusColor = AppColors.success;
+        statusIcon = LucideIcons.circleCheck;
+      case PaystubEstado.rechazado:
+        statusColor = AppColors.error;
+        statusIcon = LucideIcons.circleX;
+    }
+
+    return Material(
+      color: AppColors.bgDarkTop,
+      borderRadius: BorderRadius.circular(12),
+      clipBehavior: Clip.antiAlias,
+      child: InkWell(
+        onTap: onTap,
+        child: Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: statusColor.withValues(alpha: 0.35)),
+          ),
+          child: Row(
+          children: [
+            Container(
+              width: 46,
+              height: 46,
+              decoration: BoxDecoration(
+                color: statusColor.withValues(alpha: 0.15),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Icon(statusIcon, color: statusColor, size: 22),
+            ),
+            const SizedBox(width: 14),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    _formattedPeriodo,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      color: AppColors.textWhite,
+                      fontWeight: FontWeight.w600,
+                      fontSize: 15,
+                    ),
+                  ),
+                  const SizedBox(height: 3),
+                  Text(
+                    'Subido el ${DateFormat('dd/MM/yyyy').format(paystub.createdAt)}',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(color: AppColors.textMuted, fontSize: 12),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(width: 8),
+            Flexible(
+              fit: FlexFit.loose,
+              child: _PaystubStatusBadge(estado: paystub.estado),
+            ),
+            const SizedBox(width: 4),
+            const Icon(Icons.chevron_right, color: AppColors.textSecondary, size: 20),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+

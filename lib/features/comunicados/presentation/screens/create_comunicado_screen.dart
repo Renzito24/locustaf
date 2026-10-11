@@ -120,145 +120,260 @@ class _CreateComunicadoScreenState extends ConsumerState<CreateComunicadoScreen>
     });
 
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: AppColors.bgDarkTop,
       appBar: AppBar(
         title: const Text('Nuevo Comunicado'),
+        backgroundColor: AppColors.bgDarkTop,
+        foregroundColor: AppColors.textWhite,
+        elevation: 0,
       ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(24),
-        child: Form(
-          key: _formKey,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              TextFormField(
-                controller: _titleController,
-                decoration: const InputDecoration(
-                  labelText: 'Título del comunicado',
-                  border: OutlineInputBorder(),
-                ),
-                validator: (val) => val == null || val.isEmpty ? 'Requerido' : null,
-                enabled: !isLoading,
-              ),
-              const SizedBox(height: 16),
-              // ── Selector de modo: PDF o Texto ─────────────────────────
-              const Text('Formato del comunicado:', style: TextStyle(fontWeight: FontWeight.bold)),
-              const SizedBox(height: 8),
-              SegmentedButton<_ComunicadoMode>(
-                segments: const [
-                  ButtonSegment(value: _ComunicadoMode.pdf, label: Text('Archivo PDF'), icon: Icon(LucideIcons.fileText)),
-                  ButtonSegment(value: _ComunicadoMode.text, label: Text('Escritura'), icon: Icon(LucideIcons.type)),
-                ],
-                selected: {_mode},
-                onSelectionChanged: isLoading ? null : (Set<_ComunicadoMode> newSelection) {
-                  setState(() => _mode = newSelection.first);
-                },
-              ),
-              const SizedBox(height: 16),
-              if (_mode == _ComunicadoMode.text) ...[
-                TextFormField(
-                  controller: _contentController,
-                  decoration: const InputDecoration(
-                    labelText: 'Contenido del comunicado',
-                    border: OutlineInputBorder(),
-                    alignLabelWithHint: true,
-                  ),
-                  maxLines: 8,
-                  minLines: 5,
-                  enabled: !isLoading,
-                ),
-              ] else
-              if (_selectedFile == null)
-                OutlinedButton.icon(
-                  onPressed: isLoading ? null : _pickFile,
-                  icon: const Icon(LucideIcons.paperclip),
-                  label: const Text('Seleccionar PDF (máx. 10 MB)'),
-                  style: OutlinedButton.styleFrom(
-                    foregroundColor: AppColors.gold,
-                    side: const BorderSide(color: AppColors.gold),
-                    minimumSize: const Size(double.infinity, 48),
-                  ),
-                )
-              else
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                  decoration: BoxDecoration(
-                    color: AppColors.gold.withValues(alpha: 0.08),
-                    borderRadius: BorderRadius.circular(8),
-                    border: Border.all(color: AppColors.gold.withValues(alpha: 0.4)),
-                  ),
-                  child: Row(
+      body: Center(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 800),
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.all(24),
+            child: Card(
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+              elevation: 0,
+              color: AppColors.cardDark,
+              child: Padding(
+                padding: const EdgeInsets.all(24),
+                child: Form(
+                  key: _formKey,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Icon(LucideIcons.fileText, color: AppColors.gold),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              _selectedFile!.name,
-                              style: const TextStyle(fontWeight: FontWeight.w600),
-                              overflow: TextOverflow.ellipsis,
+                      TextFormField(
+                        controller: _titleController,
+                        style: const TextStyle(color: AppColors.textWhite),
+                        decoration: InputDecoration(
+                          labelText: 'Título del comunicado',
+                          labelStyle: const TextStyle(color: AppColors.textSecondary),
+                          hintStyle: const TextStyle(color: AppColors.textSecondary),
+                          filled: true,
+                          fillColor: AppColors.bgDarkTop,
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(10),
+                            borderSide: BorderSide(color: AppColors.textSecondary.withValues(alpha: 0.3)),
+                          ),
+                          enabledBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(10),
+                            borderSide: BorderSide(color: AppColors.textSecondary.withValues(alpha: 0.3)),
+                          ),
+                          focusedBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(10),
+                            borderSide: const BorderSide(color: AppColors.gold),
+                          ),
+                        ),
+                        validator: (val) => val == null || val.isEmpty ? 'Requerido' : null,
+                        enabled: !isLoading,
+                      ),
+                      const SizedBox(height: 20),
+                      // ── Selector de modo: PDF o Texto ─────────────────────────
+                      const Text(
+                        'Formato del comunicado:',
+                        style: TextStyle(fontWeight: FontWeight.bold, color: AppColors.textWhite),
+                      ),
+                      const SizedBox(height: 10),
+                      Wrap(
+                        spacing: 10,
+                        runSpacing: 10,
+                        children: [
+                          for (final mode in _ComunicadoMode.values)
+                            ChoiceChip(
+                              avatar: Icon(
+                                mode == _ComunicadoMode.pdf ? LucideIcons.fileText : LucideIcons.type,
+                                size: 16,
+                                color: mode == _mode ? AppColors.bgDarkTop : AppColors.textSecondary,
+                              ),
+                              label: Text(mode == _ComunicadoMode.pdf ? 'Archivo PDF' : 'Escritura'),
+                              selected: mode == _mode,
+                              onSelected: isLoading ? null : (_) => setState(() => _mode = mode),
+                              selectedColor: AppColors.gold,
+                              backgroundColor: AppColors.bgDarkTop,
+                              labelStyle: TextStyle(
+                                color: mode == _mode ? AppColors.bgDarkTop : AppColors.textSecondary,
+                                fontWeight: FontWeight.w600,
+                              ),
+                              side: BorderSide(
+                                color: mode == _mode
+                                    ? AppColors.gold
+                                    : AppColors.textSecondary.withValues(alpha: 0.35),
+                              ),
+                              showCheckmark: false,
+                              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                             ),
-                            Text(
-                              '${(_selectedFile!.size / 1024).toStringAsFixed(0)} KB',
-                              style: const TextStyle(fontSize: 12, color: AppColors.textSecondary),
+                        ],
+                      ),
+                      const SizedBox(height: 20),
+                      if (_mode == _ComunicadoMode.text) ...[
+                        TextFormField(
+                          controller: _contentController,
+                          style: const TextStyle(color: AppColors.textWhite),
+                          decoration: InputDecoration(
+                            labelText: 'Contenido del comunicado',
+                            labelStyle: const TextStyle(color: AppColors.textSecondary),
+                            hintStyle: const TextStyle(color: AppColors.textSecondary),
+                            filled: true,
+                            fillColor: AppColors.bgDarkTop,
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(10),
+                              borderSide: BorderSide(color: AppColors.textSecondary.withValues(alpha: 0.3)),
                             ),
-                          ],
+                            enabledBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(10),
+                              borderSide: BorderSide(color: AppColors.textSecondary.withValues(alpha: 0.3)),
+                            ),
+                            focusedBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(10),
+                              borderSide: const BorderSide(color: AppColors.gold),
+                            ),
+                            alignLabelWithHint: true,
+                          ),
+                          maxLines: 8,
+                          minLines: 5,
+                          enabled: !isLoading,
+                        ),
+                      ] else if (_selectedFile == null)
+                        OutlinedButton.icon(
+                          onPressed: isLoading ? null : _pickFile,
+                          icon: const Icon(LucideIcons.paperclip),
+                          label: const Text('Seleccionar PDF (máx. 10 MB)'),
+                          style: OutlinedButton.styleFrom(
+                            foregroundColor: AppColors.gold,
+                            side: const BorderSide(color: AppColors.gold),
+                            minimumSize: const Size(double.infinity, 50),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                          ),
+                        )
+                      else
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                          decoration: BoxDecoration(
+                            color: AppColors.gold.withValues(alpha: 0.1),
+                            borderRadius: BorderRadius.circular(10),
+                            border: Border.all(color: AppColors.gold.withValues(alpha: 0.4)),
+                          ),
+                          child: Row(
+                            children: [
+                              const Icon(LucideIcons.fileText, color: AppColors.gold),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      _selectedFile!.name,
+                                      style: const TextStyle(
+                                        fontWeight: FontWeight.w600,
+                                        color: AppColors.textWhite,
+                                      ),
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                    Text(
+                                      '${(_selectedFile!.size / 1024).toStringAsFixed(0)} KB',
+                                      style: const TextStyle(fontSize: 12, color: AppColors.textSecondary),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              if (!isLoading)
+                                IconButton(
+                                  icon: const Icon(LucideIcons.x, size: 18, color: AppColors.textSecondary),
+                                  onPressed: () => setState(() => _selectedFile = null),
+                                  tooltip: 'Quitar archivo',
+                                ),
+                            ],
+                          ),
+                        ),
+                      const SizedBox(height: 24),
+                      const Text(
+                        'Enviar a:',
+                        style: TextStyle(fontWeight: FontWeight.bold, color: AppColors.textWhite),
+                      ),
+                      const SizedBox(height: 10),
+                      Wrap(
+                        spacing: 10,
+                        runSpacing: 10,
+                        children: [
+                          for (final target in TargetType.values)
+                            ChoiceChip(
+                              avatar: Icon(
+                                target == TargetType.all
+                                    ? LucideIcons.users
+                                    : target == TargetType.workplace
+                                        ? LucideIcons.building
+                                        : LucideIcons.user,
+                                size: 16,
+                                color: target == _targetType ? AppColors.bgDarkTop : AppColors.textSecondary,
+                              ),
+                              label: Text(
+                                target == TargetType.all
+                                    ? 'Todos'
+                                    : target == TargetType.workplace
+                                        ? 'Lugar'
+                                        : 'Específicos',
+                              ),
+                              selected: target == _targetType,
+                              onSelected: isLoading
+                                  ? null
+                                  : (_) {
+                                      setState(() {
+                                        _targetType = target;
+                                        _selectedWorkplaces.clear();
+                                        _selectedUsers.clear();
+                                      });
+                                    },
+                              selectedColor: AppColors.gold,
+                              backgroundColor: AppColors.bgDarkTop,
+                              labelStyle: TextStyle(
+                                color: target == _targetType ? AppColors.bgDarkTop : AppColors.textSecondary,
+                                fontWeight: FontWeight.w600,
+                              ),
+                              side: BorderSide(
+                                color: target == _targetType
+                                    ? AppColors.gold
+                                    : AppColors.textSecondary.withValues(alpha: 0.35),
+                              ),
+                              showCheckmark: false,
+                              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                            ),
+                        ],
+                      ),
+                      const SizedBox(height: 20),
+                      
+                      if (_targetType == TargetType.workplace) _buildWorkplacesSelector(isLoading),
+                      if (_targetType == TargetType.users) _buildUsersSelector(isLoading),
+                      
+                      // ── Preview de destinatarios ──────────────────────────────
+                      const SizedBox(height: 16),
+                      _buildRecipientPreview(),
+                      const SizedBox(height: 28),
+                      SizedBox(
+                        width: double.infinity,
+                        height: 48,
+                        child: ElevatedButton(
+                          onPressed: isLoading ? null : _submit,
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: AppColors.gold,
+                            foregroundColor: AppColors.bgDarkTop,
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                            textStyle: const TextStyle(fontWeight: FontWeight.bold),
+                          ),
+                          child: isLoading
+                              ? const SizedBox(
+                                  width: 20,
+                                  height: 20,
+                                  child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.bgDarkTop),
+                                )
+                              : const Text('Enviar Comunicado'),
                         ),
                       ),
-                      if (!isLoading)
-                        IconButton(
-                          icon: const Icon(LucideIcons.x, size: 18),
-                          onPressed: () => setState(() => _selectedFile = null),
-                          tooltip: 'Quitar archivo',
-                        ),
                     ],
                   ),
                 ),
-              const SizedBox(height: 24),
-              const Text('Enviar a:', style: TextStyle(fontWeight: FontWeight.bold)),
-              const SizedBox(height: 8),
-              SegmentedButton<TargetType>(
-                segments: const [
-                  ButtonSegment(value: TargetType.all, label: Text('Todos'), icon: Icon(LucideIcons.users)),
-                  ButtonSegment(value: TargetType.workplace, label: Text('Lugar de trabajo'), icon: Icon(LucideIcons.building)),
-                  ButtonSegment(value: TargetType.users, label: Text('Empleados específicos'), icon: Icon(LucideIcons.user)),
-                ],
-                selected: {_targetType},
-                onSelectionChanged: isLoading ? null : (Set<TargetType> newSelection) {
-                  setState(() {
-                    _targetType = newSelection.first;
-                    _selectedWorkplaces.clear();
-                    _selectedUsers.clear();
-                  });
-                },
               ),
-              const SizedBox(height: 24),
-              
-              if (_targetType == TargetType.workplace) _buildWorkplacesSelector(isLoading),
-              if (_targetType == TargetType.users) _buildUsersSelector(isLoading),
-              
-              // ── Preview de destinatarios ──────────────────────────────
-              const SizedBox(height: 16),
-              _buildRecipientPreview(),
-              const SizedBox(height: 32),
-              SizedBox(
-                width: double.infinity,
-                height: 48,
-                child: ElevatedButton(
-                  onPressed: isLoading ? null : _submit,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.gold,
-                    foregroundColor: Colors.white,
-                  ),
-                  child: isLoading
-                      ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
-                      : const Text('Enviar Comunicado'),
-                ),
-              ),
-              const SizedBox(height: 24),
-            ],
+            ),
           ),
         ),
       ),
@@ -297,27 +412,48 @@ class _CreateComunicadoScreenState extends ConsumerState<CreateComunicadoScreen>
     final workplacesAsync = ref.watch(workplacesStreamProvider);
     return workplacesAsync.when(
       data: (workplaces) {
-        return Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: workplaces.map((w) {
-            return CheckboxListTile(
-              title: Text(w.nombre),
-              value: _selectedWorkplaces.contains(w.id),
-              onChanged: isLoading ? null : (checked) {
-                setState(() {
-                  if (checked == true) {
-                    _selectedWorkplaces.add(w.id);
-                  } else {
-                    _selectedWorkplaces.remove(w.id);
-                  }
-                });
-              },
-            );
-          }).toList(),
+        if (workplaces.isEmpty) {
+          return const Padding(
+            padding: EdgeInsets.symmetric(vertical: 8.0),
+            child: Text(
+              'No hay lugares de trabajo registrados',
+              style: TextStyle(color: AppColors.textMuted, fontSize: 13),
+            ),
+          );
+        }
+        return Container(
+          decoration: BoxDecoration(
+            color: AppColors.bgDarkTop,
+            borderRadius: BorderRadius.circular(10),
+            border: Border.all(color: AppColors.textSecondary.withValues(alpha: 0.2)),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: workplaces.map((w) {
+              return CheckboxListTile(
+                title: Text(w.nombre, style: const TextStyle(color: AppColors.textWhite)),
+                value: _selectedWorkplaces.contains(w.id),
+                activeColor: AppColors.gold,
+                checkColor: AppColors.bgDarkTop,
+                onChanged: isLoading ? null : (checked) {
+                  setState(() {
+                    if (checked == true) {
+                      _selectedWorkplaces.add(w.id);
+                    } else {
+                      _selectedWorkplaces.remove(w.id);
+                    }
+                  });
+                },
+              );
+            }).toList(),
+          ),
         );
       },
-      loading: () => const CircularProgressIndicator(),
-      error: (e, _) => Text('Error: $e'),
+      loading: () => const Padding(
+        padding: EdgeInsets.all(16.0),
+        child: Center(child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.gold)),
+      ),
+      error: (e, _) => Text('Error: $e', style: const TextStyle(color: AppColors.error)),
     );
   }
 
@@ -326,28 +462,49 @@ class _CreateComunicadoScreenState extends ConsumerState<CreateComunicadoScreen>
     return usersAsync.when(
       data: (users) {
         final employees = users.where((u) => u.isActive && !u.isDeleted).toList();
-        return Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: employees.map((u) {
-            return CheckboxListTile(
-              title: Text('${u.nombre} ${u.apellido}'),
-              subtitle: Text(u.email),
-              value: _selectedUsers.contains(u.id),
-              onChanged: isLoading ? null : (checked) {
-                setState(() {
-                  if (checked == true) {
-                    _selectedUsers.add(u.id);
-                  } else {
-                    _selectedUsers.remove(u.id);
-                  }
-                });
-              },
-            );
-          }).toList(),
+        if (employees.isEmpty) {
+          return const Padding(
+            padding: EdgeInsets.symmetric(vertical: 8.0),
+            child: Text(
+              'No hay empleados disponibles',
+              style: TextStyle(color: AppColors.textMuted, fontSize: 13),
+            ),
+          );
+        }
+        return Container(
+          decoration: BoxDecoration(
+            color: AppColors.bgDarkTop,
+            borderRadius: BorderRadius.circular(10),
+            border: Border.all(color: AppColors.textSecondary.withValues(alpha: 0.2)),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: employees.map((u) {
+              return CheckboxListTile(
+                title: Text('${u.nombre} ${u.apellido}', style: const TextStyle(color: AppColors.textWhite)),
+                subtitle: Text(u.email, style: const TextStyle(color: AppColors.textMuted, fontSize: 12)),
+                value: _selectedUsers.contains(u.id),
+                activeColor: AppColors.gold,
+                checkColor: AppColors.bgDarkTop,
+                onChanged: isLoading ? null : (checked) {
+                  setState(() {
+                    if (checked == true) {
+                      _selectedUsers.add(u.id);
+                    } else {
+                      _selectedUsers.remove(u.id);
+                    }
+                  });
+                },
+              );
+            }).toList(),
+          ),
         );
       },
-      loading: () => const CircularProgressIndicator(),
-      error: (e, _) => Text('Error: $e'),
+      loading: () => const Padding(
+        padding: EdgeInsets.all(16.0),
+        child: Center(child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.gold)),
+      ),
+      error: (e, _) => Text('Error: $e', style: const TextStyle(color: AppColors.error)),
     );
   }
 }

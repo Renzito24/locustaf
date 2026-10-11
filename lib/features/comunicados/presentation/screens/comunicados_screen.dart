@@ -27,46 +27,95 @@ class ComunicadosScreen extends ConsumerWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
+                  LayoutBuilder(
+                    builder: (context, constraints) {
+                      final isNarrow = constraints.maxWidth < 600;
+
+                      final headerInfo = Row(
+                        crossAxisAlignment: CrossAxisAlignment.center,
                         children: [
-                          Text(
-                            'Comunicados',
-                            style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                                  fontWeight: FontWeight.bold,
-                                  color: AppColors.textWhite,
-                                ),
+                          Container(
+                            padding: const EdgeInsets.all(10),
+                            decoration: BoxDecoration(
+                              color: AppColors.gold.withValues(alpha: 0.15),
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: const Icon(LucideIcons.megaphone, color: AppColors.gold, size: 24),
                           ),
-                          const SizedBox(height: 8),
-                          Text(
-                            isAdmin
-                                ? 'Enviá notificaciones a tus empleados y lugares de trabajo'
-                                : 'Avisos y notificaciones de la empresa',
-                            style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                                  color: AppColors.textSecondary,
+                          const SizedBox(width: 16),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  'Comunicados',
+                                  style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                                        fontWeight: FontWeight.bold,
+                                        color: AppColors.textWhite,
+                                      ),
                                 ),
+                                const SizedBox(height: 4),
+                                Text(
+                                  isAdmin
+                                      ? 'Enviá notificaciones a tus empleados y lugares de trabajo'
+                                      : 'Avisos y notificaciones de la empresa',
+                                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                                        color: AppColors.textSecondary,
+                                      ),
+                                  softWrap: true,
+                                ),
+                              ],
+                            ),
                           ),
                         ],
-                      ),
-                      if (isAdmin)
-                        ElevatedButton.icon(
-                          onPressed: () {
-                            context.push(RoutePaths.createComunicado);
-                          },
-                          icon: const Icon(LucideIcons.plus),
-                          label: const Text('Nuevo Comunicado'),
-                          style: ElevatedButton.styleFrom(
-                            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
-                            backgroundColor: AppColors.gold,
-                            foregroundColor: Colors.white,
-                          ),
-                        ),
-                    ],
+                      );
+
+                      final actionButton = isAdmin
+                          ? ElevatedButton.icon(
+                              onPressed: () {
+                                context.push(RoutePaths.createComunicado);
+                              },
+                              icon: const Icon(LucideIcons.plus, size: 18),
+                              label: const Text('Nuevo Comunicado'),
+                              style: ElevatedButton.styleFrom(
+                                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+                                backgroundColor: AppColors.gold,
+                                foregroundColor: AppColors.bgDarkTop,
+                                textStyle: const TextStyle(fontWeight: FontWeight.bold),
+                              ),
+                            )
+                          : null;
+
+                      if (isNarrow) {
+                        return Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            headerInfo,
+                            if (actionButton != null) ...[
+                              const SizedBox(height: 16),
+                              SizedBox(
+                                width: double.infinity,
+                                child: actionButton,
+                              ),
+                            ],
+                          ],
+                        );
+                      }
+
+                      return Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        crossAxisAlignment: CrossAxisAlignment.center,
+                        children: [
+                          Expanded(child: headerInfo),
+                          if (actionButton != null) ...[
+                            const SizedBox(width: 16),
+                            actionButton,
+                          ],
+                        ],
+                      );
+                    },
                   ),
-                  const SizedBox(height: 32),
+                  const SizedBox(height: 24),
                 ],
               ),
             ),
@@ -77,42 +126,52 @@ class ComunicadosScreen extends ConsumerWidget {
               child: Card(
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                 elevation: 0,
-                color: Colors.white,
-                child: comunicadosAsync.when(
-                  data: (comunicados) => ComunicadosList(
-                    comunicados: comunicados,
-                    isAdmin: isAdmin,
-                  ),
-                  loading: () => const Center(
-                    child: Padding(
-                      padding: EdgeInsets.all(32.0),
-                      child: CircularProgressIndicator(),
+                color: AppColors.cardDark,
+                child: Padding(
+                  padding: const EdgeInsets.all(20.0),
+                  child: comunicadosAsync.when(
+                    data: (comunicados) => ComunicadosList(
+                      comunicados: comunicados,
+                      isAdmin: isAdmin,
                     ),
-                  ),
-                  error: (e, _) => Center(
-                    child: Padding(
-                      padding: const EdgeInsets.all(32.0),
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          const Icon(Icons.error_outline, color: Colors.red, size: 48),
-                          const SizedBox(height: 16),
-                          Text(
-                            'Error al cargar comunicados',
-                            style: Theme.of(context).textTheme.titleLarge,
-                          ),
-                          const SizedBox(height: 8),
-                          Text(
-                            e.toString(),
-                            textAlign: TextAlign.center,
-                            style: const TextStyle(color: Colors.red),
-                          ),
-                          const SizedBox(height: 16),
-                          ElevatedButton(
-                            onPressed: () => ref.invalidate(comunicadosForUserProvider),
-                            child: const Text('Reintentar'),
-                          ),
-                        ],
+                    loading: () => const Center(
+                      child: Padding(
+                        padding: EdgeInsets.all(32.0),
+                        child: CircularProgressIndicator(color: AppColors.gold),
+                      ),
+                    ),
+                    error: (e, _) => Center(
+                      child: Padding(
+                        padding: const EdgeInsets.all(32.0),
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const Icon(Icons.error_outline, color: AppColors.error, size: 48),
+                            const SizedBox(height: 16),
+                            Text(
+                              'Error al cargar comunicados',
+                              style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                                    color: AppColors.textWhite,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                            ),
+                            const SizedBox(height: 8),
+                            Text(
+                              e.toString(),
+                              textAlign: TextAlign.center,
+                              style: const TextStyle(color: AppColors.error),
+                            ),
+                            const SizedBox(height: 16),
+                            ElevatedButton(
+                              onPressed: () => ref.invalidate(comunicadosForUserProvider),
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: AppColors.gold,
+                                foregroundColor: AppColors.bgDarkTop,
+                              ),
+                              child: const Text('Reintentar'),
+                            ),
+                          ],
+                        ),
                       ),
                     ),
                   ),

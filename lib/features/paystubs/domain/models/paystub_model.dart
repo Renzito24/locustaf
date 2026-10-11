@@ -139,6 +139,22 @@ class PaystubModel extends Equatable {
     );
   }
 
+  /// Periodo normalizado a formato `YYYY-MM`.
+  ///
+  /// Los recibos pueden haberse creado con formato libre (ej. "Octubre 2026")
+  /// o con formato `YYYY-MM`. Este getter unifica ambos para filtros y métricas.
+  String get normalizedPeriod {
+    final parts = periodo.split('-');
+    if (parts.length >= 2) {
+      final year = int.tryParse(parts[0]);
+      final month = int.tryParse(parts[1]);
+      if (year != null && month != null && month >= 1 && month <= 12) {
+        return '${year.toString()}-${month.toString().padLeft(2, '0')}';
+      }
+    }
+    return '${createdAt.year.toString()}-${createdAt.month.toString().padLeft(2, '0')}';
+  }
+
   @override
   List<Object?> get props => [
         id,
